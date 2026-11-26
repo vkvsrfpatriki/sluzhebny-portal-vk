@@ -118,8 +118,10 @@ async function init(){
   if (error) {
    message.textContent = register ? "Не удалось зарегистрироваться. Проверь адрес и пароль." : "Не удалось войти. Проверь почту, пароль и подтверждение аккаунта.";
   } else if (data.session) {
+   form.reset();
    await showAccount(data.session);
   } else {
+   form.reset();
    message.textContent = "Проверь почту и подтверди регистрацию по ссылке.";
   }
  });
@@ -130,5 +132,6 @@ async function init(){
  document.querySelectorAll("[data-portal-signout]").forEach((button) => button.addEventListener("click", signOut));
  document.getElementById("portalOpenLeadership").addEventListener("click", showAssignments);
  document.getElementById("portalCloseLeadership").addEventListener("click", () => { leadership.hidden = true; });
+ document.getElementById("portalAuthFields").disabled = false;
 }
 init();
