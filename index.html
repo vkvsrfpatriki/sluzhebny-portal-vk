@@ -93,6 +93,22 @@ main{padding:24px;max-width:1600px;width:100%;margin:auto}
 @media(max-width:1050px){.reportWorkspace{grid-template-columns:minmax(0,1fr)}}
 @media(max-width:600px){.reportEditor .formGrid{grid-template-columns:repeat(2,minmax(0,1fr))}.reportEditor{padding:14px 12px}.reportPreview .officialDocument{padding:30px 20px}}
 .reportEditor .criteriaRow[data-status="met"] .criterionText{text-decoration:line-through}
+.reportExport{display:grid;gap:8px}
+.reportExport .action{width:100%;border-radius:999px}
+.reportExport .action:first-of-type{background:#255da8;border-color:#6194d8}
+#reportExportStatus:empty{display:none}
+@page{size:A4;margin:16mm 19mm}
+@media print{
+ body.printingReport{background:#fff}
+ body.printingReport .top,body.printingReport aside,body.printingReport .footer,
+ body.printingReport main .page:not(#promotion),body.printingReport #promotion>:not(#promoReport),
+ body.printingReport #promoReport>:not(.reportPreview),body.printingReport .previewTop{display:none!important}
+ body.printingReport .shell,body.printingReport .layout,body.printingReport main,
+ body.printingReport #promoReport,body.printingReport .reportPreview{display:block!important;position:static;margin:0;padding:0;min-height:0;background:#fff}
+ body.printingReport .reportPreview .officialDocument{padding:0;box-shadow:none}
+ body.printingReport .officialDocument::after{display:none}
+ body.printingReport .reportPaperHeader,body.printingReport .reportSignature{break-inside:avoid}
+}
 </style>
 </head>
 <body><div class="shell">
@@ -280,12 +296,11 @@ Object.entries(pages).forEach(([id,p]) => {
        <h4 class="reportFieldGroup">2. Подразделение и должность</h4>
        <label>Подразделение<input data-report-field="unit" placeholder="Отдел кадров / Отдел призыва" /></label>
        <label>Должность<input data-report-field="position" placeholder="Должность" /></label>
-       <h4 class="reportFieldGroup">3. Звание и период службы в текущем звании</h4>
+       <h4 class="reportFieldGroup">3. Испрашиваемое звание</h4>
        <label class="reportFieldWide">Испрашиваемое звание<select data-report-field="requestedRank">
         <option value="Сержант">Сержант</option><option value="Старший сержант">Старший сержант</option><option value="Старшина">Старшина</option><option value="Прапорщик">Прапорщик</option><option value="Старший прапорщик">Старший прапорщик</option><option value="Младший лейтенант">Младший лейтенант</option><option value="Лейтенант">Лейтенант</option><option value="Старший лейтенант">Старший лейтенант</option><option value="Капитан">Капитан</option>
        </select></label>
-       <label>Дата присвоения текущего звания<input data-report-field="rankDate" type="date" /></label>
-       <label>Период службы в текущем звании<input data-report-field="rankPeriod" placeholder="Справочно, не норматив" /></label>
+
       </div>
      </div>
      <div class="panel">
@@ -303,7 +318,18 @@ Object.entries(pages).forEach(([id,p]) => {
       </div>
       <div id="reportActivities"></div>
       <p id="catalogEmpty" class="muted" hidden>Действия не найдены.</p>
+     </div>
+     <div class="panel">
+      <h3 class="reportSectionTitle">III. Итоговая информация</h3>
+      <label class="extraNotes">Общий результат работы за период<textarea data-report-field="summary" rows="2" placeholder="Заполняется автоматически по выполненным работам"></textarea></label>
       <label class="extraNotes">Дополнительные сведения<textarea data-report-field="notes" rows="3" placeholder="При необходимости укажи дополнительные сведения"></textarea></label>
+     </div>
+     <div class="panel reportExport">
+      <h3 class="reportSectionTitle">Выгрузка</h3>
+      <button type="button" id="reportPdf" class="action">Сохранить PDF</button>
+      <button type="button" id="reportPng" class="action secondary">Скачать PNG</button>
+      <button type="button" id="reportReset" class="action secondary">Обнулить достижения</button>
+      <p id="reportExportStatus" class="muted" role="status"></p>
      </div>
     </div>
     <div class="reportPreview">
@@ -494,13 +520,11 @@ function refreshReport(){
   '<p class="docSection">I. ОБЩИЕ СВЕДЕНИЯ</p><ol>'+
   '<li><b>Военнослужащий:</b> '+field("currentRank")+' '+field("name")+', игровой паспорт № '+field("passport")+'.</li>'+
   '<li><b>Подразделение и должность:</b> '+field("unit")+', '+field("position")+'.</li>'+
-  '<li><b>Воинское звание и период службы в текущем звании:</b><br>— текущее звание — '+field("currentRank")+', с '+date("rankDate")+';'+
-  (reportValue("rankPeriod") ? '<br>— период службы — '+field("rankPeriod")+';' : '')+
-  '<br>— испрашиваемое звание — '+field("requestedRank")+'.</li></ol>'+
+  '<li><b>Испрашиваемое звание:</b> '+field("requestedRank")+'.</li></ol>'+ 
   '<p class="docSection">II. РЕЗУЛЬТАТЫ СЛУЖЕБНОЙ ДЕЯТЕЛЬНОСТИ</p>'+
   (reportGroups ? '<ol start="4">'+reportGroups+'</ol>' : '<p>Действия пока не добавлены.</p>')+
   '<p class="docSection">III. ИТОГОВАЯ ИНФОРМАЦИЯ</p><ol start="'+(4 + catalogGroups.filter((_, group) => catalog.some((action) => action.group === group && action.count)).length)+'">'+
-  '<li><b>Общий результат работы за период:</b><br>— выполнено действий: '+count+'.</li>'+
+  '<li><b>Общий результат работы за период:</b><br>'+field("summary", "Выполнено мероприятий и служебных действий: "+count+".")+'</li>'+
   '<li><b>Дополнительные сведения:</b> '+field("notes","Отсутствуют")+'.</li></ol>'+
   '<p class="reportProse">На основании изложенного прошу рассмотреть настоящий рапорт и присвоить мне очередное воинское звание «'+field("requestedRank")+'».</p>'+
   '<p><b>Общее количество баллов:</b> '+total+'<br><b>Дата подачи:</b> '+date("date")+'</p>'+
@@ -530,6 +554,71 @@ catalogList.addEventListener("click", (event) => {
  row.querySelector("output").textContent = action.count;
  row.querySelector('[data-step="-1"]').disabled = action.count === 0;
  row.classList.toggle("selected", action.count > 0);
+ filterCatalog();
+ refreshReport();
+});
+document.getElementById("reportPdf").addEventListener("click", () => {
+ document.body.classList.add("printingReport");
+ try {
+  window.print();
+ } finally {
+  document.body.classList.remove("printingReport");
+ }
+});
+
+let reportImageRenderer;
+function loadReportImageRenderer(){
+ if (!reportImageRenderer) {
+  reportImageRenderer = new Promise((resolve, reject) => {
+   const script = document.createElement("script");
+   script.src = "https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js";
+   script.onload = () => typeof window.html2canvas === "function" ? resolve(window.html2canvas) : reject(new Error("Renderer unavailable"));
+   script.onerror = reject;
+   document.head.appendChild(script);
+  }).catch((error) => {
+   reportImageRenderer = null;
+   throw error;
+  });
+ }
+ return reportImageRenderer;
+}
+
+document.getElementById("reportPng").addEventListener("click", async (event) => {
+ const button = event.currentTarget;
+ const status = document.getElementById("reportExportStatus");
+ button.disabled = true;
+ status.textContent = "Готовим изображение…";
+ try {
+  const render = await loadReportImageRenderer();
+  const canvas = await render(document.getElementById("reportDocument"), {backgroundColor:"#fff", scale:2});
+  const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/png"));
+  if (!blob) throw new Error("PNG is empty");
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "raport-na-povyshenie.png";
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  status.textContent = "Изображение готово.";
+ } catch {
+  status.textContent = "Не удалось создать PNG. Попробуй ещё раз или сохрани PDF.";
+ } finally {
+  button.disabled = false;
+ }
+});
+
+document.getElementById("reportReset").addEventListener("click", () => {
+ if (!window.confirm("Обнулить количество выполненных работ и очистить ссылки на доказательства?")) return;
+ catalog.forEach((action, index) => {
+  action.count = 0;
+  const row = catalogRows[index];
+  row.querySelector("output").textContent = "0";
+  row.querySelector("textarea").value = "";
+  row.querySelector('[data-step="-1"]').disabled = true;
+  row.classList.remove("selected");
+ });
  filterCatalog();
  refreshReport();
 });
