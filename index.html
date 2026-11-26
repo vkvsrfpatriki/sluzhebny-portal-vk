@@ -225,7 +225,7 @@ main{padding:24px;max-width:1600px;width:100%;margin:auto}
 <button id="portalOpenReports" type="button" data-page="portalReportsQueue" hidden><span class="ico" aria-hidden="true">▤</span>Входящие отчёты</button>
 <button id="portalOpenPromotion" type="button" data-page="portalPromotionQueue" hidden><span class="ico" aria-hidden="true">✦</span>Рапорты на повышение</button>
 <button id="portalOpenLeadership" type="button" data-page="portalLeadership" hidden><span class="ico" aria-hidden="true">♟</span>Назначение ролей</button>
-</nav><div class="asidefoot">◉ Защищённый служебный интерфейс<br><br>Демонстрационный макет · данные условные</div></aside>
+</nav></aside>
 <main>
 <div class="row portalSession">
  <span id="portalSessionStatus" role="status"></span>
@@ -246,7 +246,7 @@ main{padding:24px;max-width:1600px;width:100%;margin:auto}
 </section>
 <section class="page active" id="home">
 <div class="hero"><div><div class="tag">Служебная система · ВК</div><h2>Добро пожаловать<br>на служебный портал</h2><p>Дисциплина. Порядок. Служба.</p></div><div class="heroStats"><div class="stat"><span>Отчёт за неделю</span><b id="homeWeeklyStatus" aria-live="polite">—</b></div><div class="stat"><span>Баллы за неделю</span><b id="homeWeeklyPoints" aria-live="polite">—</b></div></div></div>
-<div class="sectionhead"><div><h3>Быстрые переходы</h3><p>Выберите нужный раздел портала</p></div><span class="muted">Демо-версия</span></div>
+<div class="sectionhead"><div><h3>Быстрые переходы</h3><p>Выберите нужный раздел портала</p></div></div>
 <div class="content"><div class="tiles">
 <div class="tile" data-go="profile"><img src="staff.jpg" alt="Личный профиль"><div class="tilelabel"><span><i>◉</i>Мой профиль</span>↗</div></div>
 <div class="tile" data-go="reports"><img src="reports.jpg" alt="Заполнение служебного отчёта"><div class="tilelabel"><span><i>▤</i>Еженедельный отчёт</span>↗</div></div>
@@ -262,7 +262,7 @@ main{padding:24px;max-width:1600px;width:100%;margin:auto}
 <div class="widget"><h4>Памятка</h4><p class="muted">Проверяйте уведомления и своевременно отправляйте недельный отчёт.</p></div>
 </div></div></section>
 <div id="otherPages"></div>
-<div class="footer">© Служебный портал ВК · Демонстрационный интерфейс · Все данные вымышлены</div>
+<div class="footer">© Военный Комиссариат</div>
 </main></div></div>
 <script>
 const pages = {
@@ -373,7 +373,7 @@ Object.entries(pages).forEach(([id,p]) => {
      </div>
     </div>
     <div class="rankNote">Указанные обязательные критерии не добавляют баллы. Порог баллов и обязательные действия проверяются раздельно. Для перехода на капитана отдельный балльный порог не указан.</div>
-    <div class="panel" style="margin-top:14px"><h3 class="reportSectionTitle">Калькулятор повышения</h3><p class="muted">В рабочей версии здесь будут фактические результаты сотрудника, необходимые значения и статус каждого требования. Выполненные пункты отмечаются зелёным, невыполненные — красным. Сейчас это демонстрационный просмотр без персональных данных и подтверждённых действий.</p></div>
+    <div class="panel" style="margin-top:14px"><h3 class="reportSectionTitle">Калькулятор повышения</h3><p class="muted">Открой «Рапорт на повышение», чтобы увидеть прогресс по требованиям выбранного звания.</p></div>
    </div>
    <div id="promoPoints" style="display:none">
     <div class="panel">
@@ -407,7 +407,7 @@ Object.entries(pages).forEach(([id,p]) => {
      <div class="panel">
       <h3>Рапорт на повышение</h3>
       <div class="formGrid">
-       <label>Номер рапорта<input data-report-field="number" placeholder="Будет присвоен системой" value="ДЕМО-0001" /></label>
+       <label>Номер рапорта<input data-report-field="number" placeholder="Укажи номер рапорта" /></label>
        <label>Дата подачи<input data-report-field="date" type="date" value="2026-11-26" /></label>
       </div>
      </div>
@@ -461,7 +461,7 @@ Object.entries(pages).forEach(([id,p]) => {
      <article id="reportDocument" class="officialDocument">
       <div class="docCenter"><b>ВОЕННЫЙ КОМИССАРИАТ</b><div>СЛУЖЕБНЫЙ РАПОРТ</div></div>
       <h2>РАПОРТ НА ПОВЫШЕНИЕ</h2>
-      <p>Номер: ДЕМО-0001</p><p>Дата: 26.11.2026</p>
+      <p>Номер: —</p><p>Дата: 26.11.2026</p>
       <p>Прошу рассмотреть вопрос о моём повышении в воинском звании.</p>
       <p>Документ будет автоматически заполняться по мере ввода данных слева.</p>
      </article>
