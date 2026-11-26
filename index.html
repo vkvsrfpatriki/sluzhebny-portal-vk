@@ -33,6 +33,25 @@ main{padding:24px;max-width:1600px;width:100%;margin:auto}
 @media(max-width:1050px){.content{grid-template-columns:1fr}.rightcol{display:grid;grid-template-columns:repeat(2,1fr)}.tiles{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:700px){.top{height:auto;min-height:68px;padding:10px 14px}.brand h1{font-size:15px}.brand small{font-size:11px}.emblem{width:38px;height:38px}.topright .role{display:none}.layout{display:block}aside{position:sticky;top:68px;z-index:4;padding:7px;border-right:0;border-bottom:1px solid var(--line);overflow-x:auto}.nav{display:flex;min-width:max-content}.navtitle,.asidefoot{display:none}.nav button{width:auto;padding:9px 11px;font-size:12px}.nav .ico{display:none}main{padding:14px}.hero{padding:22px;min-height:190px}.heroStats{display:none}.tiles{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.tile{height:125px}.rightcol{display:flex}.pagehero{height:150px}.pageheroText h2{font-size:24px}.rankGrid{grid-template-columns:1fr}}
 .catalogTools{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:12px}.catalogTools input[type=search]{flex:1;min-width:12ch;padding:8px;border:1px solid var(--line);border-radius:7px;background:var(--bg);color:var(--text);font:inherit}.catalogGroup>summary,.catalogEvidence>summary{cursor:pointer}.catalogGroup>summary{color:var(--gold);font-weight:700}.catalogItem{padding:10px;margin-top:7px;border:1px solid var(--line);border-radius:8px}.catalogItem.selected{background:#1b3322}.catalogRow{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px}.catalogRow strong{flex:1 1 14ch}.catalogRate{color:var(--gold);font-size:12px}.catalogCount{display:flex;align-items:center;gap:7px}.catalogCount button{padding:2px 9px}.catalogCount output{min-width:2ch;text-align:center}.catalogEvidence{font-size:13px;margin-top:6px}.catalogEvidence textarea{width:100%;margin-top:6px;padding:7px;background:var(--bg);color:var(--text);border:1px solid var(--line);border-radius:6px;font:inherit}.reportScore{width:100%;accent-color:#72a66c}.officialDocument{background:#fff;min-height:auto;aspect-ratio:210/297;overflow-wrap:anywhere}.reportPaperHeader{border-bottom:2px solid;padding-bottom:10px}.reportRecipient{margin-left:auto;width:fit-content}.reportSubtitle{text-align:center}.officialDocument h2{margin-bottom:4px}@media(min-width:1051px){.reportEditor{max-height:calc(100vh - 100px);overflow:auto;padding-right:6px}.reportPreview{position:sticky;top:90px}}
+
+.officialDocument{padding:clamp(24px,4vw,60px) clamp(20px,4.8vw,72px);border-radius:0;color:#141414;font:13px/1.35 "Times New Roman",serif}
+.officialDocument .reportPaperHeader{margin:0 0 12px;padding-bottom:8px;border-bottom:3px double #222;text-transform:uppercase;line-height:1.15}
+.reportPaperMark{display:block;margin-bottom:5px;color:#a47a27;font-size:30px;line-height:1}
+.officialDocument .reportRecipient{width:fit-content;max-width:55%;margin:0 0 18px auto}
+.officialDocument h2{font-size:19px;letter-spacing:.28em;margin:0 0 3px}
+.officialDocument .reportSubtitle{line-height:1.25;margin-bottom:22px}
+.reportDocumentNumber{display:block;margin-top:5px}
+.officialDocument p{margin:8px 0}
+.officialDocument .reportProse{text-align:justify;text-indent:2em}
+.officialDocument .docSection{margin:19px 0 5px}
+.officialDocument ol{margin:0;padding-left:24px}
+.officialDocument li{padding-left:2px;margin-bottom:4px}
+.officialDocument li::marker{font-weight:bold}
+.officialDocument .reportEvidence{list-style-type:lower-alpha;margin-top:3px}
+.officialDocument a{color:#174482;text-decoration:underline;overflow-wrap:anywhere}
+.reportSignature{display:flex;justify-content:space-between;gap:16px;margin-top:22px}
+.reportSignature span:last-child{text-align:right}
+@media(max-width:600px){.officialDocument{padding:24px 18px}.officialDocument .reportRecipient{max-width:70%}}
 </style>
 </head>
 <body><div class="shell">
@@ -371,25 +390,29 @@ function refreshReport(){
   const links = catalogList.children[index].querySelector("textarea").value.split(/\r?\n/).map((line) => line.trim())
    .filter((line) => /^https?:\/\/\S+$/i.test(line));
   const evidence = links.map((url) => '<li><a href="'+reportEscape(url)+'" target="_blank" rel="noopener noreferrer">'+reportEscape(url)+'</a></li>').join("");
-  return '<li>'+reportEscape(action.title)+' — '+action.unit+': '+action.count+' ('+action.count * action.rate+' баллов)'+(evidence ? '<ol>'+evidence+'</ol>' : '')+'</li>';
+  return '<li>'+reportEscape(action.title)+' — '+action.unit+': '+action.count+' ('+action.count * action.rate+' баллов)'+(evidence ? '<ol class="reportEvidence">'+evidence+'</ol>' : '')+'</li>';
  }).join("");
 
  doc.innerHTML =
-  '<div class="docCenter reportPaperHeader"><b>ВОЕННЫЙ КОМИССАРИАТ</b></div>'+
-  '<div class="reportRecipient"><b>Кому:</b> Военному комиссару<br><b>От:</b> '+field("currentRank")+' '+field("name")+'</div>'+
-  '<h2>Р А П О Р Т</h2><div class="reportSubtitle"><b>О присвоении очередного воинского звания</b><br>№ '+field("number")+'</div>'+
-  '<p>Докладываю Вам о результатах служебной деятельности за период службы в текущем воинском звании.</p>'+
+  '<header class="docCenter reportPaperHeader"><span class="reportPaperMark" aria-hidden="true">✦</span>'+
+  '<b>МИНИСТЕРСТВО ОБОРОНЫ РОССИЙСКОЙ ФЕДЕРАЦИИ<br>ВОЕННЫЙ КОМИССАРИАТ</b></header>'+
+  '<div class="reportRecipient"><b>Кому:</b> Военному комиссару<br><b>От:</b> '+field("currentRank")+' '+field("name")+'<br>'+field("position")+'</div>'+
+  '<h2>РАПОРТ</h2><div class="reportSubtitle"><b>О присвоении очередного воинского звания</b><span class="reportDocumentNumber">№ '+field("number")+'</span></div>'+
+  '<p class="reportProse">Докладываю Вам о результатах служебной деятельности за период службы в текущем воинском звании и прошу рассмотреть вопрос о присвоении мне очередного воинского звания.</p>'+
   '<p class="docSection">I. ОБЩИЕ СВЕДЕНИЯ</p><ol>'+
   '<li><b>Военнослужащий:</b> '+field("currentRank")+' '+field("name")+', игровой паспорт № '+field("passport")+'.</li>'+
   '<li><b>Подразделение и должность:</b> '+field("unit")+', '+field("position")+'.</li>'+
-  '<li><b>Воинское звание и период службы:</b> с '+date("rankDate")+', '+field("rankPeriod")+'. Испрашиваемое звание — '+field("requestedRank")+'.</li></ol>'+
-  '<p class="docSection">II. РЕЗУЛЬТАТЫ СЛУЖЕБНОЙ ДЕЯТЕЛЬНОСТИ</p><b>Работа комиссариата</b>'+
-  (rows ? '<ol>'+rows+'</ol>' : '<p>Действия пока не добавлены.</p>')+
-  '<p class="docSection">III. ИТОГОВАЯ ИНФОРМАЦИЯ</p><p>Выполнено действий: '+count+'.</p>'+
-  '<p><b>Дополнительные сведения:</b> '+field("notes","Отсутствуют")+'</p>'+
-  '<p>Прошу рассмотреть рапорт и присвоить мне очередное воинское звание «'+field("requestedRank")+'».</p>'+
+  '<li><b>Воинское звание и период службы в текущем звании:</b><br>— текущее звание — '+field("currentRank")+', с '+date("rankDate")+';'+
+  (reportValue("rankPeriod") ? '<br>— период службы — '+field("rankPeriod")+';' : '')+
+  '<br>— испрашиваемое звание — '+field("requestedRank")+'.</li></ol>'+
+  '<p class="docSection">II. РЕЗУЛЬТАТЫ СЛУЖЕБНОЙ ДЕЯТЕЛЬНОСТИ</p><ol start="4"><li><b>Работа комиссариата:</b>'+
+  (rows ? '<ol>'+rows+'</ol>' : '<p>Действия пока не добавлены.</p>')+'</li></ol>'+
+  '<p class="docSection">III. ИТОГОВАЯ ИНФОРМАЦИЯ</p><ol start="5">'+
+  '<li><b>Общий результат работы за период:</b><br>— выполнено действий: '+count+'.</li>'+
+  '<li><b>Дополнительные сведения:</b> '+field("notes","Отсутствуют")+'.</li></ol>'+
+  '<p class="reportProse">На основании изложенного прошу рассмотреть настоящий рапорт и присвоить мне очередное воинское звание «'+field("requestedRank")+'».</p>'+
   '<p><b>Общее количество баллов:</b> '+total+'<br><b>Дата подачи:</b> '+date("date")+'</p>'+
-  '<p><b>Рапорт составил:</b> '+field("position")+' · '+field("name")+'</p>';
+  '<div class="reportSignature"><span><b>Рапорт составил:</b><br>'+field("position")+'</span><span>'+field("currentRank")+'<br>'+field("name")+'</span></div>';
 }
 document.getElementById("catalogSearch").addEventListener("input", filterCatalog);
 document.getElementById("catalogSelected").addEventListener("change", filterCatalog);
