@@ -207,6 +207,7 @@ main{padding:24px;max-width:1600px;width:100%;margin:auto}
 .portalReportSigner span{display:block}
 .portalReportSigner .portalReportAutograph{color:#1c4e8d;font:italic 600 21px/1.35 "Segoe Script","Monotype Corsiva",Georgia,serif;margin:4px 0;overflow-wrap:anywhere}
 @media(max-width:600px){.portalReportSeal{width:96px;height:96px;flex-basis:96px;font-size:7px}.portalReportSeal small{font-size:6px}.portalReportSigner .portalReportAutograph{font-size:17px}}
+#weeklyTopPeriod{font:inherit;color:var(--text);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:7px}
 </style>
 </head>
 <body>
@@ -309,7 +310,9 @@ const pages = {
 const staffTopMarkup = `
  <section class="panel staffSection">
   <h3>Топ сотрудников</h3>
-  <p class="muted">Недельный рейтинг пока не опубликован.</p>
+  <label>Период <select id="weeklyTopPeriod"><option value="0">Текущая неделя</option><option value="-1">Прошлая неделя</option></select></label>
+  <p id="weeklyTopStatus" class="muted" role="status"></p>
+  <div id="weeklyTopTable"></div>
  </section>`;
 const staffMarkup = `
  <section class="panel staffSection">
@@ -696,7 +699,7 @@ function reportCriterionState(criterion, total, threshold, actions){
 
 function reportCertification(rank, name){
  const stamp = '<div class="portalReportSeal" aria-label="Игровая печать Военного Комиссариата">'+
-  '<span>ВОЕННЫЙ</span><span>КОМИССАРИАТ</span><strong aria-hidden="true">✦</strong><small>ИГРОВОЙ ПОРТАЛ</small></div>';
+  '<span>ВОЕННЫЙ</span><span>КОМИССАРИАТ</span><strong aria-hidden="true">✦</strong></div>';
  const autograph = name.trim() ? '<span class="portalReportAutograph" aria-label="Игровая подпись">'+reportEscape(name.trim())+'</span>' : '';
  return '<div class="reportSignature portalReportCertification">'+stamp+
   '<div class="portalReportSigner"><b>Рапорт составил:</b>'+autograph+
@@ -1345,6 +1348,7 @@ async function showAccount(session){
  accountId = nextId;
  accountRole = null;
  clearNotifications();
+ loadWeeklyTop();
  loadHomeWeeklySummary();
  updatePortalMode();
  shell.hidden = true;
@@ -1379,6 +1383,7 @@ async function showAccount(session){
  accountRole = data.role;
  syncAccountProfile(data);
  loadNotifications();
+ loadWeeklyTop();
  loadHomeWeeklySummary();
  loadStaffLeadership();
  const meta = session.user.user_metadata || {};
@@ -1558,6 +1563,34 @@ function renderReportBody(target, body){
  }
 }
 
+const reviewLabels = {pending:"На проверке",approved:"Одобрен",rejected:"Отклонён"};
+let weeklyTopVersion = 0;
+async function loadWeeklyTop(){
+ const version = ++weeklyTopVersion;
+ const status = document.getElementById("weeklyTopStatus");
+ const target = document.getElementById("weeklyTopTable");
+ target.replaceChildren();
+ if (!accountRole || !accountId) return;
+ const offset = Number(document.getElementById("weeklyTopPeriod").value);
+ const [start,end] = weeklyPeriod(weeklyToday(),offset);
+ status.textContent = "Загрузка…";
+ const {data,error} = await client.rpc("portal_weekly_leaderboard",{start_date:start,end_date:end});
+ if (version !== weeklyTopVersion || !accountRole) return;
+ if (error || !data.length) {
+  status.textContent = error ? "Не удалось загрузить топ." : "За эту неделю пока нет одобренных отчётов с баллами.";
+  return;
+ }
+ status.textContent = [start,end].map((date)=>date.split("-").reverse().join(".")).join(" — ");
+ const table = document.createElement("table");
+ table.className = "fakeTable";
+ table.innerHTML = "<thead><tr><th>Место</th><th>Имя и фамилия</th><th>Баллы</th></tr></thead><tbody></tbody>";
+ for (const item of data) {
+  const row = table.tBodies[0].insertRow();
+  for (const value of [item.place,item.name,item.points]) row.insertCell().textContent = value;
+ }
+ target.append(table);
+}
+
 function makeReportRow(queue, report){
  const row = document.createElement("details");
  const title = document.createElement("summary");
@@ -1565,7 +1598,12 @@ function makeReportRow(queue, report){
  const body = document.createElement("div");
  actions.className = "portalPdfActions";
  body.className = "portalReportBody";
- title.textContent = reportTypes[report.kind].label + " · " + new Date(report.created_at).toLocaleString("ru-RU");
+ const updateTitle = () => {
+  title.textContent = reportTypes[report.kind].label + " · " + new Date(report.created_at).toLocaleString("ru-RU") +
+   " · " + reviewLabels[report.review_status] +
+   (report.weekly_points == null ? "" : " · " + report.weekly_points + " баллов");
+ };
+ updateTitle();
  row.append(title,actions,body);
  const remove = document.createElement("button");
  remove.type = "button";
@@ -1582,10 +1620,45 @@ function makeReportRow(queue, report){
    return;
   }
   await loadReports(queue,true);
-  if (report.kind === "weekly") loadHomeWeeklySummary();
+  if (report.kind === "weekly") {loadHomeWeeklySummary();loadWeeklyTop();}
   if (!queue.panel.hidden && canAssignRoles() && !queue.status.textContent) queue.status.textContent = "Документ удалён.";
  });
  actions.append(remove);
+ if (report.review_status === "pending") {
+  const buttons = [];
+  for (const [decision,label] of [["approved","Одобрить"],["rejected","Отказать"]]) {
+   const review = document.createElement("button");
+   review.type = "button";
+   review.className = decision === "approved" ? "action" : "action secondary portalPdfDanger";
+   review.textContent = label;
+   review.addEventListener("click", async () => {
+    if (!canAssignRoles() || !window.confirm(label+" документ?")) return;
+    buttons.forEach((button) => {button.disabled = true;});
+    const {data,error} = await client.rpc("portal_review_report",{report_id:report.id,decision});
+    if (!row.isConnected || !canAssignRoles()) return;
+    if (error) {
+     queue.status.textContent = "Не удалось сохранить решение.";
+     buttons.forEach((button) => {button.disabled = false;});
+     return;
+    }
+    if (!data) {
+     await loadReports(queue,true);
+     queue.status.textContent = "Документ уже рассмотрен или удалён.";
+     return;
+    }
+    report.review_status = decision;
+    updateTitle();
+    buttons.forEach((button) => button.remove());
+    queue.status.textContent = "Решение сохранено.";
+    if (report.kind === "weekly") {
+     loadHomeWeeklySummary();
+     loadWeeklyTop();
+    }
+   });
+   buttons.push(review);
+   actions.append(review);
+  }
+ }
  let loaded = false;
  let loading = false;
  row.addEventListener("toggle", async () => {
@@ -1638,7 +1711,7 @@ async function loadReports(queue, reset){
  queue.more.hidden = true;
  queue.status.textContent = "Загрузка…";
  const pageSize = 30;
- const {data,error} = await client.from("portal_reports").select("id,kind,created_at").eq("kind",queue.kind)
+ const {data,error} = await client.from("portal_reports").select("id,kind,created_at,review_status,weekly_points").eq("kind",queue.kind)
   .order("created_at",{ascending:false}).order("id",{ascending:false}).range(queue.offset,queue.offset+pageSize-1);
  if (version !== queue.version || !canAssignRoles()) return;
  if (error) {
@@ -1710,7 +1783,7 @@ async function loadHomeWeeklySummary(){
  points.textContent = "—";
  if (!accountId || !accountRole) return;
  const [start,end] = weeklyPeriod(weeklyToday(),0);
- const {data,error} = await client.from("portal_reports").select("weekly_points")
+ const {data,error} = await client.from("portal_reports").select("weekly_points,review_status")
   .eq("author_id",accountId).eq("kind","weekly")
   .eq("week_start",start).eq("week_end",end)
   .order("created_at",{ascending:false}).order("id",{ascending:false}).limit(1).maybeSingle();
@@ -1719,7 +1792,7 @@ async function loadHomeWeeklySummary(){
   status.textContent = "Не удалось загрузить";
   return;
  }
- status.textContent = data ? "Отправлен" : "Не отправлен";
+ status.textContent = data ? (data.review_status === "pending" ? "Отправлен" : reviewLabels[data.review_status]) : "Не отправлен";
  points.textContent = data ? String(data.weekly_points) : "—";
 }
 const pendingReports = new WeakMap();
@@ -1829,6 +1902,10 @@ async function init(){
  document.addEventListener("click",openNotifications);
  document.addEventListener("visibilitychange",() => { if (!document.hidden) loadNotifications(); });
  window.setInterval(() => { if (!document.hidden) loadNotifications(); },30000);
+ document.getElementById("weeklyTopPeriod").addEventListener("change",loadWeeklyTop);
+ document.addEventListener("click",(event) => {
+  if (event.target.closest('[data-page="rating"],[data-go="rating"]')) loadWeeklyTop();
+ });
  discordButton.disabled = false;
 }
 init();
