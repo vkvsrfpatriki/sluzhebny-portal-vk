@@ -123,6 +123,7 @@ main{padding:24px;max-width:1600px;width:100%;margin:auto}
  body.printingWeekly .officialDocument{padding:0;box-shadow:none}
  body.printingWeekly .officialDocument::after{display:none}
 }
+.weeklyManualRate{display:flex;align-items:center;gap:8px;margin-top:6px;color:#d6e5fb;font-size:13px}.weeklyManualRate input{width:65px;padding:4px 6px;background:#111720;color:#e9edf3;border:1px solid #303b49;border-radius:4px}
 </style>
 </head>
 <body><div class="shell">
@@ -743,7 +744,9 @@ const weeklyActions = [
 ].map((action) => ({
  title:action.title,
  count:0,
- rate:weeklyRates.get(action.id),
+ rate:weeklyRates.get(action.id) ?? action.rate ?? 0,
+ manualRate:action.id === "thanks",
+ unit:action.unit === "военнослужащих" ? action.unit : "штук",
  group:action.group ?? (action.id === "thanks" ? 1 : 0),
  senior:action.senior === true
 }));
@@ -754,9 +757,10 @@ weeklyList.innerHTML = weeklyGroups.map((title, group) =>
   if (action.group !== group) return "";
   const name = reportEscape(action.title);
   return '<div class="catalogItem" data-week-action="'+index+'"><div class="catalogRow"><strong>'+name+'</strong>'+
-   (action.rate === undefined ? '' : '<span class="catalogRate">+'+action.rate+' баллов</span>')+
+   (action.manualRate ? '' : '<span class="catalogRate">+'+action.rate+' баллов'+(action.unit === "военнослужащих" ? " за военнослужащего" : "")+'</span>')+
    '<span class="catalogCount"><button type="button" class="action secondary" data-week-step="-1" aria-label="Уменьшить: '+name+'" disabled>−</button>'+
    '<output aria-label="Количество: '+name+'">0</output><button type="button" class="action secondary" data-week-step="1" aria-label="Увеличить: '+name+'">+</button></span></div>'+
+   (action.manualRate ? '<label class="weeklyManualRate">Баллы за одну благодарность <input type="number" min="0" step="1" value="0" data-week-rate></label>' : '')+
    '<details class="catalogEvidence"><summary>Доказательства</summary><textarea rows="2" aria-label="Доказательства: '+name+'" placeholder="По одной ссылке на строку"></textarea></details></div>';
  }).join("")+'</details>'
 ).join("");
@@ -798,7 +802,7 @@ function refreshWeeklyReport(){
   return available;
  });
  const count = availableActions.reduce((sum, action) => sum+action.count, 0);
- const points = availableActions.reduce((sum, action) => sum+action.count*(action.rate ?? 0), 0);
+ const points = availableActions.reduce((sum, action) => sum+action.count*action.rate, 0);
  document.getElementById("weeklyPoints").textContent = points+" баллов за неделю";
  document.getElementById("weeklyPlan").textContent = "План по баллам: "+points+" / 200 минимум · 400 норма";
  const groups = weeklyGroups.map((title, group) => {
@@ -807,8 +811,8 @@ function refreshWeeklyReport(){
    const evidence = reportEvidenceLinks(weeklyRows[index].querySelector("textarea").value).map(({href,label}) =>
     '<li><a href="'+reportEscape(href)+'" target="_blank" rel="noopener noreferrer">'+reportEscape(label)+'</a></li>'
    ).join("");
-   return '<li>'+reportEscape(action.title)+' — штук: <b>'+action.count+'</b>'+
-    (showPoints && action.rate !== undefined ? ' ('+action.count*action.rate+' баллов)' : '')+
+   return '<li>'+reportEscape(action.title)+' — '+action.unit+': <b>'+action.count+'</b>'+
+    (showPoints ? ' ('+action.count*action.rate+' баллов)' : '')+
     (evidence ? '<div class="reportEvidenceLabel">Доказательства:</div><ol class="reportEvidence">'+evidence+'</ol>' : '')+'</li>';
   }).join("");
   return items ? '<li><b>'+title+':</b><ol>'+items+'</ol></li>' : "";
@@ -841,7 +845,14 @@ function updateWeeklyRow(row, action){
  row.querySelector('[data-week-step="-1"]').disabled = action.count === 0;
  row.classList.toggle("selected", action.count > 0);
 }
-weeklyPage.addEventListener("input", refreshWeeklyReport);
+weeklyPage.addEventListener("input", (event) => {
+ const input = event.target.closest("[data-week-rate]");
+ if (input) {
+  const action = weeklyActions[Number(input.closest("[data-week-action]").dataset.weekAction)];
+  action.rate = Math.max(0, Math.floor(input.valueAsNumber || 0));
+ }
+ refreshWeeklyReport();
+});
 weeklyPage.addEventListener("click", (event) => {
  const offset = event.target.closest("[data-week-offset]");
  if (offset) {
@@ -880,6 +891,10 @@ document.getElementById("weeklyReset").addEventListener("click", () => {
  weeklyActions.forEach((action, index) => {
   action.count = 0;
   weeklyRows[index].querySelector("textarea").value = "";
+  if (action.manualRate) {
+   action.rate = 0;
+   weeklyRows[index].querySelector("[data-week-rate]").value = "0";
+  }
   updateWeeklyRow(weeklyRows[index], action);
  });
  weeklyField("summary").value = "";
