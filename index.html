@@ -208,6 +208,10 @@ main{padding:24px;max-width:1600px;width:100%;margin:auto}
 .portalReportSigner .portalReportAutograph{color:#1c4e8d;font:italic 600 21px/1.35 "Segoe Script","Monotype Corsiva",Georgia,serif;margin:4px 0;overflow-wrap:anywhere}
 @media(max-width:600px){.portalReportSeal{width:96px;height:96px;flex-basis:96px;font-size:7px}.portalReportSeal small{font-size:6px}.portalReportSigner .portalReportAutograph{font-size:17px}}
 #weeklyTopPeriod{font:inherit;color:var(--text);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:7px}
+#bonusNav[hidden],.materialUpload[hidden]{display:none!important}
+.bonusForm label,.materialUpload label{display:grid;gap:5px}
+.bonusForm input,.materialUpload input{font:inherit;padding:7px;max-width:100%}
+.materialList li{margin:8px 0;overflow-wrap:anywhere;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 </style>
 </head>
 <body>
@@ -247,6 +251,7 @@ main{padding:24px;max-width:1600px;width:100%;margin:auto}
 <button type="button" data-page="reports"><span class="ico">▤</span>Отчёты</button>
 <button type="button" data-page="training"><span class="ico">▱</span>Обучение</button>
 <button type="button" data-page="staff"><span class="ico">♟</span>Руководящий состав</button>
+<button type="button" id="bonusNav" data-page="bonuses" hidden>Премии</button>
 <button type="button" data-page="documents"><span class="ico">▣</span>Документация ВК</button>
 <button type="button" data-page="rating"><span class="ico">★</span>Топ сотрудников недели</button>
 <button type="button" data-page="notifications"><span class="ico">♢</span>Уведомления</button>
@@ -556,6 +561,23 @@ Object.entries(pages).forEach(([id,p]) => {
    <p id="portalNotificationStatus" class="muted" role="status"></p>
    <div id="portalNotificationList" aria-live="polite"></div>
   </div>`;
+ } else if (id === "bonuses") {
+  section.innerHTML = `<div class="panel"><h2>Премии</h2>
+   <form id="bonusForm" class="row bonusForm">
+    <label>Неделя с понедельника<input name="week" type="date" required></label>
+    <label>Общий бюджет ВК<input name="budget" type="number" min="0" step="1" required></label>
+    <label>Премия комиссара<input name="own" type="number" min="0" step="1" value="0" required></label>
+    <button type="submit" class="action">Рассчитать</button>
+   </form>
+   <p class="muted">Без отчёта — 100 000. Меньше 200 баллов — 250 000. Остаток делится поровну между набравшими 200 баллов и больше.</p>
+   <p id="bonusStatus" role="status"></p><div id="bonusResults"></div>
+  </div>`;
+ } else if (id === "documents" || id === "training") {
+  section.innerHTML = `<div class="pagehero"><img src="${p[2]}" alt=""><div class="pageheroText"><h2>${p[0]}</h2><p>${p[1]}</p></div></div>
+   <div class="panel"><h3>Файлы</h3>
+    <form class="row materialUpload" hidden><label>Документ до 10 МБ<input type="file" required></label><button class="action" type="submit">Добавить файл</button></form>
+    <p class="materialStatus muted" role="status"></p><ul class="materialList"></ul>
+   </div>`;
  } else if (id === "rating") {
   section.innerHTML = staffTopMarkup;
  } else if (id === "staff") {
@@ -1092,6 +1114,14 @@ function canAssignRoles(){
 function updatePortalMode(){
  const commissioner = accountRole === "commissioner";
  modeSwitch.hidden = !commissioner;
+ document.getElementById("bonusNav").hidden = !commissioner || !commissionerMode;
+ if ((!commissioner || !commissionerMode) && document.getElementById("bonuses").classList.contains("active")) go("home");
+ if (!commissioner || !commissionerMode) {
+  document.getElementById("bonusForm").reset();
+  document.getElementById("bonusStatus").textContent = "";
+  document.getElementById("bonusResults").replaceChildren();
+ }
+ document.querySelectorAll(".materialUpload").forEach((form) => {form.hidden = !canAssignRoles();});
  document.getElementById("manageEmployeeProfiles").hidden = !canAssignRoles();
  document.getElementById("roleLabel").hidden = commissioner;
  modeSwitch.querySelectorAll("[data-portal-mode]").forEach((button) => {
@@ -1906,8 +1936,144 @@ async function init(){
  document.addEventListener("click",(event) => {
   if (event.target.closest('[data-page="rating"],[data-go="rating"]')) loadWeeklyTop();
  });
+ bonusForm.elements.week.value = weeklyPeriod(weeklyToday(),0)[0];
+ bonusForm.addEventListener("submit",calculateBonuses);
+ document.querySelectorAll(".materialUpload").forEach((form) => form.addEventListener("submit",uploadMaterial));
+ document.addEventListener("click",(event) => {
+  const target = event.target.closest("[data-page],[data-go]");
+  const section = target?.dataset.page || target?.dataset.go;
+  if (section === "documents" || section === "training") loadMaterials(section);
+ });
  discordButton.disabled = false;
 }
+function canCalculateBonuses(){
+ return accountRole === "commissioner" && commissionerMode;
+}
+function splitBonuses(roster, budget, own){
+ const fixed = roster.map(({submitted,points}) => !submitted ? 100000 : points < 200 ? 250000 : null);
+ const remaining = budget-own-fixed.reduce((sum,value) => sum+(value ?? 0),0);
+ if (remaining < 0) return {shortfall:-remaining};
+ const eligible = fixed.filter((value) => value === null).length;
+ const portion = eligible ? Math.floor(remaining/eligible) : 0;
+ let extra = eligible ? remaining%eligible : 0;
+ return {payouts:fixed.map((value) => value ?? portion+(extra-- > 0 ? 1 : 0)),unused:eligible ? 0 : remaining};
+}
+const bonusForm = document.getElementById("bonusForm");
+const bonusStatus = document.getElementById("bonusStatus");
+const bonusResults = document.getElementById("bonusResults");
+const formatBonus = (amount) => new Intl.NumberFormat("ru-RU").format(amount);
+async function calculateBonuses(event){
+ event.preventDefault();
+ if (!canCalculateBonuses()) return;
+ const version = stateVersion;
+ const week = bonusForm.elements.week.value;
+ const budget = bonusForm.elements.budget.valueAsNumber;
+ const own = bonusForm.elements.own.valueAsNumber;
+ bonusResults.replaceChildren();
+ if (!Number.isSafeInteger(budget) || !Number.isSafeInteger(own) || own < 0 || own > budget) {
+  bonusStatus.textContent = "Проверь бюджет и премию комиссара.";
+  return;
+ }
+ if (!week) return;
+ const [start,end] = weeklyPeriod(week,0);
+ if (week !== start) {
+  bonusStatus.textContent = "Выбери понедельник нужной недели.";
+  return;
+ }
+ const button = bonusForm.querySelector("button");
+ button.disabled = true;
+ bonusStatus.textContent = "Загрузка отчётов…";
+ try {
+  const {data,error} = await client.rpc("portal_bonus_roster",{start_date:start,end_date:end});
+  if (version !== stateVersion || !canCalculateBonuses()) return;
+  if (error) throw error;
+  if (data.some((item) => item.submitted && item.points == null)) {
+   bonusStatus.textContent = "У одного из отчётов нет сохранённых баллов. Для расчёта его нужно отправить заново.";
+   return;
+  }
+  const result = splitBonuses(data,budget,own);
+  if (result.shortfall) {
+   bonusStatus.textContent = "Не хватает "+formatBonus(result.shortfall)+" для фиксированных выплат.";
+   return;
+  }
+  const table = document.createElement("table");
+  table.className = "fakeTable";
+  table.innerHTML = "<thead><tr><th>Сотрудник</th><th>Баллы</th><th>Премия</th></tr></thead><tbody></tbody>";
+  for (const [index,item] of data.entries()) {
+   const row = table.tBodies[0].insertRow();
+   for (const value of [item.employee_name,item.submitted ? item.points : "Без отчёта",formatBonus(result.payouts[index])]) row.insertCell().textContent = value;
+  }
+  bonusResults.append(table);
+  bonusStatus.textContent = start+" — "+end+" · Комиссару: "+formatBonus(own)+" · Нераспределённый остаток: "+formatBonus(result.unused);
+ } catch {
+  if (version === stateVersion) bonusStatus.textContent = "Не удалось рассчитать премии.";
+ } finally {
+  button.disabled = false;
+ }
+}
+
+async function loadMaterials(section){
+ const viewer = accountId;
+ if (!viewer || !accountRole) return;
+ const page = document.getElementById(section);
+ const status = page.querySelector(".materialStatus");
+ const list = page.querySelector(".materialList");
+ const bucket = client.storage.from("portal-materials");
+ const {data,error} = await bucket.list(section,{limit:100,sortBy:{column:"created_at",order:"desc"}});
+ if (viewer !== accountId || !accountRole) return;
+ if (error) {status.textContent = "Не удалось загрузить список файлов.";return;}
+ status.textContent = data.length ? "" : "Файлов пока нет.";
+ list.replaceChildren();
+ for (const file of data) {
+  const item = document.createElement("li");
+  let name = file.name.slice(37);
+  try {name = decodeURIComponent(name);} catch {}
+  item.append(name || "Документ");
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "action secondary";
+  button.textContent = "Скачать";
+  button.onclick = async () => {
+   if (viewer !== accountId || !accountRole) return;
+   const result = await bucket.download(section+"/"+file.name);
+   if (viewer !== accountId || !accountRole) return;
+   if (result.error) {status.textContent = "Не удалось скачать файл.";return;}
+   const url = URL.createObjectURL(result.data);
+   const link = document.createElement("a");
+   link.href = url;
+   link.download = name || "document";
+   link.click();
+   setTimeout(() => URL.revokeObjectURL(url),1000);
+  };
+  item.append(button);
+  list.append(item);
+ }
+}
+async function uploadMaterial(event){
+ event.preventDefault();
+ if (!canAssignRoles()) return;
+ const form = event.currentTarget;
+ const section = form.closest(".page").id;
+ const input = form.querySelector("input");
+ const file = input.files[0];
+ const status = form.parentElement.querySelector(".materialStatus");
+ if (!file || file.size > 10485760) {status.textContent = "Выбери файл до 10 МБ.";return;}
+ const button = form.querySelector("button");
+ button.disabled = true;
+ const viewer = accountId;
+ status.textContent = "Загрузка файла…";
+ try {
+  const encodedName = encodeURIComponent(file.name.slice(0,65));
+  const {error} = await client.storage.from("portal-materials").upload(section+"/"+crypto.randomUUID()+"-"+encodedName,file);
+  if (viewer !== accountId) return;
+  if (error) throw error;
+  form.reset();
+  await loadMaterials(section);
+ } catch {
+  if (viewer === accountId) status.textContent = "Не удалось добавить файл.";
+ } finally {button.disabled = false;}
+}
+
 init();
 
 </script>
