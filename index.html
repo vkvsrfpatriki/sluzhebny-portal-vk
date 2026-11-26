@@ -196,6 +196,7 @@ main{padding:24px;max-width:1600px;width:100%;margin:auto}
 .portalLoginCard .discordEntry:hover:not(:disabled){background:#5363ed}
 .portalLoginCard button:focus-visible{outline:2px solid #c0d2ff;outline-offset:3px}
 @media(max-width:480px){.portalGate.portalPhotoLogin{padding:16px}.portalLoginCard{padding:28px 20px 24px}}
+.roleSearch{display:block;margin:12px 0}.roleSearch input,.roleAssignment select{color:var(--text);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:8px;font:inherit}.roleSearch input{width:min(100%,420px);display:block;margin-top:5px}#portalAssignments{overflow-x:auto}#portalAssignments .fakeTable{min-width:660px}.roleAssignment{display:flex;gap:8px;align-items:center;margin-top:5px}
 </style>
 </head>
 <body>
@@ -257,8 +258,9 @@ main{padding:24px;max-width:1600px;width:100%;margin:auto}
  <button data-more-reports class="action secondary" type="button" hidden>Показать ещё</button>
 </section>
 <section id="portalLeadership" class="page panel" hidden>
- <div class="row"><h2>Назначение ролей</h2><button id="portalCloseLeadership" class="action secondary" type="button">Закрыть</button></div>
- <div id="portalAssignments" aria-live="polite"></div>
+ <div class="row"><h2>Пользователи и роли</h2><button id="portalCloseLeadership" class="action secondary" type="button">Закрыть</button></div>
+ <label class="roleSearch">Поиск пользователей <input id="portalRoleSearch" type="search" placeholder="Discord ID, ник, игровое имя, статик"></label>
+ <p id="portalRoleStatus" role="status"></p><div id="portalAssignments"></div>
 </section>
 <section class="page active" id="home">
 <div class="hero"><div><div class="tag">Служебная система · ВК</div><h2>Добро пожаловать<br>на служебный портал</h2><p>Дисциплина. Порядок. Служба.</p></div><div class="heroStats"><div class="stat"><span>Отчёт за неделю</span><b id="homeWeeklyStatus" aria-live="polite">—</b></div><div class="stat"><span>Баллы за неделю</span><b id="homeWeeklyPoints" aria-live="polite">—</b></div></div></div>
@@ -1038,7 +1040,7 @@ const pending = document.getElementById("portalPending");
 const leadership = document.getElementById("portalLeadership");
 const assignments = document.getElementById("portalAssignments");
 const accountControls = document.getElementById("portalAccountControls");
-const roles = {employee:"Сотрудник", deputy:"Заместитель комиссара", commissioner:"Комиссар"};
+const roles = {trainee:"Стажёр", employee:"Сотрудник ВК", deputy:"ЗВК", commissioner:"Комиссар"};
 const redirectTo = "https://vkvsrfpatriki.github.io/sluzhebny-portal-vk/registration-preview/";
 const portalHome = "https://vkvsrfpatriki.github.io/sluzhebny-portal-vk/";
 const isCallbackPage = location.pathname.startsWith(new URL(redirectTo).pathname);
@@ -1392,46 +1394,80 @@ async function showAccount(session){
  updatePortalMode();
 }
 
+const roleSearch = document.getElementById("portalRoleSearch");
+const roleStatus = document.getElementById("portalRoleStatus");
+
 async function showAssignments(){
  if (!canAssignRoles()) return;
  const version = stateVersion;
  leadership.hidden = false;
- assignments.textContent = "Загрузка…";
- const {data, error} = await client.from("portal_accounts").select("user_id,email").is("role",null);
- if (version !== stateVersion) return;
  assignments.replaceChildren();
- if (error || !data.length) {
-  assignments.textContent = error ? "Не удалось загрузить заявки." : "Нет аккаунтов без роли.";
+ roleStatus.textContent = "Загрузка…";
+ const {data,error} = await client.rpc("portal_role_directory");
+ if (version !== stateVersion || !canAssignRoles() || leadership.hidden) return;
+ if (error) {
+  roleStatus.textContent = "Не удалось загрузить пользователей.";
   return;
  }
+ const table = document.createElement("table");
+ table.className = "fakeTable";
+ table.innerHTML = "<thead><tr><th>Пользователь</th><th>Игровое имя / статик</th><th>Роль</th><th>Последний вход</th></tr></thead><tbody></tbody>";
+ const rows = [];
  for (const account of data) {
-  const row = document.createElement("div");
-  const label = document.createElement("span");
-  label.textContent = account.email || account.user_id;
-  row.append(label);
-  const commissioner = accountRole === "commissioner";
-  for (const role of commissioner ? ["employee","deputy"] : ["employee"]) {
+  const row = table.tBodies[0].insertRow();
+  const identity = row.insertCell();
+  identity.append(account.discord_name);
+  if (account.discord_id) {
+   const id = document.createElement("div");
+   id.className = "muted";
+   id.textContent = account.discord_id;
+   identity.append(id);
+  }
+  const profile = row.insertCell();
+  profile.textContent = [account.game_name,account.game_static].filter(Boolean).join(" / ") || "—";
+  const cell = row.insertCell();
+  cell.textContent = roles[account.staff_role] || "Ожидает назначения";
+  if (!account.staff_role) {
+   const controls = document.createElement("div");
+   controls.className = "roleAssignment";
+   const select = document.createElement("select");
+   select.setAttribute("aria-label","Роль для "+account.discord_name);
+   select.append(new Option("Выбери роль",""));
+   const available = accountRole === "commissioner" ? ["trainee","employee","deputy"] : ["trainee","employee"];
+   for (const key of available) select.append(new Option(roles[key],key));
    const button = document.createElement("button");
    button.type = "button";
    button.className = "action secondary";
-   button.textContent = roles[role];
+   button.textContent = "Выдать";
+   button.disabled = true;
+   select.addEventListener("change", () => { button.disabled = !select.value; });
    button.addEventListener("click", async () => {
+    if (version !== stateVersion || !canAssignRoles() || !available.includes(select.value)) return;
+    select.disabled = button.disabled = true;
+    const {error} = await client.rpc("portal_assign_role",{target_user:account.user_id,target_role:select.value});
     if (version !== stateVersion || !canAssignRoles()) return;
-    row.querySelectorAll("button").forEach((control) => { control.disabled = true; });
-    const {error} = await client.rpc("portal_assign_role",{target_user:account.user_id,target_role:role});
-    if (version !== stateVersion) return;
     if (error) {
-     label.textContent = (account.email || account.user_id) + " · Назначение недоступно. Проверь, подтверждён ли аккаунт.";
-     row.querySelectorAll("button").forEach((control) => { control.disabled = false; });
+     roleStatus.textContent = "Не удалось выдать роль. Возможно, её уже назначили.";
+     select.disabled = button.disabled = false;
      return;
     }
     loadStaffLeadership();
     await showAssignments();
    });
-   row.append(button);
+   controls.append(select,button);
+   cell.append(controls);
   }
-  assignments.append(row);
+  row.insertCell().textContent = account.last_sign_in ? new Date(account.last_sign_in).toLocaleString("ru-RU") : "—";
+  rows.push({row,search:[account.discord_name,account.discord_id,account.game_name,account.game_static].join(" ").toLocaleLowerCase("ru")});
  }
+ function filter(){
+  const query = roleSearch.value.trim().toLocaleLowerCase("ru");
+  rows.forEach(({row,search}) => {row.hidden = !search.includes(query);});
+  roleStatus.textContent = rows.some(({row}) => !row.hidden) ? "" : "Пользователи не найдены.";
+ }
+ assignments.replaceChildren(table);
+ roleSearch.oninput = filter;
+ filter();
 }
 
 function clearReportQueue(queue){
