@@ -12,9 +12,36 @@ const roles = {employee:"Сотрудник", deputy:"Заместитель к�
 const redirectTo = new URL(location.pathname, location.origin).href;
 let client;
 let stateVersion = 0;
+let accountRole = null;
+let accountId = null;
+let commissionerMode = true;
+const modeSwitch = document.getElementById("portalModeSwitch");
+
+function canAssignRoles(){
+ return accountRole === "deputy" || (accountRole === "commissioner" && commissionerMode);
+}
+
+function updatePortalMode(){
+ const commissioner = accountRole === "commissioner";
+ modeSwitch.hidden = !commissioner;
+ modeSwitch.setAttribute("aria-pressed", String(commissioner && commissionerMode));
+ document.getElementById("roleLabel").textContent = commissioner
+  ? (commissionerMode ? "● Режим комиссара" : "● Режим сотрудника")
+  : roles[accountRole] || "";
+ document.getElementById("portalOpenLeadership").hidden = !canAssignRoles();
+ if (!canAssignRoles()) {
+  leadership.hidden = true;
+  assignments.replaceChildren();
+ }
+}
 
 async function showAccount(session){
  const version = ++stateVersion;
+ const nextId = session?.user?.id ?? null;
+ if (accountId !== nextId) commissionerMode = true;
+ accountId = nextId;
+ accountRole = null;
+ updatePortalMode();
  shell.hidden = true;
  gate.hidden = false;
  leadership.hidden = true;
@@ -37,12 +64,12 @@ async function showAccount(session){
  }
  shell.hidden = false;
  gate.hidden = true;
- document.getElementById("roleLabel").textContent = roles[data.role];
- const canAssign = data.role === "commissioner" || data.role === "deputy";
- document.getElementById("portalOpenLeadership").hidden = !canAssign;
+ accountRole = data.role;
+ updatePortalMode();
 }
 
 async function showAssignments(){
+ if (!canAssignRoles()) return;
  const version = stateVersion;
  leadership.hidden = false;
  assignments.textContent = "Загрузка…";
@@ -58,13 +85,14 @@ async function showAssignments(){
   const label = document.createElement("span");
   label.textContent = account.email || account.user_id;
   row.append(label);
-  const commissioner = document.getElementById("roleLabel").textContent === roles.commissioner;
+  const commissioner = accountRole === "commissioner";
   for (const role of commissioner ? ["employee","deputy"] : ["employee"]) {
    const button = document.createElement("button");
    button.type = "button";
    button.className = "action secondary";
    button.textContent = roles[role];
    button.addEventListener("click", async () => {
+    if (version !== stateVersion || !canAssignRoles()) return;
     row.querySelectorAll("button").forEach((control) => { control.disabled = true; });
     const {error} = await client.rpc("portal_assign_role",{target_user:account.user_id,target_role:role});
     if (version !== stateVersion) return;
@@ -130,6 +158,12 @@ async function init(){
   if (error) message.textContent = "Не удалось открыть вход через Discord.";
  });
  document.querySelectorAll("[data-portal-signout]").forEach((button) => button.addEventListener("click", signOut));
+ modeSwitch.addEventListener("click", () => {
+  if (accountRole !== "commissioner") return;
+  commissionerMode = !commissionerMode;
+  stateVersion++;
+  updatePortalMode();
+ });
  document.getElementById("portalOpenLeadership").addEventListener("click", showAssignments);
  document.getElementById("portalCloseLeadership").addEventListener("click", () => { leadership.hidden = true; });
  document.getElementById("portalAuthFields").disabled = false;
