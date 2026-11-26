@@ -128,7 +128,7 @@ main{padding:24px;max-width:1600px;width:100%;margin:auto}
 .shell[hidden],#portalGate [hidden],#portalOpenLeadership[hidden],#portalLeadership[hidden]{display:none!important}
 .portalGate{max-width:530px;margin:9vh auto;padding:24px;background:var(--panel);border:1px solid var(--line);border-radius:14px}
 .portalGate .formGrid{grid-template-columns:1fr}
-.portalGate form>.row,.portalGate form>button,.portalGate #portalAccountControls{margin-top:12px}
+.portalGate fieldset{border:0;margin:0;padding:0;min-width:0}.portalGate fieldset>.row,.portalGate fieldset>button,.portalGate #portalAccountControls{margin-top:12px}
 .portalSession{justify-content:flex-end;margin-bottom:12px}
 #portalAssignments>div{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 0}
 #portalAssignments>div>span{flex:1 1 180px;overflow-wrap:anywhere}
@@ -139,7 +139,8 @@ main{padding:24px;max-width:1600px;width:100%;margin:auto}
 <section id="portalGate" class="portalGate">
  <h1>Служебный портал ВК</h1>
  <p id="portalAuthStatus" role="status"></p>
- <form id="portalAuthForm">
+ <form id="portalAuthForm" method="post">
+  <fieldset id="portalAuthFields" disabled>
   <div class="formGrid">
    <label>Электронная почта<input type="email" name="email" autocomplete="email" required></label>
    <label>Пароль<input type="password" name="password" autocomplete="current-password" required></label>
@@ -149,6 +150,7 @@ main{padding:24px;max-width:1600px;width:100%;margin:auto}
    <button class="action secondary" type="submit" value="register">Зарегистрироваться</button>
   </div>
   <button id="portalDiscord" class="action" type="button">Войти через Discord</button>
+  </fieldset>
  </form>
  <section id="portalPending" hidden>
   <h2>Ожидает назначения роли</h2>
