@@ -163,6 +163,21 @@ main{padding:24px;max-width:1600px;width:100%;margin:auto}
 .staffLeader p{margin:0 0 5px;color:#d8bd79;font-size:13px}
 .staffLeader strong{display:block;overflow-wrap:anywhere;font-size:17px}
 .staffLeader:first-child{border-color:#837248}
+.profileHeading{font-size:clamp(28px,4vw,42px);margin:0 0 12px}
+.accountProfilePanel{padding:22px 26px;background:#101621;border-color:#3a495a;border-radius:16px}
+.accountProfileIdentity{display:flex;align-items:center;gap:12px;margin-bottom:15px}
+.accountProfileIdentity .avatar{width:60px;height:60px;flex:0 0 60px;border:2px solid #4389e6;background:#173d69;position:relative;overflow:hidden}
+.accountProfileIdentity img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.accountProfileIdentity img[hidden],#manageEmployeeProfiles[hidden],#managerProfileForm[hidden]{display:none!important}
+.accountProfilePanel fieldset{padding:0;border:0;margin:0;min-width:0}
+.profileFields{grid-template-columns:repeat(4,minmax(0,1fr));margin-top:14px}
+.profileFields input,#employeeProfileSelect{background:#141a1c;color:#f3f6fa;border:1px solid #404b48;border-radius:4px;padding:9px}
+.profileSave{margin-top:12px;border-radius:999px;background:#2057a0;border-color:#7da7e1}
+.profileStatus:empty,#manageProfileStatus:empty{display:none}
+#employeeProfileLog{overflow-wrap:anywhere}
+#employeeProfileLog li{margin:6px 0}
+@media(max-width:850px){.profileFields{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:460px){.profileFields{grid-template-columns:1fr}.accountProfilePanel{padding:16px}}
 </style>
 </head>
 <body>
@@ -264,27 +279,39 @@ const staffMarkup = `
    <p class="muted">Загрузка состава руководства…</p>
   </div>
  </section>` + staffTopMarkup;
-const currentProfile = {name: "Иванов Алексей", passport: "014", rank: ""};
-const profileRankKey = "vk.portal.profile.currentRank";
-try {
- currentProfile.rank = (localStorage.getItem(profileRankKey) || "").trim();
-} catch {
- // The profile can still be edited for the current session.
-}
-const profileMarkup = `
- <div class="panel">
-  <h3>${reportEscape(currentProfile.name)}</h3>
-  <div class="row">
-   <div class="metric"><span>Статик</span><b>${reportEscape(currentProfile.passport)}</b></div>
-   <div class="metric"><span>Должность</span><b>Сотрудник ВК</b></div>
-   <div class="metric formGrid" style="display:block"><label>Текущее звание<input id="profileCurrentRank" value="${reportEscape(currentProfile.rank)}" placeholder="Укажи текущее звание" /></label></div>
-  </div>
-  <div class="row" style="margin-top:12px">
-   <div class="metric"><span>Статус</span><b>Действующий</b></div>
-   <div class="metric"><span>Дата вступления</span><b>12.06.2026</b></div>
-  </div>
-  <p class="muted" style="margin-top:14px">Демонстрационный профиль. Звание сохраняется в этом браузере и подставляется в рапорт.</p>
+const currentProfile = {name:"",passport:"",rank:"",position:""};
+const profileFields = `
+ <div class="formGrid profileFields">
+  <label>Имя и фамилия (игровые)<input name="player_name" required maxlength="100"></label>
+  <label>Звание<input name="player_rank" required maxlength="80"></label>
+  <label>Статик (номер удостоверения)<input name="player_static" required maxlength="40"></label>
+  <label>Должность (по желанию)<input name="player_position" maxlength="100"></label>
  </div>`;
+const profileMarkup = `
+ <h2 class="profileHeading">Профиль</h2>
+ <div class="panel accountProfilePanel">
+  <div class="accountProfileIdentity">
+   <span class="avatar" aria-hidden="true"><span id="profileDiscordInitials">ВК</span><img id="profileDiscordAvatar" alt="" hidden></span>
+   <div><strong id="profileDiscordName"></strong><div class="muted" id="profileDiscordDetails"></div></div>
+  </div>
+  <p class="muted">Данные подставляются в еженедельный отчёт и рапорт на повышение. Руководство может исправить данные. Изменения записываются в журнал.</p>
+  <form id="employeeProfileForm" method="post">
+   <fieldset disabled>${profileFields}<button class="action profileSave" type="submit">Сохранить</button></fieldset>
+   <p class="muted profileStatus" role="status"></p>
+  </form>
+ </div>
+ <section class="panel accountProfilePanel" id="manageEmployeeProfiles" hidden>
+  <h3>Профили сотрудников</h3>
+  <button id="loadEmployeeProfiles" class="action secondary" type="button">Загрузить список</button>
+  <p id="manageProfileStatus" class="muted" role="status"></p>
+  <form id="managerProfileForm" method="post" hidden>
+   <label>Сотрудник <select id="employeeProfileSelect"></select></label>
+   ${profileFields}
+   <button class="action profileSave" type="submit">Сохранить изменения</button>
+   <p class="muted profileStatus" role="status"></p>
+  </form>
+  <div id="employeeProfileLog"></div>
+ </section>`;
 const host = document.getElementById("otherPages");
 Object.entries(pages).forEach(([id,p]) => {
  const section = document.createElement("section");
@@ -487,7 +514,7 @@ Object.entries(pages).forEach(([id,p]) => {
  } else if (id === "staff") {
   section.innerHTML = `<div class="pagehero"><img src="staff.jpg" alt=""><div class="pageheroText"><h2>${p[0]}</h2><p>${p[1]}</p></div></div>` + staffMarkup;
  } else if (id === "profile") {
-  section.innerHTML = `<div class="pagehero"><img src="staff.jpg" alt=""><div class="pageheroText"><h2>Мой профиль</h2><p>Личные данные и служебная информация</p></div></div>` + profileMarkup;
+  section.innerHTML = profileMarkup;
  } else {
   section.innerHTML = `
   <div class="pagehero">
@@ -689,16 +716,6 @@ function refreshReport(){
   '<p><b>Общее количество баллов:</b> '+total+'<br><b>Дата подачи:</b> '+date("date")+'</p>'+
   '<div class="reportSignature"><span><b>Рапорт составил:</b><br>'+field("position")+'</span><span>'+field("currentRank")+'<br>'+field("name")+'</span></div>';
 }
-document.getElementById("profileCurrentRank").addEventListener("input", (event) => {
- currentProfile.rank = event.target.value.trim();
- try {
-  localStorage.setItem(profileRankKey, currentProfile.rank);
- } catch {
-  // Keep the new rank available until the page is reloaded.
- }
- document.querySelector('[data-report-field="currentRank"]').value = currentProfile.rank;
- refreshReport();
-});
 document.getElementById("catalogSearch").addEventListener("input", filterCatalog);
 document.getElementById("catalogSelected").addEventListener("change", filterCatalog);
 document.getElementById("promoReport").addEventListener("input", (event) => {
@@ -942,10 +959,6 @@ weeklyPage.addEventListener("click", (event) => {
   refreshWeeklyReport();
  }
 });
-document.getElementById("profileCurrentRank").addEventListener("input", () => {
- syncWeeklyProfile();
- refreshWeeklyReport();
-});
 document.getElementById("weeklyPdf").addEventListener("click", () => {
  if (!weeklyField("end").reportValidity()) return;
  document.body.classList.add("printingWeekly");
@@ -1018,6 +1031,7 @@ function canAssignRoles(){
 function updatePortalMode(){
  const commissioner = accountRole === "commissioner";
  modeSwitch.hidden = !commissioner;
+ document.getElementById("manageEmployeeProfiles").hidden = !canAssignRoles();
  document.getElementById("roleLabel").hidden = commissioner;
  modeSwitch.querySelectorAll("[data-portal-mode]").forEach((button) => {
   button.setAttribute("aria-pressed", String(commissioner && (button.dataset.portalMode === "commissioner") === commissionerMode));
@@ -1031,6 +1045,124 @@ function updatePortalMode(){
   closeReportsQueue();
   leadership.hidden = true;
   assignments.replaceChildren();
+ }
+}
+
+
+const selfProfileForm = document.getElementById("employeeProfileForm");
+const managerProfileForm = document.getElementById("managerProfileForm");
+const employeeSelect = document.getElementById("employeeProfileSelect");
+const profileLog = document.getElementById("employeeProfileLog");
+let managedProfiles = new Map();
+let managedLogVersion = 0;
+
+function fillProfileForm(form, data){
+ form.elements.player_name.value = data.game_name || "";
+ form.elements.player_rank.value = data.game_rank || "";
+ form.elements.player_static.value = data.game_static || "";
+ form.elements.player_position.value = data.game_position || "";
+}
+function syncAccountProfile(data){
+ fillProfileForm(selfProfileForm, data);
+ selfProfileForm.querySelector("fieldset").disabled = false;
+ Object.assign(currentProfile, {
+  name:data.game_name || "", rank:data.game_rank || "",
+  passport:data.game_static || "", position:data.game_position || ""
+ });
+ for (const [field,key] of [["name","name"],["currentRank","rank"],["passport","passport"],["position","position"]]) {
+  document.querySelector('[data-report-field="'+field+'"]').value = currentProfile[key];
+ }
+ syncWeeklyProfile();
+ weeklyField("position").value = currentProfile.position;
+ refreshReport();
+ refreshWeeklyReport();
+}
+
+async function loadManagedLog(){
+ const version = ++managedLogVersion;
+ const target = employeeSelect.value;
+ profileLog.textContent = "Загрузка журнала…";
+ const {data,error} = await client.from("portal_profile_log")
+  .select("editor_id,previous_values,new_values,changed_at")
+  .eq("target_id",target).order("id",{ascending:false}).limit(20);
+ if (version !== managedLogVersion || !canAssignRoles() || employeeSelect.value !== target) return;
+ if (error || !data.length) {
+  profileLog.textContent = error ? "Не удалось загрузить журнал." : "Изменений пока нет.";
+  return;
+ }
+ const heading = document.createElement("h4");
+ heading.textContent = "Последние изменения";
+ const list = document.createElement("ul");
+ const names = {name:"ФИО",rank:"Звание",static:"Статик",position:"Должность"};
+ for (const entry of data) {
+  const item = document.createElement("li");
+  const editor = managedProfiles.get(entry.editor_id);
+  const changes = Object.keys(names).filter((key) => entry.previous_values[key] !== entry.new_values[key])
+   .map((key) => names[key]+": "+(entry.previous_values[key] || "—")+" → "+(entry.new_values[key] || "—"));
+  item.textContent = new Date(entry.changed_at).toLocaleString("ru-RU")+" · "+(editor?.game_name || editor?.discord_name || "Редактор")+" · "+changes.join(", ");
+  list.append(item);
+ }
+ profileLog.replaceChildren(heading,list);
+}
+function selectManagedProfile(){
+ const profile = managedProfiles.get(employeeSelect.value);
+ if (!profile) return;
+ fillProfileForm(managerProfileForm, profile);
+ managerProfileForm.querySelector(".profileStatus").textContent = "";
+ loadManagedLog();
+}
+async function loadEmployeeProfiles(){
+ if (!canAssignRoles()) return;
+ const account = accountId;
+ const status = document.getElementById("manageProfileStatus");
+ status.textContent = "Загрузка…";
+ const {data,error} = await client.rpc("portal_manage_profiles");
+ if (account !== accountId || !canAssignRoles()) return;
+ if (error || !data.length) {
+  status.textContent = error ? "Не удалось загрузить профили." : "Сотрудников пока нет.";
+  return;
+ }
+ status.textContent = "";
+ managedProfiles = new Map(data.map((profile) => [profile.user_id, profile]));
+ employeeSelect.replaceChildren(...data.map((profile) => new Option(profile.game_name || profile.discord_name,profile.user_id)));
+ managerProfileForm.hidden = false;
+ selectManagedProfile();
+}
+async function saveEmployeeProfile(event){
+ event.preventDefault();
+ const form = event.currentTarget;
+ const manager = form === managerProfileForm;
+ if (!accountRole || !accountId || (manager && !canAssignRoles())) return;
+ const editor = accountId;
+ const target = manager ? employeeSelect.value : editor;
+ if (!target) return;
+ const status = form.querySelector(".profileStatus");
+ const button = form.querySelector('button[type="submit"]');
+ const fields = Object.fromEntries(["player_name","player_rank","player_static","player_position"].map((name) => [name,form.elements[name].value.trim()]));
+ if (!fields.player_name || !fields.player_rank || !fields.player_static) {
+  status.textContent = "Заполни ФИО, звание и статик.";
+  return;
+ }
+ button.disabled = true;
+ status.textContent = "Сохраняем…";
+ try {
+  const {error} = await client.rpc("portal_save_profile",{target_user:target,...fields});
+  if (editor !== accountId || (manager && !canAssignRoles())) return;
+  if (error) {
+   status.textContent = "Не удалось сохранить профиль.";
+   return;
+  }
+  const saved = {game_name:fields.player_name,game_rank:fields.player_rank,game_static:fields.player_static,game_position:fields.player_position};
+  if (target === editor) syncAccountProfile(saved);
+  if (managedProfiles.has(target)) Object.assign(managedProfiles.get(target),saved);
+  if (manager && employeeSelect.value === target) {
+   employeeSelect.selectedOptions[0].textContent = saved.game_name;
+   fillProfileForm(form,saved);
+   loadManagedLog();
+  }
+  status.textContent = "Профиль сохранён.";
+ } finally {
+  button.disabled = false;
  }
 }
 
@@ -1065,7 +1197,17 @@ async function showAccount(session){
  }
  const version = ++stateVersion;
  const nextId = session?.user?.id ?? null;
- if (accountId !== nextId) commissionerMode = true;
+ if (accountId !== nextId) {
+  commissionerMode = true;
+  selfProfileForm.reset();
+  selfProfileForm.querySelector("fieldset").disabled = true;
+  selfProfileForm.querySelector(".profileStatus").textContent = "";
+  managedProfiles.clear();
+  managedLogVersion++;
+  managerProfileForm.hidden = true;
+  employeeSelect.replaceChildren();
+  profileLog.replaceChildren();
+ }
  accountId = nextId;
  accountRole = null;
  updatePortalMode();
@@ -1085,7 +1227,7 @@ async function showAccount(session){
   }
   return;
  }
- const {data, error} = await client.from("portal_accounts").select("role")
+ const {data, error} = await client.from("portal_accounts").select("role,game_name,game_rank,game_static,game_position")
   .eq("user_id",session.user.id).single();
  if (version !== stateVersion) return;
  if (error) {
@@ -1099,10 +1241,15 @@ async function showAccount(session){
  shell.hidden = false;
  gate.hidden = true;
  accountRole = data.role;
+ syncAccountProfile(data);
  loadStaffLeadership(version);
  const meta = session.user.user_metadata || {};
  const candidate = meta.full_name || meta.name || meta.preferred_username;
  const title = typeof candidate === "string" && candidate.trim() ? candidate.trim().slice(0,80) : "Профиль";
+ document.getElementById("profileDiscordName").textContent = title;
+ const discord = session.user.identities?.find((identity) => identity.provider === "discord");
+ const discordId = discord?.identity_data?.provider_id || discord?.identity_data?.sub || discord?.id;
+ document.getElementById("profileDiscordDetails").textContent = (discordId ? "Discord ID: " + discordId + " · " : "") + "Роль: " + roles[data.role];
  document.getElementById("headerAccountName").textContent = title;
  const avatar = document.getElementById("headerAvatar");
  avatar.hidden = true;
@@ -1115,6 +1262,16 @@ async function showAccount(session){
   avatar.removeAttribute("src");
  }
  document.getElementById("headerInitials").textContent = title === "Профиль" ? "ВК" : title.split(/\s+/).slice(0,2).map((part)=>Array.from(part)[0]).join("").toLocaleUpperCase("ru");
+ const profileAvatar = document.getElementById("profileDiscordAvatar");
+ profileAvatar.hidden = true;
+ document.getElementById("profileDiscordInitials").textContent = document.getElementById("headerInitials").textContent;
+ if (typeof imageUrl === "string" && /^https:\/\/cdn\.discordapp\.com\/avatars\//.test(imageUrl)) {
+  profileAvatar.onload = () => { profileAvatar.hidden = false; };
+  profileAvatar.onerror = () => { profileAvatar.hidden = true; };
+  profileAvatar.src = imageUrl;
+ } else {
+  profileAvatar.removeAttribute("src");
+ }
  updatePortalMode();
 }
 
@@ -1311,6 +1468,10 @@ async function init(){
  document.querySelectorAll("[data-submit-report]").forEach((button) => {
   button.addEventListener("click", () => submitReport(button));
  });
+ selfProfileForm.addEventListener("submit",saveEmployeeProfile);
+ managerProfileForm.addEventListener("submit",saveEmployeeProfile);
+ employeeSelect.addEventListener("change",selectManagedProfile);
+ document.getElementById("loadEmployeeProfiles").addEventListener("click",loadEmployeeProfiles);
  discordButton.disabled = false;
 }
 init();
