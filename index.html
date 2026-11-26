@@ -170,8 +170,8 @@ main{padding:24px;max-width:1600px;width:100%;margin:auto}
 .accountProfileIdentity img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .accountProfileIdentity img[hidden],#manageEmployeeProfiles[hidden],#managerProfileForm[hidden]{display:none!important}
 .accountProfilePanel fieldset{padding:0;border:0;margin:0;min-width:0}
-.profileFields{grid-template-columns:repeat(4,minmax(0,1fr));margin-top:14px}
-.profileFields input,#employeeProfileSelect{background:#141a1c;color:#f3f6fa;border:1px solid #404b48;border-radius:4px;padding:9px}
+.profileFields{grid-template-columns:repeat(3,minmax(0,1fr));margin-top:14px}
+.profileFields input,.profileFields select,#employeeProfileSelect{background:#141a1c;color:#f3f6fa;border:1px solid #404b48;border-radius:4px;padding:9px}
 .profileSave{margin-top:12px;border-radius:999px;background:#2057a0;border-color:#7da7e1}
 .profileStatus:empty,#manageProfileStatus:empty{display:none}
 #employeeProfileLog{overflow-wrap:anywhere}
@@ -280,12 +280,17 @@ const staffMarkup = `
   </div>
  </section>` + staffTopMarkup;
 const currentProfile = {name:"",passport:"",rank:"",position:""};
+const profileRanks = [
+ "Рядовой", "Ефрейтор", "Младший сержант", "Сержант", "Старший сержант", "Старшина",
+ "Прапорщик", "Старший прапорщик", "Младший лейтенант", "Лейтенант", "Старший лейтенант",
+ "Капитан", "Майор", "Подполковник", "Полковник", "Генерал-майор", "Генерал-лейтенант",
+ "Генерал-полковник", "Генерал армии", "Маршал Российской Федерации"
+];
 const profileFields = `
  <div class="formGrid profileFields">
   <label>Имя и фамилия (игровые)<input name="player_name" required maxlength="100"></label>
-  <label>Звание<input name="player_rank" required maxlength="80"></label>
+  <label>Звание<select name="player_rank" required><option value="">Выбери звание</option>${profileRanks.map((rank) => '<option>'+reportEscape(rank)+'</option>').join("")}</select></label>
   <label>Статик (номер удостоверения)<input name="player_static" required maxlength="40"></label>
-  <label>Должность (по желанию)<input name="player_position" maxlength="100"></label>
  </div>`;
 const profileMarkup = `
  <h2 class="profileHeading">Профиль</h2>
@@ -1058,9 +1063,9 @@ let managedLogVersion = 0;
 
 function fillProfileForm(form, data){
  form.elements.player_name.value = data.game_name || "";
- form.elements.player_rank.value = data.game_rank || "";
+ const savedRank = (data.game_rank || "").trim().toLocaleLowerCase("ru").replace(/[‐‑–—]/g, "-");
+ form.elements.player_rank.value = profileRanks.find((rank) => rank.toLocaleLowerCase("ru") === savedRank) || "";
  form.elements.player_static.value = data.game_static || "";
- form.elements.player_position.value = data.game_position || "";
 }
 function syncAccountProfile(data){
  fillProfileForm(selfProfileForm, data);
@@ -1069,11 +1074,10 @@ function syncAccountProfile(data){
   name:data.game_name || "", rank:data.game_rank || "",
   passport:data.game_static || "", position:data.game_position || ""
  });
- for (const [field,key] of [["name","name"],["currentRank","rank"],["passport","passport"],["position","position"]]) {
+ for (const [field,key] of [["name","name"],["currentRank","rank"],["passport","passport"]]) {
   document.querySelector('[data-report-field="'+field+'"]').value = currentProfile[key];
  }
  syncWeeklyProfile();
- weeklyField("position").value = currentProfile.position;
  refreshReport();
  refreshWeeklyReport();
 }
@@ -1138,8 +1142,9 @@ async function saveEmployeeProfile(event){
  if (!target) return;
  const status = form.querySelector(".profileStatus");
  const button = form.querySelector('button[type="submit"]');
- const fields = Object.fromEntries(["player_name","player_rank","player_static","player_position"].map((name) => [name,form.elements[name].value.trim()]));
- if (!fields.player_name || !fields.player_rank || !fields.player_static) {
+ const fields = Object.fromEntries(["player_name","player_rank","player_static"].map((name) => [name,form.elements[name].value.trim()]));
+ fields.player_position = manager ? managedProfiles.get(target)?.game_position || "" : currentProfile.position;
+ if (!fields.player_name || !profileRanks.includes(fields.player_rank) || !fields.player_static) {
   status.textContent = "Заполни ФИО, звание и статик.";
   return;
  }
