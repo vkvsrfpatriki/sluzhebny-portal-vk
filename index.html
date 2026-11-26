@@ -258,7 +258,7 @@ main{padding:24px;max-width:1600px;width:100%;margin:auto}
 <div class="tile" data-go="training"><img src="training.jpg" alt="Занятие в учебном классе"><div class="tilelabel"><span><i>▱</i>Обучение</span>↗</div></div>
 </div><div class="rightcol">
 <div class="widget"><h4>★ Ваш профиль</h4><div class="profileRole">Сотрудник ВК</div><p class="muted">Иванов Алексей · № 014</p><p class="muted">Дата вступления: 12.06.2026</p></div>
-<div class="widget"><h4>♢ Последние уведомления</h4><div class="notice"><span class="dot"></span>Напоминание о недельном отчёте</div><div class="notice"><span class="dot"></span>Обновлены документы ВК</div><div class="notice"><span class="dot"></span>Опубликовано объявление руководства</div></div>
+<div class="widget"><h4>♢ Последние уведомления</h4><div id="homeNotifications" aria-live="polite"></div><button type="button" class="action secondary" data-go="notifications">Все уведомления</button></div>
 <div class="widget"><h4>Памятка</h4><p class="muted">Проверяйте уведомления и своевременно отправляйте недельный отчёт.</p></div>
 </div></div></section>
 <div id="otherPages"></div>
@@ -519,6 +519,12 @@ Object.entries(pages).forEach(([id,p]) => {
      <article id="weeklyDocument" class="officialDocument"></article>
     </div>
    </div>`;
+ } else if (id === "notifications") {
+  section.innerHTML = `<div class="panel">
+   <div class="row"><h2>Уведомления</h2><button id="markNotificationsRead" class="action secondary" type="button" disabled>Отметить все прочитанными</button></div>
+   <p id="portalNotificationStatus" class="muted" role="status"></p>
+   <div id="portalNotificationList" aria-live="polite"></div>
+  </div>`;
  } else if (id === "rating") {
   section.innerHTML = staffTopMarkup;
  } else if (id === "staff") {
@@ -1209,6 +1215,78 @@ async function loadStaffLeadership(){
  }
 }
 
+
+const notificationLabels = {
+ weekly:"Поступил новый еженедельный отчёт",
+ promotion:"Поступил новый рапорт на повышение",
+ role:"Тебе назначили роль на портале"
+};
+const notificationList = document.getElementById("portalNotificationList");
+const homeNotifications = document.getElementById("homeNotifications");
+const markRead = document.getElementById("markNotificationsRead");
+const notificationStatus = document.getElementById("portalNotificationStatus");
+let notificationVersion = 0;
+
+function renderNotifications(target, items){
+ const nodes = items.map((item) => {
+  const row = document.createElement("div");
+  row.className = "notice";
+  const label = document.createElement("span");
+  label.textContent = notificationLabels[item.kind];
+  if (!item.read_at) {
+   const dot = document.createElement("span");
+   dot.className = "dot";
+   dot.setAttribute("aria-label","Непрочитанное");
+   row.append(dot);
+  }
+  row.append(label);
+  const time = document.createElement("div");
+  time.className = "muted";
+  time.textContent = new Date(item.created_at).toLocaleString("ru-RU");
+  row.append(time);
+  return row;
+ });
+ target.replaceChildren(...nodes);
+ if (!nodes.length) target.textContent = "Уведомлений пока нет.";
+}
+function clearNotifications(){
+ notificationVersion++;
+ notificationList.replaceChildren();
+ homeNotifications.replaceChildren();
+ notificationStatus.textContent = "";
+ markRead.disabled = true;
+}
+async function loadNotifications(){
+ const user = accountId;
+ if (!user || !accountRole) return;
+ const version = ++notificationVersion;
+ const {data,error} = await client.from("portal_notifications")
+  .select("id,kind,created_at,read_at").eq("recipient_id",user).order("id",{ascending:false}).limit(50);
+ if (version !== notificationVersion || user !== accountId || !accountRole) return;
+ if (error) {
+  notificationStatus.textContent = "Не удалось загрузить уведомления.";
+  return;
+ }
+ notificationStatus.textContent = "";
+ renderNotifications(notificationList,data);
+ renderNotifications(homeNotifications,data.slice(0,3));
+ markRead.disabled = !data.some((item) => !item.read_at);
+}
+async function markNotificationsRead(){
+ const user = accountId;
+ if (!user || !accountRole || markRead.disabled) return;
+ markRead.disabled = true;
+ const {error} = await client.from("portal_notifications")
+  .update({read_at:new Date().toISOString()}).eq("recipient_id",user).is("read_at",null);
+ if (user !== accountId || !accountRole) return;
+ if (error) {
+  notificationStatus.textContent = "Не удалось отметить уведомления.";
+  markRead.disabled = false;
+  return;
+ }
+ await loadNotifications();
+}
+
 async function showAccount(session){
  if (session && isCallbackPage) {
   location.replace(portalHome);
@@ -1229,6 +1307,7 @@ async function showAccount(session){
  }
  accountId = nextId;
  accountRole = null;
+ clearNotifications();
  loadHomeWeeklySummary();
  updatePortalMode();
  shell.hidden = true;
@@ -1262,6 +1341,7 @@ async function showAccount(session){
  gate.hidden = true;
  accountRole = data.role;
  syncAccountProfile(data);
+ loadNotifications();
  loadHomeWeeklySummary();
  loadStaffLeadership();
  const meta = session.user.user_metadata || {};
@@ -1631,6 +1711,13 @@ async function init(){
  managerProfileForm.addEventListener("submit",saveEmployeeProfile);
  employeeSelect.addEventListener("change",selectManagedProfile);
  document.getElementById("loadEmployeeProfiles").addEventListener("click",loadEmployeeProfiles);
+ markRead.addEventListener("click",markNotificationsRead);
+ const openNotifications = (event) => {
+  if (event.target.closest('[data-page="notifications"],[data-go="notifications"]')) loadNotifications();
+ };
+ document.addEventListener("click",openNotifications);
+ document.addEventListener("visibilitychange",() => { if (!document.hidden) loadNotifications(); });
+ window.setInterval(() => { if (!document.hidden) loadNotifications(); },30000);
  discordButton.disabled = false;
 }
 init();
