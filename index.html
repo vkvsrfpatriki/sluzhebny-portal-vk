@@ -17,7 +17,7 @@ button{font:inherit;color:inherit;cursor:pointer}.shell{min-height:100vh;backgro
 .nav button:hover,.nav button.active{background:linear-gradient(90deg,#2c5735,#1b3322);color:white}.nav .ico{width:22px;text-align:center;color:#c9d6c6;font-size:17px}
 .asidefoot{margin:24px 5px 0;padding:13px;border:1px solid var(--line);border-radius:12px;color:var(--muted);font-size:12px}
 main{padding:24px;max-width:1600px;width:100%;margin:auto}
-.hero{min-height:220px;border-radius:18px;overflow:hidden;position:relative;background:linear-gradient(90deg,#07110cf2 0%,#0a160dc9 48%,#0b150c33 100%),url('assets/staff.jpg') center 46%/cover;border:1px solid #354c38;display:flex;align-items:center;padding:32px;margin-bottom:20px}
+.hero{min-height:220px;border-radius:18px;overflow:hidden;position:relative;background:linear-gradient(90deg,#07110cf2 0%,#0a160dc9 48%,#0b150c33 100%),url('staff.jpg') center 46%/cover;border:1px solid #354c38;display:flex;align-items:center;padding:32px;margin-bottom:20px}
 .hero h2{font-size:clamp(26px,3vw,40px);line-height:1.12;margin:0 0 12px;max-width:570px}.hero p{color:#d2ded2;margin:0}.hero .tag{color:var(--gold);font-size:12px;letter-spacing:2px;text-transform:uppercase;margin-bottom:12px}
 .heroStats{margin-left:auto;display:flex;gap:10px;align-self:flex-end}.stat{background:#08110dc9;border:1px solid #536a51;border-radius:12px;padding:13px 16px;min-width:120px}.stat b{display:block;font-size:21px}.stat span{font-size:12px;color:var(--muted)}
 .sectionhead{display:flex;align-items:end;justify-content:space-between;margin:22px 0 13px}.sectionhead h3{margin:0;font-size:20px}.sectionhead p{margin:3px 0 0;color:var(--muted);font-size:13px}
@@ -57,12 +57,12 @@ main{padding:24px;max-width:1600px;width:100%;margin:auto}
 <div class="hero"><div><div class="tag">Служебная система · ВК</div><h2>Добро пожаловать<br>на служебный портал</h2><p>Дисциплина. Порядок. Служба.</p></div><div class="heroStats"><div class="stat"><span>Отчёт за неделю</span><b>Черновик</b></div><div class="stat"><span>Баллы за неделю</span><b>—</b></div></div></div>
 <div class="sectionhead"><div><h3>Рабочие разделы</h3><p>Выберите нужный раздел портала</p></div><span class="muted">Демо-версия</span></div>
 <div class="content"><div class="tiles">
-<div class="tile" data-go="staff"><img src="assets/staff.jpg" alt="Военнослужащие на построении"><div class="tilelabel"><span><i>♟</i>Состав ВК</span>↗</div></div>
-<div class="tile" data-go="reports"><img src="assets/reports.jpg" alt="Заполнение служебного отчёта"><div class="tilelabel"><span><i>▤</i>Отчёты</span>↗</div></div>
-<div class="tile" data-go="training"><img src="assets/training.jpg" alt="Занятие в учебном классе"><div class="tilelabel"><span><i>▱</i>Обучение</span>↗</div></div>
-<div class="tile" data-go="documents"><img src="assets/documents.jpg" alt="Служебные папки и документы"><div class="tilelabel"><span><i>▣</i>Документы ВК</span>↗</div></div>
-<div class="tile" data-go="promotion"><img src="assets/promotion.jpg" alt="Торжественное вручение знака отличия"><div class="tilelabel"><span><i>✦</i>Повышение</span>↗</div></div>
-<div class="tile" data-go="rating"><img src="assets/rating.jpg" alt="Командная подготовка военнослужащих"><div class="tilelabel"><span><i>★</i>Рейтинг и баллы</span>↗</div></div>
+<div class="tile" data-go="staff"><img src="staff.jpg" alt="Военнослужащие на построении"><div class="tilelabel"><span><i>♟</i>Состав ВК</span>↗</div></div>
+<div class="tile" data-go="reports"><img src="reports.jpg" alt="Заполнение служебного отчёта"><div class="tilelabel"><span><i>▤</i>Отчёты</span>↗</div></div>
+<div class="tile" data-go="training"><img src="training.jpg" alt="Занятие в учебном классе"><div class="tilelabel"><span><i>▱</i>Обучение</span>↗</div></div>
+<div class="tile" data-go="documents"><img src="documents.jpg" alt="Служебные папки и документы"><div class="tilelabel"><span><i>▣</i>Документы ВК</span>↗</div></div>
+<div class="tile" data-go="promotion"><img src="promotion.jpg" alt="Торжественное вручение знака отличия"><div class="tilelabel"><span><i>✦</i>Повышение</span>↗</div></div>
+<div class="tile" data-go="rating"><img src="rating.jpg" alt="Командная подготовка военнослужащих"><div class="tilelabel"><span><i>★</i>Рейтинг и баллы</span>↗</div></div>
 </div><div class="rightcol">
 <div class="widget"><h4>★ Ваш профиль</h4><div class="profileRole">Сотрудник ВК</div><p class="muted">Иванов Алексей · № 014</p><p class="muted">Дата вступления: 12.06.2026</p></div>
 <div class="widget"><h4>♢ Последние уведомления</h4><div class="notice"><span class="dot"></span>Напоминание о недельном отчёте</div><div class="notice"><span class="dot"></span>Обновлены документы ВК</div><div class="notice"><span class="dot"></span>Опубликовано объявление руководства</div></div>
@@ -73,15 +73,15 @@ main{padding:24px;max-width:1600px;width:100%;margin:auto}
 </main></div></div>
 <script>
 const pages = {
- reports:["Отчёты","Работа с недельными отчётами и историей отправок","assets/reports.jpg","Здесь будет форма отчёта, автосохранение, ссылки на доказательства и история проверок."],
- training:["Обучение","Лекции и итоговый экзамен для стажёров","assets/training.jpg","Здесь будут лекции, прогресс обучения, попытки экзамена и результаты проверки."],
- staff:["Состав ВК","Список сотрудников, должности и служебные карточки","assets/staff.jpg","Здесь будут поиск сотрудников, фильтры по должностям и карточки состава."],
- documents:["Документы ВК","Уставы, инструкции, регламенты и распоряжения","assets/documents.jpg","Здесь будет библиотека документов с категориями, просмотром и скачиванием."],
- promotion:["Повышение в звании","Требования, прогресс и рапорты на повышение","assets/promotion.jpg","Здесь будут текущее и следующее звание, требования, доказательства и история рапортов."],
- rating:["Рейтинг и баллы","Недельный рейтинг и результаты за всё время","assets/rating.jpg","Здесь будет рейтинг сотрудников, баллы и история недельных результатов."],
- bonuses:["Премии","Расчёт и история премиальных выплат","assets/bonuses.jpg","Здесь будут сумма бюджета, параметры расчёта и персональная премия."],
- archive:["Архив","Архив сотрудников, отчётов и кадровой истории","assets/archive.jpg","Здесь будут архивные записи с поиском и разграничением доступа."],
- notifications:["Уведомления","Объявления и личные служебные уведомления","assets/notifications.jpg","Здесь будет единый центр уведомлений, статусы прочтения и объявления."]
+ reports:["Отчёты","Работа с недельными отчётами и историей отправок","reports.jpg","Здесь будет форма отчёта, автосохранение, ссылки на доказательства и история проверок."],
+ training:["Обучение","Лекции и итоговый экзамен для стажёров","training.jpg","Здесь будут лекции, прогресс обучения, попытки экзамена и результаты проверки."],
+ staff:["Состав ВК","Список сотрудников, должности и служебные карточки","staff.jpg","Здесь будут поиск сотрудников, фильтры по должностям и карточки состава."],
+ documents:["Документы ВК","Уставы, инструкции, регламенты и распоряжения","documents.jpg","Здесь будет библиотека документов с категориями, просмотром и скачиванием."],
+ promotion:["Повышение в звании","Требования, прогресс и рапорты на повышение","promotion.jpg","Здесь будут текущее и следующее звание, требования, доказательства и история рапортов."],
+ rating:["Рейтинг и баллы","Недельный рейтинг и результаты за всё время","rating.jpg","Здесь будет рейтинг сотрудников, баллы и история недельных результатов."],
+ bonuses:["Премии","Расчёт и история премиальных выплат","bonuses.jpg","Здесь будут сумма бюджета, параметры расчёта и персональная премия."],
+ archive:["Архив","Архив сотрудников, отчётов и кадровой истории","archive.jpg","Здесь будут архивные записи с поиском и разграничением доступа."],
+ notifications:["Уведомления","Объявления и личные служебные уведомления","notifications.jpg","Здесь будет единый центр уведомлений, статусы прочтения и объявления."]
 };
 const host = document.getElementById("otherPages");
 Object.entries(pages).forEach(([id,p]) => {
