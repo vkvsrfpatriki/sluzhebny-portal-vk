@@ -156,7 +156,7 @@ const pages = {
  documents:["Документация ВК","Служебные документы и полезные ссылки","documents.jpg","Здесь будет простой список документов и полезных ссылок. Открывать ссылки смогут все пользователи, редактировать записи — только Комиссар."],
  promotion:["Повышение","Ступени званий и рапорт на повышение","promotion.jpg","Подразделы: «Ступени» — требования и прогресс по всем званиям; «Рапорт на повышение» — оформление рапорта с доказательствами и калькулятором."],
  rating:["Топ сотрудников недели","Недельный рейтинг и результаты за всё время","rating.jpg","Здесь будет таблица: место, имя и фамилия, номер сотрудника, должность и баллы. Можно выбрать неделю или период «За всё время»."],
- profile:["Мой профиль","Личные данные и история повышений в звании","staff.jpg","Здесь будут Discord, имя и фамилия, номер игрового паспорта, должность, дата вступления, звание, прогресс и история повышений."],
+ profile:["Мой профиль","Личные данные и история повышений в звании","staff.jpg","Здесь будут Discord, имя и фамилия, статик, должность, дата вступления, звание, прогресс и история повышений."],
  bonuses:["Премии","Расчёт и история премиальных выплат","bonuses.jpg","Здесь будут сумма бюджета, параметры расчёта и персональная премия."],
  archive:["Архив","Архив сотрудников, отчётов и кадровой истории","archive.jpg","Здесь будут архивные записи с поиском и разграничением доступа."],
  notifications:["Уведомления","Объявления и личные служебные уведомления","notifications.jpg","Здесь будет единый центр уведомлений, статусы прочтения и объявления."]
@@ -168,7 +168,7 @@ const staffMarkup = `
   <p class="muted">Демонстрационная запись. После подключения базы здесь будут отображаться все действующие сотрудники и стажёры.</p>
   <div style="overflow-x:auto">
    <table class="fakeTable">
-    <thead><tr><th>Должность</th><th>Имя Фамилия</th><th>Номер игрового паспорта</th></tr></thead>
+    <thead><tr><th>Должность</th><th>Имя Фамилия</th><th>Статик</th></tr></thead>
     <tbody>
      <tr><th colspan="3">Комиссар</th></tr>
      <tr><th colspan="3">Заместитель военного комиссара</th></tr>
@@ -193,7 +193,7 @@ const profileMarkup = `
  <div class="panel">
   <h3>${reportEscape(currentProfile.name)}</h3>
   <div class="row">
-   <div class="metric"><span>Номер игрового паспорта</span><b>${reportEscape(currentProfile.passport)}</b></div>
+   <div class="metric"><span>Статик</span><b>${reportEscape(currentProfile.passport)}</b></div>
    <div class="metric"><span>Должность</span><b>Сотрудник ВК</b></div>
    <div class="metric formGrid" style="display:block"><label>Текущее звание<input id="profileCurrentRank" value="${reportEscape(currentProfile.rank)}" placeholder="Укажи текущее звание" /></label></div>
   </div>
@@ -291,7 +291,7 @@ Object.entries(pages).forEach(([id,p]) => {
       <div class="formGrid">
        <h4 class="reportFieldGroup">1. Военнослужащий</h4>
        <label>Текущее звание<input data-report-field="currentRank" value="${reportEscape(currentProfile.rank)}" placeholder="Укажи звание в профиле" readonly /></label>
-       <label>Номер игрового паспорта<input data-report-field="passport" value="${reportEscape(currentProfile.passport)}" readonly /></label>
+       <label>Статик<input data-report-field="passport" value="${reportEscape(currentProfile.passport)}" readonly /></label>
        <label class="reportFieldWide">Имя и фамилия<input data-report-field="name" value="${reportEscape(currentProfile.name)}" readonly /></label>
        <h4 class="reportFieldGroup">2. Подразделение и должность</h4>
        <label>Подразделение<input data-report-field="unit" placeholder="Отдел кадров / Отдел призыва" /></label>
@@ -518,7 +518,7 @@ function refreshReport(){
   '<h2>РАПОРТ</h2><div class="reportSubtitle"><b>О присвоении очередного воинского звания</b><span class="reportDocumentNumber">№ '+field("number")+'</span></div>'+
   '<p class="reportProse">Докладываю Вам о результатах служебной деятельности за период службы в текущем воинском звании и прошу рассмотреть вопрос о присвоении мне очередного воинского звания.</p>'+
   '<p class="docSection">I. ОБЩИЕ СВЕДЕНИЯ</p><ol>'+
-  '<li><b>Военнослужащий:</b> '+field("currentRank")+' '+field("name")+', игровой паспорт № '+field("passport")+'.</li>'+
+  '<li><b>Военнослужащий:</b> '+field("currentRank")+' '+field("name")+', статик № '+field("passport")+'.</li>'+
   '<li><b>Подразделение и должность:</b> '+field("unit")+', '+field("position")+'.</li>'+
   '<li><b>Испрашиваемое звание:</b> '+field("requestedRank")+'.</li></ol>'+ 
   '<p class="docSection">II. РЕЗУЛЬТАТЫ СЛУЖЕБНОЙ ДЕЯТЕЛЬНОСТИ</p>'+
