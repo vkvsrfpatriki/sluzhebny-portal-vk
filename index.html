@@ -110,6 +110,19 @@ main{padding:24px;max-width:1600px;width:100%;margin:auto}
  body.printingReport .reportPaperHeader,body.printingReport .reportSignature{break-inside:avoid}
 }
 .reportEvidenceLabel{font-weight:bold;margin-top:3px}
+.weeklyWorkspace .reportSectionTitle,.weeklyWorkspace .catalogGroup>summary{color:#f4c952}
+.weeklyWorkspace .catalogGroup{margin-top:12px}
+.weeklyWorkspace .reportExport .action{border-radius:4px}
+.weeklyWorkspace .reportExport .action:first-of-type{background:#8a231e;border-color:#b43f37}
+@media print{
+ body.printingWeekly .top,body.printingWeekly aside,body.printingWeekly .footer,
+ body.printingWeekly main .page:not(#reports),body.printingWeekly .weeklyWorkspace>:not(.reportPreview),
+ body.printingWeekly .previewTop{display:none!important}
+ body.printingWeekly .shell,body.printingWeekly .layout,body.printingWeekly main,
+ body.printingWeekly .weeklyWorkspace,body.printingWeekly .reportPreview{display:block!important;margin:0;padding:0;position:static;min-height:0;background:#fff}
+ body.printingWeekly .officialDocument{padding:0;box-shadow:none}
+ body.printingWeekly .officialDocument::after{display:none}
+}
 </style>
 </head>
 <body><div class="shell">
@@ -345,6 +358,58 @@ Object.entries(pages).forEach(([id,p]) => {
     </div>
    </div>
    <p class="muted" style="margin-top:12px">Это интерактивный демонстрационный макет: данные пока не сохраняются на сервере, рапорт нельзя отправить, а доказательства не проходят реальную проверку.</p>`;
+ } else if (id === "reports") {
+  section.innerHTML = `
+   <div class="reportWorkspace weeklyWorkspace">
+    <h2 class="reportHeading">Еженедельный отчёт</h2>
+    <div class="reportEditor">
+     <div class="panel formGrid">
+      <label>Номер рапорта<input data-week-field="number" inputmode="numeric" value="1"></label>
+      <label>Дата подачи<input data-week-field="date" type="date"></label>
+      <label class="reportFieldWide">Кому<input data-week-field="recipient" value="Военному комиссару"></label>
+     </div>
+     <div class="panel">
+      <h3 class="reportSectionTitle">I. Общие сведения</h3>
+      <div class="formGrid">
+       <h4 class="reportFieldGroup">1. Военнослужащий</h4>
+       <label>Текущее звание<input data-week-field="rank" readonly></label>
+       <label>Статик<input data-week-field="passport" readonly></label>
+       <label class="reportFieldWide">Имя и фамилия<input data-week-field="name" readonly></label>
+       <h4 class="reportFieldGroup">2. Подразделение и должность</h4>
+       <label>Подразделение<input data-week-field="unit"></label>
+       <label>Должность<input data-week-field="position"></label>
+       <h4 class="reportFieldGroup">3. Отчётный период</h4>
+       <label>Начало недели<input data-week-field="start" type="date"></label>
+       <label>Конец недели<input data-week-field="end" type="date"></label>
+       <button type="button" class="action secondary" data-week-offset="0">Текущая неделя</button>
+       <button type="button" class="action secondary" data-week-offset="-1">Прошлая неделя</button>
+      </div>
+     </div>
+     <div class="panel">
+      <h3 class="reportSectionTitle">II. Результаты служебной деятельности</h3>
+      <div class="reportPointsMeter"><output id="weeklyPoints" aria-live="polite"></output></div>
+      <label><input type="checkbox" id="weeklyShowPoints" checked> Указывать баллы в документе</label>
+      <p id="weeklyPlan" class="muted" aria-live="polite"></p>
+      <div id="weeklyActions"></div>
+     </div>
+     <div class="panel">
+      <h3 class="reportSectionTitle">III. Итоговая информация</h3>
+      <label class="extraNotes">Общий результат работы за неделю<textarea data-week-field="summary" rows="2" placeholder="Подставляется автоматически"></textarea></label>
+      <label class="extraNotes">Дополнительные сведения<textarea data-week-field="notes" rows="3"></textarea></label>
+     </div>
+     <div class="panel reportExport">
+      <h3 class="reportSectionTitle">Выгрузка</h3>
+      <button type="button" id="weeklyPdf" class="action">Сохранить PDF</button>
+      <button type="button" id="weeklyPng" class="action secondary">Скачать PNG</button>
+      <button type="button" id="weeklyReset" class="action secondary">Обнулить неделю</button>
+      <p class="muted" id="weeklyExportStatus" role="status"></p>
+     </div>
+    </div>
+    <div class="reportPreview">
+     <div class="previewTop">Предпросмотр</div>
+     <article id="weeklyDocument" class="officialDocument"></article>
+    </div>
+   </div>`;
  } else if (id === "staff") {
   section.innerHTML = `<div class="pagehero"><img src="staff.jpg" alt=""><div class="pageheroText"><h2>${p[0]}</h2><p>${p[1]}</p></div></div>` + staffMarkup;
  } else if (id === "profile") {
@@ -603,20 +668,28 @@ function loadReportImageRenderer(){
  return reportImageRenderer;
 }
 
-document.getElementById("reportPng").addEventListener("click", async (event) => {
- const button = event.currentTarget;
- const status = document.getElementById("reportExportStatus");
+async function downloadReportPng(button, documentId, statusId, filename, replaceLinks = false){
+ const status = document.getElementById(statusId);
  button.disabled = true;
  status.textContent = "Готовим изображение…";
  try {
   const render = await loadReportImageRenderer();
-  const canvas = await render(document.getElementById("reportDocument"), {backgroundColor:"#fff", scale:2});
+  const canvas = await render(document.getElementById(documentId), {
+   backgroundColor:"#fff",
+   scale:2,
+   onclone: (copy) => {
+    if (!replaceLinks) return;
+    copy.getElementById(documentId).querySelectorAll(".reportEvidence a").forEach((anchor, index) => {
+     anchor.replaceWith(copy.createTextNode("Приложение №"+(index+1)));
+    });
+   }
+  });
   const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/png"));
   if (!blob) throw new Error("PNG is empty");
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
-  link.download = "raport-na-povyshenie.png";
+  link.download = filename;
   document.body.appendChild(link);
   link.click();
   link.remove();
@@ -627,6 +700,9 @@ document.getElementById("reportPng").addEventListener("click", async (event) => 
  } finally {
   button.disabled = false;
  }
+}
+document.getElementById("reportPng").addEventListener("click", (event) => {
+ downloadReportPng(event.currentTarget, "reportDocument", "reportExportStatus", "raport-na-povyshenie.png");
 });
 
 document.getElementById("reportReset").addEventListener("click", () => {
@@ -643,5 +719,158 @@ document.getElementById("reportReset").addEventListener("click", () => {
  refreshReport();
 });
 refreshReport();
+
+const weeklyPage = document.getElementById("reports");
+const weeklyField = (name) => weeklyPage.querySelector('[data-week-field="'+name+'"]');
+const weeklyGroups = ["Основная отчётность", "Дополнительная отчётность", "Работа ВК"];
+// Weekly rates are separate from the promotion rates.
+const weeklyRates = new Map([["1",20],["2",20],["3",3],["procedure",10],["academyOath",1]]);
+const weeklyActions = [
+ ...catalog,
+ {id:"procedure", title:"Передать проц. действия правоохранительным органам"},
+ {id:"academyOath", title:"Принятие присяги у ВА"},
+ {id:"thanks", title:"Благодарность от руководства"}
+].map((action) => ({
+ title:action.title,
+ count:0,
+ rate:weeklyRates.get(action.id),
+ group:weeklyRates.has(action.id) ? 0 : action.group === 0 ? 2 : 1
+}));
+const weeklyList = document.getElementById("weeklyActions");
+weeklyList.innerHTML = weeklyGroups.map((title, group) =>
+ '<details class="catalogGroup"'+(group === 0 ? ' open' : '')+'><summary>'+title+'</summary>'+
+ weeklyActions.map((action, index) => {
+  if (action.group !== group) return "";
+  const name = reportEscape(action.title);
+  return '<div class="catalogItem" data-week-action="'+index+'"><div class="catalogRow"><strong>'+name+'</strong>'+
+   (action.rate === undefined ? '' : '<span class="catalogRate">+'+action.rate+' баллов</span>')+
+   '<span class="catalogCount"><button type="button" class="action secondary" data-week-step="-1" aria-label="Уменьшить: '+name+'" disabled>−</button>'+
+   '<output aria-label="Количество: '+name+'">0</output><button type="button" class="action secondary" data-week-step="1" aria-label="Увеличить: '+name+'">+</button></span></div>'+
+   '<details class="catalogEvidence"><summary>Доказательства</summary><textarea rows="2" aria-label="Доказательства: '+name+'" placeholder="По одной ссылке на строку"></textarea></details></div>';
+ }).join("")+'</details>'
+).join("");
+const weeklyRows = weeklyActions.map((_, index) => weeklyList.querySelector('[data-week-action="'+index+'"]'));
+const weeklyDocument = document.getElementById("weeklyDocument");
+
+function weeklyToday(){
+ const parts = Object.fromEntries(new Intl.DateTimeFormat("en-GB", {timeZone:"Europe/Minsk", year:"numeric", month:"2-digit", day:"2-digit"})
+  .formatToParts(new Date()).map(({type,value}) => [type,value]));
+ return parts.year+"-"+parts.month+"-"+parts.day;
+}
+
+function weeklyPeriod(today, offset){
+ const start = new Date(today+"T00:00:00Z");
+ start.setUTCDate(start.getUTCDate() - (start.getUTCDay()+6)%7 + offset*7);
+ const end = new Date(start);
+ end.setUTCDate(end.getUTCDate()+6);
+ return [start, end].map((day) => day.toISOString().slice(0,10));
+}
+
+function setWeeklyPeriod(offset){
+ const [start,end] = weeklyPeriod(weeklyToday(), offset);
+ weeklyField("start").value = start;
+ weeklyField("end").value = end;
+}
+function syncWeeklyProfile(){
+ weeklyField("name").value = currentProfile.name;
+ weeklyField("passport").value = currentProfile.passport;
+ weeklyField("rank").value = currentProfile.rank;
+}
+function refreshWeeklyReport(){
+ const field = (name, fallback = "—") => reportEscape(weeklyField(name).value.trim() || fallback);
+ const date = (name) => field(name).replace(/^(\d{4})-(\d{2})-(\d{2})$/, "$3.$2.$1");
+ const showPoints = document.getElementById("weeklyShowPoints").checked;
+ const count = weeklyActions.reduce((sum, action) => sum+action.count, 0);
+ const points = weeklyActions.reduce((sum, action) => sum+action.count*(action.rate ?? 0), 0);
+ document.getElementById("weeklyPoints").textContent = points+" баллов за неделю · основная отчётность";
+ document.getElementById("weeklyPlan").textContent = "План по баллам: "+points+" / 200 минимум · 400 норма";
+ const groups = weeklyGroups.map((title, group) => {
+  const items = weeklyActions.map((action, index) => {
+   if (!action.count || action.group !== group) return "";
+   const evidence = reportEvidenceLinks(weeklyRows[index].querySelector("textarea").value).map(({href,label}) =>
+    '<li><a href="'+reportEscape(href)+'" target="_blank" rel="noopener noreferrer">'+reportEscape(label)+'</a></li>'
+   ).join("");
+   return '<li>'+reportEscape(action.title)+' — штук: <b>'+action.count+'</b>'+
+    (showPoints && action.rate !== undefined ? ' ('+action.count*action.rate+' баллов)' : '')+
+    (evidence ? '<ol class="reportEvidence">'+evidence+'</ol>' : '')+'</li>';
+  }).join("");
+  return items ? '<li><b>'+title+':</b><ol>'+items+'</ol></li>' : "";
+ }).filter(Boolean);
+ const start = weeklyField("start");
+ const end = weeklyField("end");
+ const invalidPeriod = start.value && end.value && start.value > end.value;
+ end.setCustomValidity(invalidPeriod ? "Конец периода должен быть не раньше начала." : "");
+ weeklyDocument.innerHTML =
+  '<header class="docCenter reportPaperHeader"><span class="reportPaperMark" aria-hidden="true">✦</span><b>МИНИСТЕРСТВО ОБОРОНЫ РОССИЙСКОЙ ФЕДЕРАЦИИ<br>ВОЕННЫЙ КОМИССАРИАТ</b></header>'+
+  '<div class="reportRecipient"><b>Кому:</b> '+field("recipient")+'<br><b>От:</b> '+field("rank")+' '+field("name")+'<br>'+field("position")+'</div>'+
+  '<h2>РАПОРТ</h2><div class="reportSubtitle"><b>О результатах служебной деятельности за отчётную неделю</b><span class="reportDocumentNumber">№ '+field("number")+'</span></div>'+
+  '<p class="reportProse">Докладываю Вам о результатах выполнения служебных обязанностей и проведённых мероприятиях за установленный отчётный период.</p>'+
+  '<p class="docSection">I. ОБЩИЕ СВЕДЕНИЯ</p><ol>'+
+  '<li><b>Военнослужащий:</b> '+field("rank")+' '+field("name")+', статик № '+field("passport")+'.</li>'+
+  '<li><b>Подразделение и должность:</b> '+field("unit")+', '+field("position")+'.</li>'+
+  '<li><b>Отчётный период:</b> '+date("start")+' — '+date("end")+'.</li></ol>'+
+  '<p class="docSection">II. РЕЗУЛЬТАТЫ СЛУЖЕБНОЙ ДЕЯТЕЛЬНОСТИ</p>'+
+  (groups.length ? '<ol start="4">'+groups.join("")+'</ol>' : '<p>Действия пока не добавлены.</p>')+
+  '<p class="docSection">III. ИТОГОВАЯ ИНФОРМАЦИЯ</p><ol start="'+(4+groups.length)+'">'+
+  '<li><b>Общий результат работы за неделю:</b> '+field("summary","Выполнено мероприятий и служебных действий: "+count+".")+'</li>'+
+  '<li><b>Дополнительные сведения:</b> '+field("notes","Отсутствуют")+'</li></ol>'+
+  '<p class="reportProse">Прошу принять еженедельный отчёт и учесть представленные результаты при оценке моей работы.</p>'+
+  (showPoints ? '<p><b>Общее количество баллов:</b> '+points+'</p>' : '')+
+  '<p><b>Дата подачи:</b> '+date("date")+'</p>'+
+  '<div class="reportSignature"><span><b>Рапорт составил:</b><br>'+field("position")+'</span><span>'+field("rank")+'<br>'+field("name")+'</span></div>';
+}
+function updateWeeklyRow(row, action){
+ row.querySelector("output").textContent = action.count;
+ row.querySelector('[data-week-step="-1"]').disabled = action.count === 0;
+ row.classList.toggle("selected", action.count > 0);
+}
+weeklyPage.addEventListener("input", refreshWeeklyReport);
+weeklyPage.addEventListener("click", (event) => {
+ const offset = event.target.closest("[data-week-offset]");
+ if (offset) {
+  setWeeklyPeriod(Number(offset.dataset.weekOffset));
+  refreshWeeklyReport();
+ }
+ const step = event.target.closest("[data-week-step]");
+ if (step) {
+  const row = step.closest("[data-week-action]");
+  const action = weeklyActions[Number(row.dataset.weekAction)];
+  action.count = Math.max(0, action.count + Number(step.dataset.weekStep));
+  updateWeeklyRow(row, action);
+  refreshWeeklyReport();
+ }
+});
+document.getElementById("profileCurrentRank").addEventListener("input", () => {
+ syncWeeklyProfile();
+ refreshWeeklyReport();
+});
+document.getElementById("weeklyPdf").addEventListener("click", () => {
+ if (!weeklyField("end").reportValidity()) return;
+ document.body.classList.add("printingWeekly");
+ try {
+  window.print();
+ } finally {
+  document.body.classList.remove("printingWeekly");
+ }
+});
+document.getElementById("weeklyPng").addEventListener("click", (event) => {
+ if (!weeklyField("end").reportValidity()) return;
+ downloadReportPng(event.currentTarget, "weeklyDocument", "weeklyExportStatus", "ezhenedelny-otchet.png", true);
+});
+document.getElementById("weeklyReset").addEventListener("click", () => {
+ if (!window.confirm("Очистить выполненные работы, доказательства и итог за неделю?")) return;
+ weeklyActions.forEach((action, index) => {
+  action.count = 0;
+  weeklyRows[index].querySelector("textarea").value = "";
+  updateWeeklyRow(weeklyRows[index], action);
+ });
+ weeklyField("summary").value = "";
+ weeklyField("notes").value = "";
+ refreshWeeklyReport();
+});
+weeklyField("date").value = weeklyToday();
+setWeeklyPeriod(0);
+syncWeeklyProfile();
+refreshWeeklyReport();
 </script>
 </body></html>
