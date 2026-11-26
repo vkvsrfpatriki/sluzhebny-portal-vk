@@ -1,5 +1,5 @@
 // Use only the project's publishable key here.
-const config = {url:"", publishableKey:""};
+const config = {"url":"https://zrcimhwyrunblodtssne.supabase.co","publishableKey":"sb_publishable_VQZm8JVpSO1xVY2g4_Y0IQ_e-0ucq3K"};
 const gate = document.getElementById("portalGate");
 const shell = document.querySelector(".shell");
 const message = document.getElementById("portalAuthStatus");
