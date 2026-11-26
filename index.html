@@ -125,19 +125,26 @@ const staffMarkup = `
    </table>
   </div>
  </div>`;
+const currentProfile = {name: "Иванов Алексей", passport: "014", rank: ""};
+const profileRankKey = "vk.portal.profile.currentRank";
+try {
+ currentProfile.rank = (localStorage.getItem(profileRankKey) || "").trim();
+} catch {
+ // The profile can still be edited for the current session.
+}
 const profileMarkup = `
  <div class="panel">
-  <h3>Иванов Алексей</h3>
+  <h3>${reportEscape(currentProfile.name)}</h3>
   <div class="row">
-   <div class="metric"><span>Номер игрового паспорта</span><b>014</b></div>
+   <div class="metric"><span>Номер игрового паспорта</span><b>${reportEscape(currentProfile.passport)}</b></div>
    <div class="metric"><span>Должность</span><b>Сотрудник ВК</b></div>
-   <div class="metric"><span>Звание</span><b>Не указано</b></div>
+   <div class="metric formGrid" style="display:block"><label>Текущее звание<input id="profileCurrentRank" value="${reportEscape(currentProfile.rank)}" placeholder="Укажи текущее звание" /></label></div>
   </div>
   <div class="row" style="margin-top:12px">
    <div class="metric"><span>Статус</span><b>Действующий</b></div>
    <div class="metric"><span>Дата вступления</span><b>12.06.2026</b></div>
   </div>
-  <p class="muted" style="margin-top:14px">Демонстрационные данные. Discord и служебная история будут показываться с учётом прав доступа после подключения авторизации и базы данных.</p>
+  <p class="muted" style="margin-top:14px">Демонстрационный профиль. Звание сохраняется в этом браузере и подставляется в рапорт.</p>
  </div>`;
 const host = document.getElementById("otherPages");
 Object.entries(pages).forEach(([id,p]) => {
@@ -223,9 +230,9 @@ Object.entries(pages).forEach(([id,p]) => {
      <div class="panel">
       <h3>I. Общие сведения</h3>
       <div class="formGrid">
-       <label>Текущее воинское звание<input data-report-field="currentRank" placeholder="Например, младший сержант" /></label>
-       <label>Номер игрового паспорта<input data-report-field="passport" placeholder="Номер паспорта" /></label>
-       <label>Имя и фамилия<input data-report-field="name" placeholder="Имя Фамилия" /></label>
+       <label>Текущее воинское звание<input data-report-field="currentRank" value="${reportEscape(currentProfile.rank)}" placeholder="Укажи звание в профиле" readonly /></label>
+       <label>Номер игрового паспорта<input data-report-field="passport" value="${reportEscape(currentProfile.passport)}" readonly /></label>
+       <label>Имя и фамилия<input data-report-field="name" value="${reportEscape(currentProfile.name)}" readonly /></label>
        <label>Подразделение<input data-report-field="unit" placeholder="Отдел кадров / Отдел призыва" /></label>
        <label>Должность<input data-report-field="position" placeholder="Должность" /></label>
        <label>Испрашиваемое звание<select data-report-field="requestedRank">
@@ -414,6 +421,16 @@ function refreshReport(){
   '<p><b>Общее количество баллов:</b> '+total+'<br><b>Дата подачи:</b> '+date("date")+'</p>'+
   '<div class="reportSignature"><span><b>Рапорт составил:</b><br>'+field("position")+'</span><span>'+field("currentRank")+'<br>'+field("name")+'</span></div>';
 }
+document.getElementById("profileCurrentRank").addEventListener("input", (event) => {
+ currentProfile.rank = event.target.value.trim();
+ try {
+  localStorage.setItem(profileRankKey, currentProfile.rank);
+ } catch {
+  // Keep the new rank available until the page is reloaded.
+ }
+ document.querySelector('[data-report-field="currentRank"]').value = currentProfile.rank;
+ refreshReport();
+});
 document.getElementById("catalogSearch").addEventListener("input", filterCatalog);
 document.getElementById("catalogSelected").addEventListener("change", filterCatalog);
 document.getElementById("promoReport").addEventListener("input", (event) => {
