@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Служебный портал ВК</title>
+<style>
+:root{--bg:#0a100d;--panel:#111b15;--panel2:#17251b;--line:#304936;--green:#315f3b;--green2:#497b4c;--text:#eef2ec;--muted:#aab7aa;--gold:#d8bd79}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.45 Inter,Segoe UI,Arial,sans-serif}
+button{font:inherit;color:inherit;cursor:pointer}.shell{min-height:100vh;background:radial-gradient(ellipse at 70% 0%,#1b3022 0,transparent 45%),var(--bg)}
+.top{height:82px;display:flex;align-items:center;justify-content:space-between;padding:0 28px;border-bottom:1px solid #3b543d;background:#0b130edb;position:sticky;top:0;z-index:5;backdrop-filter:blur(12px)}
+.brand{display:flex;align-items:center;gap:14px}.emblem{width:48px;height:48px;border:1px solid #927d48;border-radius:50%;display:grid;place-items:center;color:var(--gold);font-size:25px;background:#1a2a1c}.brand h1{font-size:20px;margin:0}.brand small{color:var(--muted)}
+.topright{display:flex;align-items:center;gap:18px}.role{background:#1b2b1f;border:1px solid var(--line);border-radius:10px;padding:8px 12px;color:#dce8da}.user{display:flex;align-items:center;gap:10px}.avatar{width:38px;height:38px;border-radius:50%;background:#405844;display:grid;place-items:center}
+.layout{display:grid;grid-template-columns:238px 1fr;min-height:calc(100vh - 82px)}aside{border-right:1px solid #263c2c;padding:18px 12px;background:#0e1711}
+.navtitle{font-size:11px;color:#829485;text-transform:uppercase;letter-spacing:1.3px;padding:10px 12px}
+.nav button{width:100%;border:0;background:transparent;text-align:left;padding:12px;border-radius:9px;color:#c9d4ca;margin:2px 0;display:flex;gap:12px;align-items:center}
+.nav button:hover,.nav button.active{background:linear-gradient(90deg,#2c5735,#1b3322);color:white}.nav .ico{width:22px;text-align:center;color:#c9d6c6;font-size:17px}
+.asidefoot{margin:24px 5px 0;padding:13px;border:1px solid var(--line);border-radius:12px;color:var(--muted);font-size:12px}
+main{padding:24px;max-width:1600px;width:100%;margin:auto}
+.hero{min-height:220px;border-radius:18px;overflow:hidden;position:relative;background:linear-gradient(90deg,#07110ceF 0%,#0a160dc9 45%,#0b150c33 100%),url('https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=1800&q=85') center 46%/cover;border:1px solid #354c38;display:flex;align-items:center;padding:32px;margin-bottom:20px}
+.hero h2{font-size:clamp(26px,3vw,40px);line-height:1.12;margin:0 0 12px;max-width:570px}.hero p{color:#d2ded2;margin:0}.hero .tag{color:var(--gold);font-size:12px;letter-spacing:2px;text-transform:uppercase;margin-bottom:12px}
+.heroStats{margin-left:auto;display:flex;gap:10px;align-self:flex-end}.stat{background:#08110dc9;border:1px solid #536a51;border-radius:12px;padding:13px 16px;min-width:120px}.stat b{display:block;font-size:21px}.stat span{font-size:12px;color:var(--muted)}
+.sectionhead{display:flex;align-items:end;justify-content:space-between;margin:22px 0 13px}.sectionhead h3{margin:0;font-size:20px}.sectionhead p{margin:3px 0 0;color:var(--muted);font-size:13px}
+.content{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:18px}.tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px}
+.tile{height:154px;border-radius:14px;overflow:hidden;position:relative;border:1px solid #405b43;background:#18251b;cursor:pointer;transition:.18s}.tile:hover{transform:translateY(-3px);border-color:#87a27b}
+.tile img{width:100%;height:100%;object-fit:cover;opacity:.68;transition:.2s}.tile:hover img{opacity:.85;transform:scale(1.03)}.tile:after{content:"";position:absolute;inset:0;background:linear-gradient(0deg,#07100df5 0%,#07100d20 80%)}
+.tilelabel{position:absolute;z-index:1;bottom:13px;left:15px;right:14px;display:flex;align-items:center;justify-content:space-between;font-weight:650}.tilelabel span:first-child{display:flex;gap:9px;align-items:center}.tilelabel i{font-style:normal;font-size:19px}
+.rightcol{display:flex;flex-direction:column;gap:13px}.widget{border:1px solid var(--line);background:linear-gradient(145deg,#17271b,#101a13);border-radius:14px;padding:16px}.widget h4{margin:0 0 12px;font-size:15px}.profileRole{font-size:22px;color:var(--gold);font-weight:700}.muted{color:var(--muted);font-size:13px}.notice{padding:10px 0;border-top:1px solid #2a3d2e;font-size:13px}.notice:first-of-type{border-top:0}.dot{display:inline-block;width:7px;height:7px;background:#7bb16d;border-radius:50%;margin-right:8px}
+.page{display:none}.page.active{display:block}.pagehero{height:190px;border-radius:16px;overflow:hidden;position:relative;margin-bottom:18px;border:1px solid var(--line)}.pagehero img{width:100%;height:100%;object-fit:cover;opacity:.62}.pagehero:after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,#07110df0,#07110d44)}.pageheroText{position:absolute;z-index:1;left:25px;bottom:22px}.pageheroText h2{font-size:30px;margin:0 0 4px}.pageheroText p{margin:0;color:#d2ddd2}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:14px}.panel h3{margin:0 0 12px}.row{display:flex;gap:12px;flex-wrap:wrap}.metric{flex:1;min-width:150px;background:#17241a;border:1px solid #2b4430;border-radius:11px;padding:14px}.metric b{font-size:24px;display:block}.metric span{color:var(--muted);font-size:12px}
+.fakeTable{width:100%;border-collapse:collapse}.fakeTable td,.fakeTable th{text-align:left;padding:12px;border-bottom:1px solid #293d2d;font-size:13px}.fakeTable th{color:#9eaf9f;font-weight:500}
+.action{background:#315f3b;border:1px solid #5b825d;border-radius:9px;padding:9px 13px}.action.secondary{background:#17251b;border-color:#3a5140}.footer{text-align:center;color:#78897a;font-size:11px;padding:24px}
+@media(max-width:1050px){.content{grid-template-columns:1fr}.rightcol{display:grid;grid-template-columns:repeat(2,1fr)}.tiles{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:700px){.top{height:auto;min-height:68px;padding:10px 14px}.brand h1{font-size:15px}.brand small{font-size:11px}.emblem{width:38px;height:38px}.topright .role{display:none}.layout{display:block}aside{position:sticky;top:68px;z-index:4;padding:7px;border-right:0;border-bottom:1px solid var(--line);overflow-x:auto}.nav{display:flex;min-width:max-content}.navtitle,.asidefoot{display:none}.nav button{width:auto;padding:9px 11px;font-size:12px}.nav .ico{display:none}main{padding:14px}.hero{padding:22px;min-height:190px}.heroStats{display:none}.tiles{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.tile{height:125px}.rightcol{display:flex}.pagehero{height:150px}.pageheroText h2{font-size:24px}}
+</style>
+</head>
+<body><div class="shell">
+<header class="top">
+ <div class="brand"><div class="emblem">✦</div><div><h1>Служебный портал ВК</h1><small>Военный комиссариат</small></div></div>
+ <div class="topright"><div class="role" id="roleLabel">● Режим сотрудника</div><div class="user"><div class="avatar">АА</div><div><b>Иванов А.А.</b><div class="muted">Сотрудник ВК · № 014</div></div></div></div>
+</header>
+<div class="layout">
+<aside><div class="navtitle">Навигация</div><nav class="nav" id="nav">
+<button type="button" class="active" data-page="home"><span class="ico">⌂</span>Главная</button>
+<button type="button" data-page="reports"><span class="ico">▤</span>Отчёты</button>
+<button type="button" data-page="training"><span class="ico">▱</span>Обучение</button>
+<button type="button" data-page="staff"><span class="ico">♟</span>Состав ВК</button>
+<button type="button" data-page="documents"><span class="ico">▣</span>Документы ВК</button>
+<button type="button" data-page="promotion"><span class="ico">✦</span>Повышение</button>
+<button type="button" data-page="rating"><span class="ico">★</span>Рейтинг и баллы</button>
+<button type="button" data-page="bonuses"><span class="ico">◈</span>Премии</button>
+<button type="button" data-page="archive"><span class="ico">▧</span>Архив</button>
+<button type="button" data-page="notifications"><span class="ico">♢</span>Уведомления</button>
+</nav><div class="asidefoot">◉ Защищённый служебный интерфейс<br><br>Демонстрационный макет · данные условные</div></aside>
+<main>
+<section class="page active" id="home">
+<div class="hero"><div><div class="tag">Служебная система · ВК</div><h2>Добро пожаловать<br>на служебный портал</h2><p>Дисциплина. Порядок. Служба.</p></div><div class="heroStats"><div class="stat"><span>Отчёт за неделю</span><b>Черновик</b></div><div class="stat"><span>Баллы за неделю</span><b>—</b></div></div></div>
+<div class="sectionhead"><div><h3>Рабочие разделы</h3><p>Выберите нужный раздел портала</p></div><span class="muted">Демо-версия</span></div>
+<div class="content"><div class="tiles">
+<div class="tile" data-go="staff"><img src="https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=800&q=80"><div class="tilelabel"><span><i>♟</i>Состав ВК</span>↗</div></div>
+<div class="tile" data-go="reports"><img src="https://images.unsplash.com/photo-1455390582262-044cde?auto=format&fit=crop&w=800&q=80" onerror="this.src='https://images.unsplash.com/photo-1455390582262-044cde?auto=format&fit=crop&w=800&q=80'"><div class="tilelabel"><span><i>▤</i>Отчёты</span>↗</div></div>
+<div class="tile" data-go="training"><img src="https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=800&q=80"><div class="tilelabel"><span><i>▱</i>Обучение</span>↗</div></div>
+<div class="tile" data-go="documents"><img src="https://images.unsplash.com/photo-1506784983877-45594efa4cbe?auto=format&fit=crop&w=800&q=80"><div class="tilelabel"><span><i>▣</i>Документы ВК</span>↗</div></div>
+<div class="tile" data-go="promotion"><img src="https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=800&q=80"><div class="tilelabel"><span><i>✦</i>Повышение</span>↗</div></div>
+<div class="tile" data-go="rating"><img src="https://images.unsplash.com/photo-1511512578047-dfb367046420?auto=format&fit=crop&w=800&q=80"><div class="tilelabel"><span><i>★</i>Рейтинг и баллы</span>↗</div></div>
+</div><div class="rightcol">
+<div class="widget"><h4>★ Ваш профиль</h4><div class="profileRole">Сотрудник ВК</div><p class="muted">Иванов Алексей · № 014</p><p class="muted">Дата вступления: 12.06.2026</p></div>
+<div class="widget"><h4>♢ Последние уведомления</h4><div class="notice"><span class="dot"></span>Напоминание о недельном отчёте</div><div class="notice"><span class="dot"></span>Обновлены документы ВК</div><div class="notice"><span class="dot"></span>Опубликовано объявление руководства</div></div>
+<div class="widget"><h4>Памятка</h4><p class="muted">Проверяйте уведомления и своевременно отправляйте недельный отчёт.</p></div>
+</div></div></section>
+<div id="otherPages"></div>
+<div class="footer">© Служебный портал ВК · Демонстрационный интерфейс · Все данные вымышлены</div>
+</main></div></div>
+<script>
+const pages = {
+ reports:["Отчёты","Работа с недельными отчётами и историей отправок","https://images.unsplash.com/photo-1455390582262-044cde?auto=format&fit=crop&w=1600&q=80","Здесь будет форма отчёта, автосохранение, ссылки на доказательства и история проверок."],
+ training:["Обучение","Лекции и итоговый экзамен для стажёров","https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=1600&q=80","Здесь будут лекции, прогресс обучения, попытки экзамена и результаты проверки."],
+ staff:["Состав ВК","Список сотрудников, должности и служебные карточки","https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=1600&q=80","Здесь будут поиск сотрудников, фильтры по должностям и карточки состава."],
+ documents:["Документы ВК","Уставы, инструкции, регламенты и распоряжения","https://images.unsplash.com/photo-1506784983877-45594efa4cbe?auto=format&fit=crop&w=1600&q=80","Здесь будет библиотека документов с категориями, просмотром и скачиванием."],
+ promotion:["Повышение в звании","Требования, прогресс и рапорты на повышение","https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=1600&q=80","Здесь будут текущее и следующее звание, требования, доказательства и история рапортов."],
+ rating:["Рейтинг и баллы","Недельный рейтинг и результаты за всё время","https://images.unsplash.com/photo-1511512578047-dfb367046420?auto=format&fit=crop&w=1600&q=80","Здесь будет рейтинг сотрудников, баллы и история недельных результатов."],
+ bonuses:["Премии","Расчёт и история премиальных выплат","https://images.unsplash.com/photo-1554224155-6726b3ff858f?auto=format&fit=crop&w=1600&q=80","Здесь будут сумма бюджета, параметры расчёта и персональная премия."],
+ archive:["Архив","Архив сотрудников, отчётов и кадровой истории","https://images.unsplash.com/photo-1507842217343-583bb7270b66?auto=format&fit=crop&w=1600&q=80","Здесь будут архивные записи с поиском и разграничением доступа."],
+ notifications:["Уведомления","Объявления и личные служебные уведомления","https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&w=1600&q=80","Здесь будет единый центр уведомлений, статусы прочтения и объявления."]
+};
+
+const host = document.getElementById("otherPages");
+Object.entries(pages).forEach(([id,p]) => {
+ const section = document.createElement("section");
+ section.className = "page";
+ section.id = id;
+ section.innerHTML = `
+  <div class="pagehero">
+   <img src="${p[2]}" alt="">
+   <div class="pageheroText"><h2>${p[0]}</h2><p>${p[1]}</p></div>
+  </div>
+  <div class="panel">
+   <h3>Раздел в разработке</h3>
+   <p class="muted">${p[3]}</p>
+   <button type="button" class="action secondary" data-go="home">← На главную</button>
+  </div>
+  <div class="row">
+   <div class="metric"><b>—</b><span>Текущий статус</span></div>
+   <div class="metric"><b>—</b><span>Последнее обновление</span></div>
+   <div class="metric"><b>—</b><span>Доступ по роли</span></div>
+  </div>`;
+ host.appendChild(section);
+});
+
+function go(id) {
+ const target = document.getElementById(id);
+ if (!target || !target.classList.contains("page")) return;
+ document.querySelectorAll("main .page").forEach(page => page.classList.remove("active"));
+ target.classList.add("active");
+ document.querySelectorAll("#nav button").forEach(button => {
+  button.classList.toggle("active", button.dataset.page === id);
+ });
+ window.scrollTo({top:0, behavior:"smooth"});
+}
+window.go = go;
+
+// Делегирование событий: навигация работает и для элементов, созданных позже.
+document.addEventListener("click", event => {
+ const navButton = event.target.closest("#nav button[data-page]");
+ if (navButton) {
+  event.preventDefault();
+  go(navButton.dataset.page);
+  return;
+ }
+ const goButton = event.target.closest("[data-go]");
+ if (goButton) {
+  event.preventDefault();
+  go(goButton.dataset.go);
+ }
+});
+</script>
+</body></html>
