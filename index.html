@@ -458,25 +458,30 @@ function filterCatalog(){
 
 const trackedCriteria = [
  ["11", /(\d+)\s+лекци/u],
- ["18", /(\d+)\s+экзамен/u],
+ ["6", /(\d+)\s+экзамен/u],
  ["8", /(\d+)\s+отч[её]т/u],
  ["9", /(\d+)\s+электронн/u],
  ["3", /(\d+)\s+трениров/u],
  ["12", /(\d+)\s+экскурси/u]
 ];
 
-function reportCriterionState(criterion, total, threshold, counts){
+const catalogCriterionNames = new Set(["11", "6", "8", "9"]);
+
+function reportCriterionState(criterion, total, threshold, actions){
  if (/^Набрать \d+ баллов$/.test(criterion)) {
   return {status: total >= threshold ? "met" : "unmet", label: total + " / " + threshold + " баллов"};
  }
  const targets = trackedCriteria.flatMap(([id, pattern]) => {
   const match = criterion.match(pattern);
-  return match ? [{count: counts.get(id) ?? 0, required: Number(match[1])}] : [];
+  const action = actions.get(id);
+  return match ? [{title: action?.title, useCatalogName: catalogCriterionNames.has(id), count: action?.count ?? 0, required: Number(match[1])}] : [];
  });
  if (!targets.length) return {status: "pending", label: "Ожидает проверки"};
  const met = targets.some(({count, required}) => count >= required);
  const label = targets.length === 1 ? targets[0].count + " / " + targets[0].required : met ? "Выполнено" : "Не выполнено";
- return {status: met ? "met" : "unmet", label};
+ const named = targets.some((target) => target.useCatalogName) && targets.every((target) => target.title);
+ const title = named ? (targets.length === 1 ? targets[0].title : "На выбор: " + targets.map((target) => target.title + " — " + target.required).join(" / ")) : criterion;
+ return {status: met ? "met" : "unmet", label, title};
 }
 
 function refreshReport(){
@@ -493,10 +498,10 @@ function refreshReport(){
  progress.hidden = !threshold;
  progress.max = threshold || 1;
  progress.value = total;
- const counts = new Map(catalog.map(({id, count}) => [id, count]));
+ const actions = new Map(catalog.map((action) => [action.id, action]));
  document.getElementById("reportCriteria").innerHTML = criteria.map((criterion) => {
-  const {status, label} = reportCriterionState(criterion, total, threshold, counts);
-  return '<div class="criteriaRow" data-status="'+status+'"><span class="criterionText">'+reportEscape(criterion)+'</span><small>'+reportEscape(label)+'</small></div>';
+  const {status, label, title = criterion} = reportCriterionState(criterion, total, threshold, actions);
+  return '<div class="criteriaRow" data-status="'+status+'"><span class="criterionText">'+reportEscape(title)+'</span><small>'+reportEscape(label)+'</small></div>';
  }).join("");
 
  const rows = catalog.map((action, index) => {
