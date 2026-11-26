@@ -151,11 +151,26 @@ main{padding:24px;max-width:1600px;width:100%;margin:auto}
 .headerMode:focus-visible,.headerLogout:focus-visible{outline:2px solid #84b8ff;outline-offset:2px}
 .discordEntry{background:#4355bd;border-color:#7887df}
 @media(max-width:700px){.top{flex-wrap:wrap;gap:8px}.top .brand h1{font-size:14px}.topright{margin-left:auto;flex-wrap:wrap;justify-content:flex-end}.headerMode span{padding:5px 8px}.headerProfile b{max-width:12ch}}
+.portalGate.portalPhotoLogin{max-width:none;min-height:100vh;min-height:100svh;margin:0;padding:24px;display:grid;place-items:center;border:0;border-radius:0;background:#091225 linear-gradient(180deg,#06102180,#060d1bcf);background-image:linear-gradient(180deg,#06102180,#060d1bcf),url("https://upload.wikimedia.org/wikipedia/commons/thumb/f/fa/Brick_entrance_of_Public_Municipal_Department%2C_Amsterdam_city_-_free_photo%2C_Fons_Heijnsbroek.jpg/1280px-Brick_entrance_of_Public_Municipal_Department%2C_Amsterdam_city_-_free_photo%2C_Fons_Heijnsbroek.jpg");background-position:center;background-size:cover}
+.portalGate.portalPhotoLogin[hidden]{display:none!important}
+.portalLoginCard{width:min(100%,430px);padding:34px 30px 30px;text-align:center;background:#101a33f5;color:#f7f9ff;border:1px solid #8297c12b;border-radius:20px;box-shadow:0 24px 64px #0007}
+.portalLoginEmblem{display:block;color:#f6c85a;font-size:37px;line-height:1;margin-bottom:14px}
+.portalLoginCard h1{margin:0;font-size:clamp(23px,5vw,31px);line-height:1.15}
+.portalLoginCard h2{font-size:20px;margin:20px 0 8px}
+.portalLoginCard p{color:#c7d2e8}
+#portalAuthStatus:empty{display:none}
+.portalLoginCard .discordEntry{display:block;width:100%;margin-top:24px;padding:13px 16px;border:1px solid #6876ff;border-radius:10px;background:#4657df;color:#fff;font-weight:750}
+.portalLoginCard .discordEntry[hidden]{display:none}
+.portalLoginCard .discordEntry:hover:not(:disabled){background:#5363ed}
+.portalLoginCard button:focus-visible{outline:2px solid #c0d2ff;outline-offset:3px}
+@media(max-width:480px){.portalGate.portalPhotoLogin{padding:16px}.portalLoginCard{padding:28px 20px 24px}}
 </style>
 </head>
 <body>
-<section id="portalGate" class="portalGate">
- <h1>Военный Комиссариат</h1>
+<section id="portalGate" class="portalGate portalPhotoLogin" aria-labelledby="portalLoginTitle">
+ <div class="portalLoginCard">
+ <span class="portalLoginEmblem" aria-hidden="true">✦</span>
+ <h1 id="portalLoginTitle">Военный Комиссариат</h1>
  <p id="portalAuthStatus" role="status"></p>
  <button id="portalDiscord" class="action discordEntry" type="button" disabled>Войти через Discord</button>
  <section id="portalPending" hidden>
@@ -164,6 +179,7 @@ main{padding:24px;max-width:1600px;width:100%;margin:auto}
   <button class="action secondary" type="button" onclick="location.reload()">Проверить статус</button>
  </section>
  <div id="portalAccountControls" hidden><button class="action secondary" type="button" data-portal-signout>Выйти</button></div>
+ </div>
 </section>
 <div class="shell" hidden>
 <header class="top">
