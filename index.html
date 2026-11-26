@@ -418,10 +418,7 @@ Object.entries(pages).forEach(([id,p]) => {
        <label>Текущее звание<input data-report-field="currentRank" value="${reportEscape(currentProfile.rank)}" placeholder="Укажи звание в профиле" readonly /></label>
        <label>Статик<input data-report-field="passport" value="${reportEscape(currentProfile.passport)}" readonly /></label>
        <label class="reportFieldWide">Имя и фамилия<input data-report-field="name" value="${reportEscape(currentProfile.name)}" readonly /></label>
-       <h4 class="reportFieldGroup">2. Подразделение и должность</h4>
-       <label>Подразделение<input data-report-field="unit" placeholder="Отдел кадров / Отдел призыва" /></label>
-       <label>Должность<input data-report-field="position" placeholder="Должность" /></label>
-       <h4 class="reportFieldGroup">3. Испрашиваемое звание</h4>
+       <h4 class="reportFieldGroup">2. Испрашиваемое звание</h4>
        <label class="reportFieldWide">Испрашиваемое звание<select data-report-field="requestedRank">
         <option value="Сержант">Сержант</option><option value="Старший сержант">Старший сержант</option><option value="Старшина">Старшина</option><option value="Прапорщик">Прапорщик</option><option value="Старший прапорщик">Старший прапорщик</option><option value="Младший лейтенант">Младший лейтенант</option><option value="Лейтенант">Лейтенант</option><option value="Старший лейтенант">Старший лейтенант</option><option value="Капитан">Капитан</option>
        </select></label>
@@ -488,10 +485,7 @@ Object.entries(pages).forEach(([id,p]) => {
        <label>Текущее звание<input data-week-field="rank" readonly></label>
        <label>Статик<input data-week-field="passport" readonly></label>
        <label class="reportFieldWide">Имя и фамилия<input data-week-field="name" readonly></label>
-       <h4 class="reportFieldGroup">2. Подразделение и должность</h4>
-       <label>Подразделение<input data-week-field="unit"></label>
-       <label>Должность<input data-week-field="position"></label>
-       <h4 class="reportFieldGroup">3. Отчётный период</h4>
+       <h4 class="reportFieldGroup">2. Отчётный период</h4>
        <label>Начало недели<input data-week-field="start" type="date"></label>
        <label>Конец недели<input data-week-field="end" type="date"></label>
        <button type="button" class="action secondary" data-week-offset="0">Текущая неделя</button>
@@ -715,21 +709,20 @@ function refreshReport(){
  doc.innerHTML =
   '<header class="docCenter reportPaperHeader"><span class="reportPaperMark" aria-hidden="true">✦</span>'+
   '<b>МИНИСТЕРСТВО ОБОРОНЫ РОССИЙСКОЙ ФЕДЕРАЦИИ<br>ВОЕННЫЙ КОМИССАРИАТ</b></header>'+
-  '<div class="reportRecipient"><b>Кому:</b> Военному комиссару<br><b>От:</b> '+field("currentRank")+' '+field("name")+'<br>'+field("position")+'</div>'+
+  '<div class="reportRecipient"><b>Кому:</b> Военному комиссару<br><b>От:</b> '+field("currentRank")+' '+field("name")+'</div>'+
   '<h2>РАПОРТ</h2><div class="reportSubtitle"><b>О присвоении очередного воинского звания</b><span class="reportDocumentNumber">№ '+field("number")+'</span></div>'+
   '<p class="reportProse">Докладываю Вам о результатах служебной деятельности за период службы в текущем воинском звании и прошу рассмотреть вопрос о присвоении мне очередного воинского звания.</p>'+
   '<p class="docSection">I. ОБЩИЕ СВЕДЕНИЯ</p><ol>'+
   '<li><b>Военнослужащий:</b> '+field("currentRank")+' '+field("name")+', статик № '+field("passport")+'.</li>'+
-  '<li><b>Подразделение и должность:</b> '+field("unit")+', '+field("position")+'.</li>'+
   '<li><b>Испрашиваемое звание:</b> '+field("requestedRank")+'.</li></ol>'+ 
   '<p class="docSection">II. РЕЗУЛЬТАТЫ СЛУЖЕБНОЙ ДЕЯТЕЛЬНОСТИ</p>'+
-  (reportGroups ? '<ol start="4">'+reportGroups+'</ol>' : '<p>Действия пока не добавлены.</p>')+
-  '<p class="docSection">III. ИТОГОВАЯ ИНФОРМАЦИЯ</p><ol start="'+(4 + catalogGroups.filter((_, group) => catalog.some((action) => action.group === group && action.count)).length)+'">'+
+  (reportGroups ? '<ol start="3">'+reportGroups+'</ol>' : '<p>Действия пока не добавлены.</p>')+
+  '<p class="docSection">III. ИТОГОВАЯ ИНФОРМАЦИЯ</p><ol start="'+(3 + catalogGroups.filter((_, group) => catalog.some((action) => action.group === group && action.count)).length)+'">'+
   '<li><b>Общий результат работы за период:</b><br>'+field("summary", "Выполнено мероприятий и служебных действий: "+count+".")+'</li>'+
   '<li><b>Дополнительные сведения:</b> '+field("notes","Отсутствуют")+'.</li></ol>'+
   '<p class="reportProse">На основании изложенного прошу рассмотреть настоящий рапорт и присвоить мне очередное воинское звание «'+field("requestedRank")+'».</p>'+
   '<p><b>Общее количество баллов:</b> '+total+'<br><b>Дата подачи:</b> '+date("date")+'</p>'+
-  '<div class="reportSignature"><span><b>Рапорт составил:</b><br>'+field("position")+'</span><span>'+field("currentRank")+'<br>'+field("name")+'</span></div>';
+  '<div class="reportSignature"><span><b>Рапорт составил:</b></span><span>'+field("currentRank")+'<br>'+field("name")+'</span></div>';
 }
 document.getElementById("catalogSearch").addEventListener("input", filterCatalog);
 document.getElementById("catalogSelected").addEventListener("change", filterCatalog);
@@ -934,22 +927,21 @@ function refreshWeeklyReport(){
  end.setCustomValidity(invalidPeriod ? "Конец периода должен быть не раньше начала." : "");
  weeklyDocument.innerHTML =
   '<header class="docCenter reportPaperHeader"><span class="reportPaperMark" aria-hidden="true">✦</span><b>МИНИСТЕРСТВО ОБОРОНЫ РОССИЙСКОЙ ФЕДЕРАЦИИ<br>ВОЕННЫЙ КОМИССАРИАТ</b></header>'+
-  '<div class="reportRecipient"><b>Кому:</b> '+field("recipient")+'<br><b>От:</b> '+field("rank")+' '+field("name")+'<br>'+field("position")+'</div>'+
+  '<div class="reportRecipient"><b>Кому:</b> '+field("recipient")+'<br><b>От:</b> '+field("rank")+' '+field("name")+'</div>'+
   '<h2>РАПОРТ</h2><div class="reportSubtitle"><b>О результатах служебной деятельности за отчётную неделю</b><span class="reportDocumentNumber">№ '+field("number")+'</span></div>'+
   '<p class="reportProse">Докладываю Вам о результатах выполнения служебных обязанностей и проведённых мероприятиях за установленный отчётный период.</p>'+
   '<p class="docSection">I. ОБЩИЕ СВЕДЕНИЯ</p><ol>'+
   '<li><b>Военнослужащий:</b> '+field("rank")+' '+field("name")+', статик № '+field("passport")+'.</li>'+
-  '<li><b>Подразделение и должность:</b> '+field("unit")+', '+field("position")+'.</li>'+
   '<li><b>Отчётный период:</b> '+date("start")+' — '+date("end")+'.</li></ol>'+
   '<p class="docSection">II. РЕЗУЛЬТАТЫ СЛУЖЕБНОЙ ДЕЯТЕЛЬНОСТИ</p>'+
-  (groups.length ? '<ol start="4">'+groups.join("")+'</ol>' : '<p>Действия пока не добавлены.</p>')+
-  '<p class="docSection">III. ИТОГОВАЯ ИНФОРМАЦИЯ</p><ol start="'+(4+groups.length)+'">'+
+  (groups.length ? '<ol start="3">'+groups.join("")+'</ol>' : '<p>Действия пока не добавлены.</p>')+
+  '<p class="docSection">III. ИТОГОВАЯ ИНФОРМАЦИЯ</p><ol start="'+(3+groups.length)+'">'+
   '<li><b>Общий результат работы за неделю:</b> '+field("summary","Выполнено мероприятий и служебных действий: "+count+".")+'</li>'+
   '<li><b>Дополнительные сведения:</b> '+field("notes","Отсутствуют")+'</li></ol>'+
   '<p class="reportProse">Прошу принять еженедельный отчёт и учесть представленные результаты при оценке моей работы.</p>'+
   (showPoints ? '<p><b>Общее количество баллов:</b> '+points+'</p>' : '')+
   '<p><b>Дата подачи:</b> '+date("date")+'</p>'+
-  '<div class="reportSignature"><span><b>Рапорт составил:</b><br>'+field("position")+'</span><span>'+field("rank")+'<br>'+field("name")+'</span></div>';
+  '<div class="reportSignature"><span><b>Рапорт составил:</b></span><span>'+field("rank")+'<br>'+field("name")+'</span></div>';
 }
 function updateWeeklyRow(row, action){
  row.querySelector("output").textContent = action.count;
