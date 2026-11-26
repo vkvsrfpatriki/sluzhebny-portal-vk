@@ -216,6 +216,7 @@ Object.entries(pages).forEach(([id,p]) => {
       <tr><td>15</td><td>Участие в ГМП (3 и более организаций, минимум по 5 сотрудников)</td><td>50</td></tr>
       <tr><td>16</td><td>Организация ГМП (3 и более организаций, минимум по 5 сотрудников)</td><td>100</td></tr>
       <tr><td>17</td><td>Агитационная стойка (1 час)</td><td>50</td></tr>
+      <tr><td>18</td><td>Принять экзамен ВА</td><td>20</td></tr>
      </tbody></table></div>
     </div>
    </div>
@@ -344,7 +345,7 @@ const promotionCriteria = {
 function reportEscape(value){return String(value??"").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));}
 function reportValue(key){const el=document.querySelector('[data-report-field="'+key+'"]');return el?el.value.trim():"";}
 const catalogGroups = ["Работа ВК", "Доп отчёты"];
-const mainActionIds = new Set(["1", "3", "6", "9", "10", "11", "12", "17"]);
+const mainActionIds = new Set(["1", "3", "6", "9", "10", "11", "12", "17", "18"]);
 const catalog = Array.from(document.querySelectorAll("#promoPoints tbody tr"), (row) => ({
  title: row.cells[1].textContent.trim(),
  group: mainActionIds.has(row.cells[0].textContent.trim()) ? 0 : 1,
@@ -352,12 +353,11 @@ const catalog = Array.from(document.querySelectorAll("#promoPoints tbody tr"), (
  unit: row.cells[2].textContent.includes("за военнослужащего") ? "военнослужащих" : "выполнений",
  count: 0
 }));
-catalog.push({title:"Принять экзамен ВА", group:0, rate:null, unit:"выполнений", count:0});
 const catalogList = document.getElementById("reportActivities");
 const itemMarkup = catalog.map((action, index) => {
  const title = reportEscape(action.title);
  return '<div class="catalogItem" data-catalog-index="'+index+'"><div class="catalogRow"><strong>'+title+'</strong>'+
-  '<span class="catalogRate">'+(action.rate === null ? "Ставка не задана" : "+"+action.rate+" баллов"+(action.unit === "военнослужащих" ? " за военнослужащего" : ""))+'</span>'+
+  '<span class="catalogRate">'+("+"+action.rate+" баллов"+(action.unit === "военнослужащих" ? " за военнослужащего" : ""))+'</span>'+
   '<span class="catalogCount"><button type="button" class="action secondary" data-step="-1" aria-label="Уменьшить: '+title+'" disabled>−</button>'+
   '<output aria-label="Количество: '+title+'">0</output><button type="button" class="action secondary" data-step="1" aria-label="Увеличить: '+title+'">+</button></span></div>'+
   '<details class="catalogEvidence"><summary>Доказательства</summary><textarea rows="2" aria-label="Доказательства: '+title+'" placeholder="По одной ссылке на строку"></textarea></details></div>';
@@ -389,7 +389,7 @@ function refreshReport(){
  const doc = document.getElementById("reportDocument");
  const field = (key, fallback = "—") => reportEscape(reportValue(key) || fallback);
  const date = (key) => field(key).replace(/^(\d{4})-(\d{2})-(\d{2})$/, "$3.$2.$1");
- const total = catalog.reduce((sum, action) => sum + action.count * (action.rate ?? 0), 0);
+ const total = catalog.reduce((sum, action) => sum + action.count * action.rate, 0);
  const count = catalog.reduce((sum, action) => sum + action.count, 0);
  const criteria = promotionCriteria[reportValue("requestedRank")] || [];
  const threshold = Number(criteria.find((criterion) => /^Набрать \d+ баллов$/.test(criterion))?.match(/\d+/)?.[0] || 0);
@@ -408,7 +408,7 @@ function refreshReport(){
   const links = catalogRows[index].querySelector("textarea").value.split(/\r?\n/).map((line) => line.trim())
    .filter((line) => /^https?:\/\/\S+$/i.test(line));
   const evidence = links.map((url) => '<li><a href="'+reportEscape(url)+'" target="_blank" rel="noopener noreferrer">'+reportEscape(url)+'</a></li>').join("");
-  return '<li>'+reportEscape(action.title)+' — '+action.unit+': '+action.count+(action.rate === null ? '' : ' ('+action.count * action.rate+' баллов)')+(evidence ? '<ol class="reportEvidence">'+evidence+'</ol>' : '')+'</li>';
+  return '<li>'+reportEscape(action.title)+' — '+action.unit+': '+action.count+' ('+action.count * action.rate+' баллов)'+(evidence ? '<ol class="reportEvidence">'+evidence+'</ol>' : '')+'</li>';
  });
  const reportGroups = catalogGroups.map((title, group) => {
   const items = rows.filter((row, index) => row && catalog[index].group === group).join("");
