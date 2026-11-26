@@ -29,9 +29,9 @@ main{padding:24px;max-width:1600px;width:100%;margin:auto}
 .page{display:none}.page.active{display:block}.pagehero{height:190px;border-radius:16px;overflow:hidden;position:relative;margin-bottom:18px;border:1px solid var(--line)}.pagehero img{width:100%;height:100%;object-fit:cover;opacity:.72}.pagehero:after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,#07110df0,#07110d44)}.pageheroText{position:absolute;z-index:1;left:25px;bottom:22px}.pageheroText h2{font-size:30px;margin:0 0 4px}.pageheroText p{margin:0;color:#d2ddd2}
 .panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:14px}.panel h3{margin:0 0 12px}.row{display:flex;gap:12px;flex-wrap:wrap}.metric{flex:1;min-width:150px;background:#17241a;border:1px solid #2b4430;border-radius:11px;padding:14px}.metric b{font-size:24px;display:block}.metric span{color:var(--muted);font-size:12px}
 .fakeTable{width:100%;border-collapse:collapse}.fakeTable td,.fakeTable th{text-align:left;padding:12px;border-bottom:1px solid #293d2d;font-size:13px}.fakeTable th{color:#9eaf9f;font-weight:500}
-.action{background:#315f3b;border:1px solid #5b825d;border-radius:9px;padding:9px 13px}.action.secondary{background:#17251b;border-color:#3a5140}.footer{text-align:center;color:#78897a;font-size:11px;padding:24px}
+.action{background:#315f3b;border:1px solid #5b825d;border-radius:9px;padding:9px 13px}.action.secondary{background:#17251b;border-color:#3a5140}.subnav{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}.subnav button{background:#17251b;border:1px solid #3a5140;border-radius:9px;padding:10px 15px;color:#cbd7cb}.subnav button.active{background:#315f3b;border-color:#5b825d;color:#fff}.rankGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.rankItem{display:flex;align-items:center;gap:13px;background:#17241a;border:1px solid #2b4430;border-radius:11px;padding:13px}.rankNum{width:34px;height:34px;flex:0 0 34px;border-radius:9px;background:#263b2a;display:grid;place-items:center;color:var(--gold);font-weight:700}.rankItem b{display:block}.rankItem small{color:var(--muted)}.rankStatus{margin-left:auto;font-size:12px;color:#d8bd79;text-align:right}.rankNote{border-left:3px solid #927d48;padding:10px 13px;background:#17231a;color:#c4d0c4;border-radius:0 8px 8px 0;font-size:13px}.footer{text-align:center;color:#78897a;font-size:11px;padding:24px}
 @media(max-width:1050px){.content{grid-template-columns:1fr}.rightcol{display:grid;grid-template-columns:repeat(2,1fr)}.tiles{grid-template-columns:repeat(2,1fr)}}
-@media(max-width:700px){.top{height:auto;min-height:68px;padding:10px 14px}.brand h1{font-size:15px}.brand small{font-size:11px}.emblem{width:38px;height:38px}.topright .role{display:none}.layout{display:block}aside{position:sticky;top:68px;z-index:4;padding:7px;border-right:0;border-bottom:1px solid var(--line);overflow-x:auto}.nav{display:flex;min-width:max-content}.navtitle,.asidefoot{display:none}.nav button{width:auto;padding:9px 11px;font-size:12px}.nav .ico{display:none}main{padding:14px}.hero{padding:22px;min-height:190px}.heroStats{display:none}.tiles{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.tile{height:125px}.rightcol{display:flex}.pagehero{height:150px}.pageheroText h2{font-size:24px}}
+@media(max-width:700px){.top{height:auto;min-height:68px;padding:10px 14px}.brand h1{font-size:15px}.brand small{font-size:11px}.emblem{width:38px;height:38px}.topright .role{display:none}.layout{display:block}aside{position:sticky;top:68px;z-index:4;padding:7px;border-right:0;border-bottom:1px solid var(--line);overflow-x:auto}.nav{display:flex;min-width:max-content}.navtitle,.asidefoot{display:none}.nav button{width:auto;padding:9px 11px;font-size:12px}.nav .ico{display:none}main{padding:14px}.hero{padding:22px;min-height:190px}.heroStats{display:none}.tiles{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.tile{height:125px}.rightcol{display:flex}.pagehero{height:150px}.pageheroText h2{font-size:24px}.rankGrid{grid-template-columns:1fr}}
 </style>
 </head>
 <body><div class="shell">
@@ -139,7 +139,38 @@ Object.entries(pages).forEach(([id,p]) => {
    <div class="metric"><b>—</b><span>Последнее обновление</span></div>
    <div class="metric"><b>—</b><span>Доступ по роли</span></div>
   </div>`;
- if (id === "staff") {
+ if (id === "promotion") {
+  section.innerHTML = `
+   <div class="pagehero"><img src="promotion.jpg" alt=""><div class="pageheroText"><h2>Повышение</h2><p>Ступени званий и рапорт на повышение</p></div></div>
+   <div class="subnav"><button type="button" class="active" data-promo-tab="steps">Ступени</button><button type="button" data-promo-tab="report">Рапорт на повышение</button></div>
+   <div id="promoSteps">
+    <div class="panel">
+     <h3>Последовательность званий</h3>
+     <p class="muted">Требования и нормативы для каждого звания будут настроены Комиссаром. Сейчас значения не заданы.</p>
+     <div class="rankGrid">
+      <div class="rankItem"><span class="rankNum">1</span><div><b>Младший сержант</b><small>Требования пока не настроены</small></div><span class="rankStatus">Не настроено</span></div>
+      <div class="rankItem"><span class="rankNum">2</span><div><b>Сержант</b><small>Требования пока не настроены</small></div><span class="rankStatus">Не настроено</span></div>
+      <div class="rankItem"><span class="rankNum">3</span><div><b>Старший сержант</b><small>Требования пока не настроены</small></div><span class="rankStatus">Не настроено</span></div>
+      <div class="rankItem"><span class="rankNum">4</span><div><b>Старшина</b><small>Требования пока не настроены</small></div><span class="rankStatus">Не настроено</span></div>
+      <div class="rankItem"><span class="rankNum">5</span><div><b>Прапорщик</b><small>Требования пока не настроены</small></div><span class="rankStatus">Не настроено</span></div>
+      <div class="rankItem"><span class="rankNum">6</span><div><b>Старший прапорщик</b><small>Требования пока не настроены</small></div><span class="rankStatus">Не настроено</span></div>
+      <div class="rankItem"><span class="rankNum">7</span><div><b>Младший лейтенант</b><small>Требования пока не настроены</small></div><span class="rankStatus">Не настроено</span></div>
+      <div class="rankItem"><span class="rankNum">8</span><div><b>Лейтенант</b><small>Требования пока не настроены</small></div><span class="rankStatus">Не настроено</span></div>
+      <div class="rankItem"><span class="rankNum">9</span><div><b>Старший лейтенант</b><small>Требования пока не настроены</small></div><span class="rankStatus">Не настроено</span></div>
+      <div class="rankItem"><span class="rankNum">10</span><div><b>Капитан</b><small>Требования пока не настроены</small></div><span class="rankStatus">Не настроено</span></div>
+     </div>
+    </div>
+    <div class="panel">
+     <h3>Калькулятор повышения</h3>
+     <p class="muted">Здесь будут отображаться требования и прогресс по каждому следующему званию. Пока Комиссар не настроил нормативы, расчёт недоступен.</p>
+     <div class="rankNote">Звания Комиссара (подполковник) и Заместителя военного комиссара (майор) являются особыми и не входят в общий список ступеней повышения.</div>
+    </div>
+   </div>
+   <div id="promoReport" class="panel" style="display:none">
+    <h3>Рапорт на повышение</h3>
+    <p class="muted">Следующим этапом здесь будет редактор рапорта: форма слева и автоматически формируемый официальный документ справа. Требования и категории действий ВК будут добавлены после настройки Комиссаром.</p>
+   </div>`;
+ } else if (id === "staff") {
   section.innerHTML = `<div class="pagehero"><img src="staff.jpg" alt=""><div class="pageheroText"><h2>${p[0]}</h2><p>${p[1]}</p></div></div>` + staffMarkup;
  } else if (id === "profile") {
   section.innerHTML = `<div class="pagehero"><img src="staff.jpg" alt=""><div class="pageheroText"><h2>Мой профиль</h2><p>Личные данные и служебная информация</p></div></div>` + profileMarkup;
@@ -175,6 +206,15 @@ function go(id) {
 }
 window.go = go;
 document.addEventListener("click", event => {
+ const promoTab = event.target.closest("[data-promo-tab]");
+ if (promoTab) {
+  const reportMode = promoTab.dataset.promoTab === "report";
+  document.querySelectorAll("[data-promo-tab]").forEach(tab => tab.classList.toggle("active", tab === promoTab));
+  const steps = document.getElementById("promoSteps");
+  const report = document.getElementById("promoReport");
+  if (steps && report) { steps.style.display = reportMode ? "none" : "block"; report.style.display = reportMode ? "block" : "none"; }
+  return;
+ }
  const navButton = event.target.closest("#nav button[data-page]");
  if (navButton) {
   event.preventDefault();
