@@ -10,7 +10,7 @@
 button{font:inherit;color:inherit;cursor:pointer}.shell{min-height:100vh;background:radial-gradient(ellipse at 70% 0%,#1b3022 0,transparent 45%),var(--bg)}
 .top{height:82px;display:flex;align-items:center;justify-content:space-between;padding:0 28px;border-bottom:1px solid #3b543d;background:#0b130edb;position:sticky;top:0;z-index:5;backdrop-filter:blur(12px)}
 .brand{display:flex;align-items:center;gap:14px}.emblem{width:48px;height:48px;border:1px solid #927d48;border-radius:50%;display:grid;place-items:center;color:var(--gold);font-size:25px;background:#1a2a1c}.brand h1{font-size:20px;margin:0}.brand small{color:var(--muted)}
-.topright{display:flex;align-items:center;gap:18px}.role{background:#1b2b1f;border:1px solid var(--line);border-radius:10px;padding:8px 12px;color:#dce8da}.user{display:flex;align-items:center;gap:10px}.avatar{width:38px;height:38px;border-radius:50%;background:#405844;display:grid;place-items:center}
+.topright{display:flex;align-items:center;gap:18px}.profileShortcut{border:0;background:transparent;padding:0;text-align:left}.profileShortcut:hover b{text-decoration:underline;color:#d8bd79}.profileShortcut:focus-visible{outline:2px solid var(--gold);outline-offset:5px;border-radius:8px}.role{background:#1b2b1f;border:1px solid var(--line);border-radius:10px;padding:8px 12px;color:#dce8da}.user{display:flex;align-items:center;gap:10px}.avatar{width:38px;height:38px;border-radius:50%;background:#405844;display:grid;place-items:center}
 .layout{display:grid;grid-template-columns:238px 1fr;min-height:calc(100vh - 82px)}aside{border-right:1px solid #263c2c;padding:18px 12px;background:#0e1711}
 .navtitle{font-size:11px;color:#829485;text-transform:uppercase;letter-spacing:1.3px;padding:10px 12px}
 .nav button{width:100%;border:0;background:transparent;text-align:left;padding:12px;border-radius:9px;color:#c9d4ca;margin:2px 0;display:flex;gap:12px;align-items:center}
@@ -37,7 +37,7 @@ main{padding:24px;max-width:1600px;width:100%;margin:auto}
 <body><div class="shell">
 <header class="top">
  <div class="brand"><div class="emblem">✦</div><div><h1>Служебный портал ВК</h1><small>Военный комиссариат</small></div></div>
- <div class="topright"><div class="role" id="roleLabel">● Режим сотрудника</div><div class="user"><div class="avatar">АА</div><div><b>Иванов А.А.</b><div class="muted">Сотрудник ВК · № 014</div></div></div></div>
+ <div class="topright"><div class="role" id="roleLabel">● Режим сотрудника</div><button type="button" class="user profileShortcut" data-go="profile" aria-label="Открыть мой профиль"><div class="avatar">АА</div><div><b>Иванов А.А.</b><div class="muted">Сотрудник ВК · № 014</div></div></button></div>
 </header>
 <div class="layout">
 <aside><div class="navtitle">Навигация</div><nav class="nav" id="nav">
@@ -49,7 +49,6 @@ main{padding:24px;max-width:1600px;width:100%;margin:auto}
 <button type="button" data-page="documents"><span class="ico">▣</span>Документация ВК</button>
 <button type="button" data-page="rating"><span class="ico">★</span>Топ сотрудников недели</button>
 <button type="button" data-page="notifications"><span class="ico">♢</span>Уведомления</button>
-<button type="button" data-page="profile"><span class="ico">◉</span>Мой профиль</button>
 </nav><div class="asidefoot">◉ Защищённый служебный интерфейс<br><br>Демонстрационный макет · данные условные</div></aside>
 <main>
 <section class="page active" id="home">
