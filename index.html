@@ -125,9 +125,39 @@ main{padding:24px;max-width:1600px;width:100%;margin:auto}
 }
 .weeklyManualRate{display:flex;align-items:center;gap:8px;margin-top:6px;color:#d6e5fb;font-size:13px}.weeklyManualRate input{width:65px;padding:4px 6px;background:#111720;color:#e9edf3;border:1px solid #303b49;border-radius:4px}
 .homeBrand{color:inherit;text-decoration:none}.homeBrand:hover h1{color:var(--gold)}.homeBrand:focus-visible{outline:2px solid var(--gold);outline-offset:4px;border-radius:5px}
+.shell[hidden],#portalGate [hidden],#portalOpenLeadership[hidden],#portalLeadership[hidden]{display:none!important}
+.portalGate{max-width:530px;margin:9vh auto;padding:24px;background:var(--panel);border:1px solid var(--line);border-radius:14px}
+.portalGate .formGrid{grid-template-columns:1fr}
+.portalGate form>.row,.portalGate form>button,.portalGate #portalAccountControls{margin-top:12px}
+.portalSession{justify-content:flex-end;margin-bottom:12px}
+#portalAssignments>div{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 0}
+#portalAssignments>div>span{flex:1 1 180px;overflow-wrap:anywhere}
+@media(max-width:600px){.portalGate{margin:5vh 12px}}
 </style>
 </head>
-<body><div class="shell">
+<body>
+<section id="portalGate" class="portalGate">
+ <h1>Служебный портал ВК</h1>
+ <p id="portalAuthStatus" role="status"></p>
+ <form id="portalAuthForm">
+  <div class="formGrid">
+   <label>Электронная почта<input type="email" name="email" autocomplete="email" required></label>
+   <label>Пароль<input type="password" name="password" autocomplete="current-password" required></label>
+  </div>
+  <div class="row">
+   <button class="action" type="submit" value="login">Войти</button>
+   <button class="action secondary" type="submit" value="register">Зарегистрироваться</button>
+  </div>
+  <button id="portalDiscord" class="action" type="button">Войти через Discord</button>
+ </form>
+ <section id="portalPending" hidden>
+  <h2>Ожидает назначения роли</h2>
+  <p>Руководство назначит тебе роль. После этого служебные разделы станут доступны.</p>
+  <button class="action secondary" type="button" onclick="location.reload()">Проверить статус</button>
+ </section>
+ <div id="portalAccountControls" hidden><button class="action secondary" type="button" data-portal-signout>Выйти</button></div>
+</section>
+<div class="shell" hidden>
 <header class="top">
  <a class="brand homeBrand" href="./" data-go="home"><span class="emblem" aria-hidden="true">✦</span><div><h1>Служебный портал ВК</h1><small>Военный комиссариат</small></div></a>
  <div class="topright"><div class="role" id="roleLabel">● Режим сотрудника</div><button type="button" class="user profileShortcut" data-go="profile" aria-label="Открыть мой профиль"><div class="avatar">АА</div><div><b>Иванов А.А.</b><div class="muted">Сотрудник ВК · № 014</div></div></button></div>
@@ -144,6 +174,15 @@ main{padding:24px;max-width:1600px;width:100%;margin:auto}
 <button type="button" data-page="notifications"><span class="ico">♢</span>Уведомления</button>
 </nav><div class="asidefoot">◉ Защищённый служебный интерфейс<br><br>Демонстрационный макет · данные условные</div></aside>
 <main>
+<div class="row portalSession">
+ <button id="portalOpenLeadership" class="action secondary" type="button" hidden>Назначение ролей</button>
+ <button class="action secondary" type="button" data-portal-signout>Выйти</button>
+ <span id="portalSessionStatus" role="status"></span>
+</div>
+<section id="portalLeadership" class="panel" hidden>
+ <div class="row"><h2>Аккаунты без роли</h2><button id="portalCloseLeadership" class="action secondary" type="button">Закрыть</button></div>
+ <div id="portalAssignments" aria-live="polite"></div>
+</section>
 <section class="page active" id="home">
 <div class="hero"><div><div class="tag">Служебная система · ВК</div><h2>Добро пожаловать<br>на служебный портал</h2><p>Дисциплина. Порядок. Служба.</p></div><div class="heroStats"><div class="stat"><span>Отчёт за неделю</span><b>Черновик</b></div><div class="stat"><span>Баллы за неделю</span><b>—</b></div></div></div>
 <div class="sectionhead"><div><h3>Быстрые переходы</h3><p>Выберите нужный раздел портала</p></div><span class="muted">Демо-версия</span></div>
@@ -907,4 +946,5 @@ setWeeklyPeriod(0);
 syncWeeklyProfile();
 refreshWeeklyReport();
 </script>
+<script type="module" src="./portal-auth.js"></script>
 </body></html>
