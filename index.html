@@ -129,7 +129,7 @@ main{padding:24px;max-width:1600px;width:100%;margin:auto}
 .portalGate{max-width:530px;margin:9vh auto;padding:24px;background:var(--panel);border:1px solid var(--line);border-radius:14px}
 .portalGate .formGrid{grid-template-columns:1fr}
 .portalGate fieldset{border:0;margin:0;padding:0;min-width:0}.portalGate fieldset>.row,.portalGate fieldset>button,.portalGate #portalAccountControls{margin-top:12px}
-.portalSession{justify-content:flex-end;margin-bottom:12px}
+.portalSession{justify-content:flex-end}.portalSession:has(> :empty){display:none}
 #portalAssignments>div{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 0}
 #portalAssignments>div>span{flex:1 1 180px;overflow-wrap:anywhere}
 @media(max-width:600px){.portalGate{margin:5vh 12px}}
@@ -217,20 +217,20 @@ main{padding:24px;max-width:1600px;width:100%;margin:auto}
 <button type="button" data-page="documents"><span class="ico">▣</span>Документация ВК</button>
 <button type="button" data-page="rating"><span class="ico">★</span>Топ сотрудников недели</button>
 <button type="button" data-page="notifications"><span class="ico">♢</span>Уведомления</button>
+<button id="portalOpenReports" type="button" data-page="portalReportsQueue" hidden><span class="ico" aria-hidden="true">▤</span>Входящие отчёты</button>
+<button id="portalOpenLeadership" type="button" data-page="portalLeadership" hidden><span class="ico" aria-hidden="true">♟</span>Назначение ролей</button>
 </nav><div class="asidefoot">◉ Защищённый служебный интерфейс<br><br>Демонстрационный макет · данные условные</div></aside>
 <main>
 <div class="row portalSession">
- <button id="portalOpenReports" class="action secondary" type="button" hidden>Входящие отчёты</button>
- <button id="portalOpenLeadership" class="action secondary" type="button" hidden>Назначение ролей</button>
  <span id="portalSessionStatus" role="status"></span>
 </div>
-<section id="portalReportsQueue" class="panel" hidden>
+<section id="portalReportsQueue" class="page panel" hidden>
  <div class="row"><h2>Входящие отчёты</h2><button id="portalCloseReports" class="action secondary" type="button">Закрыть</button></div>
  <p id="portalReportsStatus" role="status"></p><div id="portalReportsList"></div>
  <button id="portalMoreReports" class="action secondary" type="button" hidden>Показать ещё</button>
 </section>
-<section id="portalLeadership" class="panel" hidden>
- <div class="row"><h2>Аккаунты без роли</h2><button id="portalCloseLeadership" class="action secondary" type="button">Закрыть</button></div>
+<section id="portalLeadership" class="page panel" hidden>
+ <div class="row"><h2>Назначение ролей</h2><button id="portalCloseLeadership" class="action secondary" type="button">Закрыть</button></div>
  <div id="portalAssignments" aria-live="polite"></div>
 </section>
 <section class="page active" id="home">
@@ -546,7 +546,6 @@ function go(id) {
  target.classList.add("active");
  document.querySelectorAll("#nav button").forEach(button => {
   button.classList.toggle("active", button.dataset.page === id);
-  button.classList.toggle("nav-hidden", id === "profile" && button.dataset.page === "staff");
  });
  window.scrollTo({top:0, behavior:"smooth"});
 }
@@ -1047,6 +1046,7 @@ function updatePortalMode(){
  document.getElementById("portalOpenLeadership").hidden = !canAssignRoles();
  document.getElementById("portalOpenReports").hidden = !canAssignRoles();
  if (!canAssignRoles()) {
+  if (queue.classList.contains("active") || leadership.classList.contains("active")) go("home");
   closeReportsQueue();
   leadership.hidden = true;
   assignments.replaceChildren();
@@ -1466,9 +1466,9 @@ async function init(){
   updatePortalMode();
  });
  document.getElementById("portalOpenLeadership").addEventListener("click", showAssignments);
- document.getElementById("portalCloseLeadership").addEventListener("click", () => { leadership.hidden = true; });
+ document.getElementById("portalCloseLeadership").addEventListener("click", () => { leadership.hidden = true; go("home"); });
  document.getElementById("portalOpenReports").addEventListener("click", () => loadReports(true));
- document.getElementById("portalCloseReports").addEventListener("click", closeReportsQueue);
+ document.getElementById("portalCloseReports").addEventListener("click", () => { closeReportsQueue(); go("home"); });
  moreReports.addEventListener("click", () => loadReports(false));
  document.querySelectorAll("[data-submit-report]").forEach((button) => {
   button.addEventListener("click", () => submitReport(button));
