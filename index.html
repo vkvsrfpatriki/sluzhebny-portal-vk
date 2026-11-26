@@ -137,25 +137,30 @@ main{padding:24px;max-width:1600px;width:100%;margin:auto}
 #portalReportsList summary{cursor:pointer}
 .portalReportBody{white-space:pre-wrap;overflow-wrap:anywhere}
 .portalReportBody a{color:#a9d6ff}
+.top{background:linear-gradient(115deg,#24292f,#17222e);box-shadow:0 1px 0 #344151}
+.top .brand{gap:10px;min-width:0}
+.top .brand h1{font-size:17px;text-transform:uppercase;letter-spacing:.055em}
+.top .emblem{width:39px;height:39px;flex:0 0 39px;background:transparent;border:1px solid #8d7246}
+.topright{display:flex;align-items:center;gap:8px}
+.topright .role,.headerMode,.headerProfile,.headerLogout{border:1px solid #354458;background:#101722;color:#c5d3e4;border-radius:999px}
+.headerMode[hidden],.topright .role[hidden]{display:none!important}
+.headerMode{display:flex;padding:3px;font:inherit;cursor:pointer;white-space:nowrap}
+.headerMode span{padding:7px 11px;border-radius:999px}
+.headerMode[aria-pressed="false"] span:first-child,.headerMode[aria-pressed="true"] span:last-child{background:#223b59;color:#f1f6ff}
+.headerProfile.profileShortcut{min-width:0;min-height:0;padding:3px 9px 3px 3px;gap:6px}
+.headerProfile .avatar{width:25px;height:25px;flex:0 0 25px;background:#25476c;font-size:10px}
+.headerProfile b{max-width:19ch;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:13px}
+.headerLogout{padding:7px 10px;cursor:pointer;font:inherit}
+.headerMode:focus-visible,.headerLogout:focus-visible{outline:2px solid #84b8ff;outline-offset:2px}
+.discordEntry{background:#4355bd;border-color:#7887df}
+@media(max-width:700px){.top{flex-wrap:wrap;gap:8px}.top .brand h1{font-size:14px}.topright{margin-left:auto;flex-wrap:wrap;justify-content:flex-end}.headerMode span{padding:5px 8px}.headerProfile b{max-width:12ch}}
 </style>
 </head>
 <body>
 <section id="portalGate" class="portalGate">
- <h1>Служебный портал ВК</h1>
+ <h1>Военный Комиссариат</h1>
  <p id="portalAuthStatus" role="status"></p>
- <form id="portalAuthForm" method="post">
-  <fieldset id="portalAuthFields" disabled>
-  <div class="formGrid">
-   <label>Электронная почта<input type="email" name="email" autocomplete="email" required></label>
-   <label>Пароль<input type="password" name="password" autocomplete="current-password" required></label>
-  </div>
-  <div class="row">
-   <button class="action" type="submit" value="login">Войти</button>
-   <button class="action secondary" type="submit" value="register">Зарегистрироваться</button>
-  </div>
-  <button id="portalDiscord" class="action" type="button">Войти через Discord</button>
-  </fieldset>
- </form>
+ <button id="portalDiscord" class="action discordEntry" type="button" disabled>Войти через Discord</button>
  <section id="portalPending" hidden>
   <h2>Ожидает назначения роли</h2>
   <p>Руководство назначит тебе роль. После этого служебные разделы станут доступны.</p>
@@ -165,8 +170,15 @@ main{padding:24px;max-width:1600px;width:100%;margin:auto}
 </section>
 <div class="shell" hidden>
 <header class="top">
- <a class="brand homeBrand" href="./" data-go="home"><span class="emblem" aria-hidden="true">✦</span><div><h1>Служебный портал ВК</h1><small>Военный комиссариат</small></div></a>
- <div class="topright"><div class="role" id="roleLabel">● Режим сотрудника</div><button type="button" class="user profileShortcut" data-go="profile" aria-label="Открыть мой профиль"><div class="avatar">АА</div><div><b>Иванов А.А.</b><div class="muted">Сотрудник ВК · № 014</div></div></button></div>
+ <a class="brand homeBrand" href="./" data-go="home"><span class="emblem" aria-hidden="true">✦</span><h1>Военный Комиссариат</h1></a>
+ <div class="topright">
+  <div class="role" id="roleLabel" aria-live="polite">Сотрудник</div>
+  <button id="portalModeSwitch" class="headerMode" type="button" aria-label="Режим комиссара" aria-pressed="false" hidden>
+   <span>Сотрудник</span><span>Комиссар</span>
+  </button>
+  <button type="button" class="user profileShortcut headerProfile" data-go="profile" aria-label="Открыть мой профиль"><span class="avatar" id="headerInitials" aria-hidden="true">ВК</span><b id="headerAccountName">Профиль</b></button>
+  <button class="headerLogout" type="button" data-portal-signout>Выйти</button>
+ </div>
 </header>
 <div class="layout">
 <aside><div class="navtitle">Навигация</div><nav class="nav" id="nav">
@@ -181,10 +193,8 @@ main{padding:24px;max-width:1600px;width:100%;margin:auto}
 </nav><div class="asidefoot">◉ Защищённый служебный интерфейс<br><br>Демонстрационный макет · данные условные</div></aside>
 <main>
 <div class="row portalSession">
- <button id="portalModeSwitch" class="action secondary" type="button" aria-pressed="false" hidden>Режим комиссара</button>
  <button id="portalOpenReports" class="action secondary" type="button" hidden>Входящие отчёты</button>
  <button id="portalOpenLeadership" class="action secondary" type="button" hidden>Назначение ролей</button>
- <button class="action secondary" type="button" data-portal-signout>Выйти</button>
  <span id="portalSessionStatus" role="status"></span>
 </div>
 <section id="portalReportsQueue" class="panel" hidden>
@@ -969,7 +979,7 @@ const config = {"url":"https://zrcimhwyrunblodtssne.supabase.co","publishableKey
 const gate = document.getElementById("portalGate");
 const shell = document.querySelector(".shell");
 const message = document.getElementById("portalAuthStatus");
-const form = document.getElementById("portalAuthForm");
+const discordButton = document.getElementById("portalDiscord");
 const pending = document.getElementById("portalPending");
 const leadership = document.getElementById("portalLeadership");
 const assignments = document.getElementById("portalAssignments");
@@ -1002,6 +1012,7 @@ function canAssignRoles(){
 function updatePortalMode(){
  const commissioner = accountRole === "commissioner";
  modeSwitch.hidden = !commissioner;
+ document.getElementById("roleLabel").hidden = commissioner;
  modeSwitch.setAttribute("aria-pressed", String(commissioner && commissionerMode));
  document.getElementById("roleLabel").textContent = commissioner
   ? (commissionerMode ? "● Режим комиссара" : "● Режим сотрудника")
@@ -1031,7 +1042,7 @@ async function showAccount(session){
  leadership.hidden = true;
  assignments.replaceChildren();
  accountControls.hidden = !session;
- form.hidden = Boolean(session);
+ discordButton.hidden = Boolean(session);
  pending.hidden = true;
  message.textContent = "";
  if (!session) {
@@ -1056,6 +1067,11 @@ async function showAccount(session){
  shell.hidden = false;
  gate.hidden = true;
  accountRole = data.role;
+ const meta = session.user.user_metadata || {};
+ const candidate = meta.full_name || meta.name || meta.preferred_username;
+ const title = typeof candidate === "string" && candidate.trim() ? candidate.trim().slice(0,80) : "Профиль";
+ document.getElementById("headerAccountName").textContent = title;
+ document.getElementById("headerInitials").textContent = title === "Профиль" ? "ВК" : title.split(/\s+/).slice(0,2).map((part)=>Array.from(part)[0]).join("").toLocaleUpperCase("ru");
  updatePortalMode();
 }
 
@@ -1230,25 +1246,7 @@ async function init(){
   return;
  }
 
- form.addEventListener("submit", async (event) => {
-  event.preventDefault();
-  const email = form.elements.email.value.trim();
-  const password = form.elements.password.value;
-  const register = event.submitter?.value === "register";
-  const {data,error} = register
-   ? await client.auth.signUp({email,password,options:{emailRedirectTo:redirectTo}})
-   : await client.auth.signInWithPassword({email,password});
-  if (error) {
-   message.textContent = register ? "Не удалось зарегистрироваться. Проверь адрес и пароль." : "Не удалось войти. Проверь почту, пароль и подтверждение аккаунта.";
-  } else if (data.session) {
-   form.reset();
-   await showAccount(data.session);
-  } else {
-   form.reset();
-   message.textContent = "Проверь почту и подтверди регистрацию по ссылке.";
-  }
- });
- document.getElementById("portalDiscord").addEventListener("click",async () => {
+ discordButton.addEventListener("click",async () => {
   const {error} = await client.auth.signInWithOAuth({provider:"discord",options:{redirectTo}});
   if (error) message.textContent = "Не удалось открыть вход через Discord.";
  });
@@ -1267,7 +1265,7 @@ async function init(){
  document.querySelectorAll("[data-submit-report]").forEach((button) => {
   button.addEventListener("click", () => submitReport(button));
  });
- document.getElementById("portalAuthFields").disabled = false;
+ discordButton.disabled = false;
 }
 init();
 
