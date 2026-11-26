@@ -125,7 +125,7 @@ main{padding:24px;max-width:1600px;width:100%;margin:auto}
 }
 .weeklyManualRate{display:flex;align-items:center;gap:8px;margin-top:6px;color:#d6e5fb;font-size:13px}.weeklyManualRate input{width:65px;padding:4px 6px;background:#111720;color:#e9edf3;border:1px solid #303b49;border-radius:4px}
 .homeBrand{color:inherit;text-decoration:none}.homeBrand:hover h1{color:var(--gold)}.homeBrand:focus-visible{outline:2px solid var(--gold);outline-offset:4px;border-radius:5px}
-.shell[hidden],#portalGate [hidden],#portalOpenLeadership[hidden],#portalLeadership[hidden]{display:none!important}
+.shell[hidden],#portalGate [hidden],#portalModeSwitch[hidden],#portalOpenLeadership[hidden],#portalLeadership[hidden]{display:none!important}
 .portalGate{max-width:530px;margin:9vh auto;padding:24px;background:var(--panel);border:1px solid var(--line);border-radius:14px}
 .portalGate .formGrid{grid-template-columns:1fr}
 .portalGate fieldset{border:0;margin:0;padding:0;min-width:0}.portalGate fieldset>.row,.portalGate fieldset>button,.portalGate #portalAccountControls{margin-top:12px}
@@ -177,6 +177,7 @@ main{padding:24px;max-width:1600px;width:100%;margin:auto}
 </nav><div class="asidefoot">◉ Защищённый служебный интерфейс<br><br>Демонстрационный макет · данные условные</div></aside>
 <main>
 <div class="row portalSession">
+ <button id="portalModeSwitch" class="action secondary" type="button" aria-pressed="false" hidden>Режим комиссара</button>
  <button id="portalOpenLeadership" class="action secondary" type="button" hidden>Назначение ролей</button>
  <button class="action secondary" type="button" data-portal-signout>Выйти</button>
  <span id="portalSessionStatus" role="status"></span>
