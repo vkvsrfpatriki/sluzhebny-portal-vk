@@ -14,7 +14,7 @@ button{font:inherit;color:inherit;cursor:pointer}.shell{min-height:100vh;backgro
 .layout{display:grid;grid-template-columns:238px 1fr;min-height:calc(100vh - 82px)}aside{border-right:1px solid #263c2c;padding:18px 12px;background:#0e1711}
 .navtitle{font-size:11px;color:#829485;text-transform:uppercase;letter-spacing:1.3px;padding:10px 12px}
 .nav button{width:100%;border:0;background:transparent;text-align:left;padding:12px;border-radius:9px;color:#c9d4ca;margin:2px 0;display:flex;gap:12px;align-items:center}
-.nav button:hover,.nav button.active{background:linear-gradient(90deg,#2c5735,#1b3322);color:white}.nav .ico{width:22px;text-align:center;color:#c9d6c6;font-size:17px}
+.nav button:hover,.nav button.active{background:linear-gradient(90deg,#2c5735,#1b3322);color:white}.nav button.nav-hidden{display:none}.nav .ico{width:22px;text-align:center;color:#c9d6c6;font-size:17px}
 .asidefoot{margin:24px 5px 0;padding:13px;border:1px solid var(--line);border-radius:12px;color:var(--muted);font-size:12px}
 main{padding:24px;max-width:1600px;width:100%;margin:auto}
 .hero{min-height:220px;border-radius:18px;overflow:hidden;position:relative;background:linear-gradient(90deg,#07110cf2 0%,#0a160dc9 48%,#0b150c33 100%),url('staff.jpg') center 46%/cover;border:1px solid #354c38;display:flex;align-items:center;padding:32px;margin-bottom:20px}
@@ -170,6 +170,7 @@ function go(id) {
  target.classList.add("active");
  document.querySelectorAll("#nav button").forEach(button => {
   button.classList.toggle("active", button.dataset.page === id);
+  button.classList.toggle("nav-hidden", id === "profile" && button.dataset.page === "staff");
  });
  window.scrollTo({top:0, behavior:"smooth"});
 }
