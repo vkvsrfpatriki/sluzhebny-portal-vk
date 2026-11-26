@@ -141,35 +141,67 @@ Object.entries(pages).forEach(([id,p]) => {
   </div>`;
  if (id === "promotion") {
   section.innerHTML = `
-   <div class="pagehero"><img src="promotion.jpg" alt=""><div class="pageheroText"><h2>Повышение</h2><p>Ступени званий и рапорт на повышение</p></div></div>
-   <div class="subnav"><button type="button" class="active" data-promo-tab="steps">Ступени</button><button type="button" data-promo-tab="report">Рапорт на повышение</button></div>
+   <div class="pagehero"><img src="promotion.jpg" alt=""><div class="pageheroText"><h2>Повышение</h2><p>Ступени званий, требования и система баллов</p></div></div>
+   <div class="subnav">
+    <button type="button" class="active" data-promo-tab="steps">Ступени и требования</button>
+    <button type="button" data-promo-tab="points">Система баллов</button>
+    <button type="button" data-promo-tab="report">Рапорт на повышение</button>
+   </div>
    <div id="promoSteps">
     <div class="panel">
-     <h3>Последовательность званий</h3>
-     <p class="muted">Требования и нормативы для каждого звания будут настроены Комиссаром. Сейчас значения не заданы.</p>
+     <h3>Ступени повышения</h3>
+     <p class="muted">Обязательные критерии отображаются отдельно от начисляемых баллов. В вариантах «на выбор» достаточно выполнить один из перечисленных вариантов.</p>
      <div class="rankGrid" style="display:flex;flex-direction:column;flex-wrap:nowrap;width:100%">
-      <div class="rankItem"><span class="rankNum">1</span><div><b>Мл. серж. — Серж.</b><small>Требования пока не настроены</small></div><span class="rankStatus">Не настроено</span></div>
-      <div class="rankItem"><span class="rankNum">2</span><div><b>Серж. — Ст. серж.</b><small>Требования пока не настроены</small></div><span class="rankStatus">Не настроено</span></div>
-      <div class="rankItem"><span class="rankNum">3</span><div><b>Ст. серж. — Старшина</b><small>Требования пока не настроены</small></div><span class="rankStatus">Не настроено</span></div>
-      <div class="rankItem"><span class="rankNum">4</span><div><b>Старшина — Прапорщик</b><small>Требования пока не настроены</small></div><span class="rankStatus">Не настроено</span></div>
-      <div class="rankItem"><span class="rankNum">5</span><div><b>Прапорщик — Ст. прапорщик</b><small>Требования пока не настроены</small></div><span class="rankStatus">Не настроено</span></div>
-      <div class="rankItem"><span class="rankNum">6</span><div><b>Ст. прапорщик — Мл. лейтенант</b><small>Требования пока не настроены</small></div><span class="rankStatus">Не настроено</span></div>
-      <div class="rankItem"><span class="rankNum">7</span><div><b>Мл. лейтенант — Лейтенант</b><small>Требования пока не настроены</small></div><span class="rankStatus">Не настроено</span></div>
-      <div class="rankItem"><span class="rankNum">8</span><div><b>Лейтенант — Ст. лейтенант</b><small>Требования пока не настроены</small></div><span class="rankStatus">Не настроено</span></div>
-      <div class="rankItem"><span class="rankNum">9</span><div><b>Ст. лейтенант — Капитан</b><small>Требования пока не настроены</small></div><span class="rankStatus">Не настроено</span></div>
+      <div class="rankItem"><span class="rankNum">1</span><div><b>Мл. серж. — Серж.</b><small>300 баллов · 1 вариант действий на выбор · военный билет · стажёрам — тестирование и завершение стажировки</small><ul class="muted"><li>На выбор: 6 лекций / 2 экзамена / 2 тренировки / 8 отчётов ВА / 5 электронных заявлений</li></ul></div></div>
+      <div class="rankItem"><span class="rankNum">2</span><div><b>Серж. — Ст. серж.</b><small>4 лекции · 2 экзамена · 8 отчётов ВА · 3 электронных заявления · стажёрам — тестирование и завершение стажировки</small></div></div>
+      <div class="rankItem"><span class="rankNum">3</span><div><b>Ст. серж. — Старшина</b><small>300 баллов · стажёрам — тестирование и завершение стажировки</small><ul class="muted"><li>На выбор: 6 лекций / 2 экзамена / 2 тренировки / 8 отчётов ВА / 5 электронных заявлений</li><li>Наличие военного билета</li></ul></div></div>
+      <div class="rankItem"><span class="rankNum">4</span><div><b>Старшина — Прапорщик</b><small>350 баллов · стажёрам — тестирование и завершение стажировки</small><ul class="muted"><li>На выбор: 6 лекций / 3 экзамена / 2 тренировки / 10 отчётов ВА / 5 электронных заявлений</li></ul></div></div>
+      <div class="rankItem"><span class="rankNum">5</span><div><b>Прапорщик — Ст. прапорщик</b><small>400 баллов · стажёрам — тестирование и завершение стажировки</small><ul class="muted"><li>На выбор: 10 лекций / 4 экзамена / 3 тренировки / 13 отчётов ВА / 5 электронных заявлений</li></ul></div></div>
+      <div class="rankItem"><span class="rankNum">6</span><div><b>Ст. прапорщик — Мл. лейтенант</b><small>450 баллов · аттестация для получения «Состава инструкторов» · стажёрам — тестирование и завершение стажировки</small><ul class="muted"><li>На выбор: 5 электронных заявлений или 1 экскурсия по части</li><li>Агитационная стойка на КПП-1 — 60 минут</li></ul></div></div>
+      <div class="rankItem"><span class="rankNum">7</span><div><b>Мл. лейтенант — Лейтенант</b><small>500 баллов · 2 экскурсии по части · обработка 10 звонков от граждан · стажёрам — тестирование и завершение стажировки</small></div></div>
+      <div class="rankItem"><span class="rankNum">8</span><div><b>Лейтенант — Ст. лейтенант</b><small>550 баллов · 3 экскурсии по части · обработка 15 звонков от граждан · 3 тренировки · стажёрам — тестирование и завершение стажировки</small></div></div>
+      <div class="rankItem"><span class="rankNum">9</span><div><b>Ст. лейтенант — Капитан</b><small>Требуется одобрение Комиссара или Заместителя комиссара</small><ul class="muted"><li>5 тренировок</li><li>3 успешно проведённые стажировки в ВК</li><li>5 экскурсий по части</li><li>Аттестация по ПОиП, ПГО, ОПС и правилам проведения наборов</li></ul></div></div>
      </div>
     </div>
+    <div class="rankNote">Указанные обязательные критерии не добавляют баллы. Порог баллов и обязательные действия проверяются раздельно. Для перехода на капитана отдельный балльный порог не указан.</div>
+    <div class="panel" style="margin-top:14px"><h3>Калькулятор повышения</h3><p class="muted">В рабочей версии здесь будут фактические результаты сотрудника, необходимые значения и статус каждого требования. Выполненные пункты отмечаются зелёным, невыполненные — красным. Сейчас это демонстрационный просмотр без персональных данных и подтверждённых действий.</p></div>
+   </div>
+   <div id="promoPoints" style="display:none">
     <div class="panel">
-     <h3>Калькулятор повышения</h3>
-     <p class="muted">Здесь будут отображаться требования и прогресс по каждому следующему званию. Пока Комиссар не настроил нормативы, расчёт недоступен.</p>
-     <div class="rankNote">Звания Комиссара (подполковник) и Заместителя военного комиссара (майор) являются особыми и не входят в общий список ступеней повышения.</div>
+     <h3>Начисление баллов Военного комиссариата</h3>
+     <p class="muted">Баллы начисляются за подтверждённые служебные действия. Количество выполнений учитывается отдельно; присяга рассчитывается за каждого военнослужащего.</p>
+     <div style="overflow-x:auto"><table class="fakeTable"><thead><tr><th>№</th><th>Действие</th><th>Начисление</th></tr></thead><tbody>
+      <tr><td>1</td><td>Участие в поставке</td><td>20</td></tr>
+      <tr><td>2</td><td>Участие в отбытии (ВС, ОБ7, РЛС)</td><td>20</td></tr>
+      <tr><td>3</td><td>Проведение тренировки (минимум 2 человека)</td><td>30</td></tr>
+      <tr><td>4</td><td>Участие в отбытии КРаЗа</td><td>20</td></tr>
+      <tr><td>5</td><td>Успешное отбытие КРаЗа</td><td>25</td></tr>
+      <tr><td>6</td><td>Организация и проведение экзамена</td><td>50</td></tr>
+      <tr><td>7</td><td>Участие в призыве</td><td>35</td></tr>
+      <tr><td>8</td><td>Рассмотрение рапорта военнослужащего из Военной академии</td><td>20</td></tr>
+      <tr><td>9</td><td>Обработка человека по электронным заявкам</td><td>15</td></tr>
+      <tr><td>10</td><td>Приведение к присяге</td><td>15 за военнослужащего</td></tr>
+      <tr><td>11</td><td>Проведение лекции (минимум 1 человек)</td><td>30</td></tr>
+      <tr><td>12</td><td>Экскурсия с лекцией о службе для граждан по территории ВС РФ (около 15 минут)</td><td>50</td></tr>
+      <tr><td>13</td><td>Участие в вечерней поверке</td><td>25</td></tr>
+      <tr><td>14</td><td>Проведение внутрифракционного мероприятия</td><td>50</td></tr>
+      <tr><td>15</td><td>Участие в ГМП (3 и более организаций, минимум по 5 сотрудников)</td><td>50</td></tr>
+      <tr><td>16</td><td>Организация ГМП (3 и более организаций, минимум по 5 сотрудников)</td><td>100</td></tr>
+      <tr><td>17</td><td>Агитационная стойка (1 час)</td><td>50</td></tr>
+     </tbody></table></div>
     </div>
    </div>
    <div id="promoReport" class="panel" style="display:none">
     <h3>Рапорт на повышение</h3>
-    <p class="muted">Следующим этапом здесь будет редактор рапорта: форма слева и автоматически формируемый официальный документ справа. Требования и категории действий ВК будут добавлены после настройки Комиссаром.</p>
+    <p class="muted">Демонстрация согласованной структуры будущего редактора: слева — номер и дата рапорта, общие сведения, выбранное звание, калькулятор и результаты служебной деятельности с количеством и ссылками на доказательства; справа — автоматически формируемый официальный документ.</p>
+    <div class="row">
+     <div class="metric"><b>I</b><span>Общие сведения о военнослужащем</span></div>
+     <div class="metric"><b>II</b><span>Результаты служебной деятельности</span></div>
+     <div class="metric"><b>PDF</b><span>Итоговый документ — формат уточняется</span></div>
+    </div>
+    <p class="muted" style="margin-top:12px">Это пока макет просмотра. Отправка рапорта, загрузка доказательств и автоматическая проверка требуют серверной части.</p>
    </div>`;
- } else if (id === "staff") {
+ } } else if (id === "staff") {
   section.innerHTML = `<div class="pagehero"><img src="staff.jpg" alt=""><div class="pageheroText"><h2>${p[0]}</h2><p>${p[1]}</p></div></div>` + staffMarkup;
  } else if (id === "profile") {
   section.innerHTML = `<div class="pagehero"><img src="staff.jpg" alt=""><div class="pageheroText"><h2>Мой профиль</h2><p>Личные данные и служебная информация</p></div></div>` + profileMarkup;
