@@ -76,7 +76,7 @@ main{padding:24px;max-width:1600px;width:100%;margin:auto}
 const pages = {
  reports:["Отчёты","Еженедельный отчёт и история отправок","reports.jpg","Здесь будет двухпанельный редактор: форма слева и автоматически формируемый официальный документ справа. Доступны PDF и PNG."],
  training:["Обучение","Лекции и единый итоговый экзамен для стажёров","training.jpg","Здесь будут курсы, темы, лекции, материалы, видео, прогресс и единый итоговый экзамен."],
- staff:["Состав ВК","Действующий состав военного комиссариата","staff.jpg","Здесь будет простой список: должность, имя и фамилия, номер игрового паспорта. Нажатие на ФИО откроет профиль сотрудника."],
+ staff:["Состав ВК","Действующий состав военного комиссариата","staff.jpg","Список действующего состава по должностям. Нажатие на ФИО открывает служебный профиль сотрудника."],
  documents:["Документация ВК","Служебные документы и полезные ссылки","documents.jpg","Здесь будет простой список документов и полезных ссылок. Открывать ссылки смогут все пользователи, редактировать записи — только Комиссар."],
  promotion:["Повышение","Ступени званий и рапорт на повышение","promotion.jpg","Подразделы: «Ступени» — требования и прогресс по всем званиям; «Рапорт на повышение» — оформление рапорта с доказательствами и калькулятором."],
  rating:["Топ сотрудников недели","Недельный рейтинг и результаты за всё время","rating.jpg","Здесь будет таблица: место, имя и фамилия, номер сотрудника, должность и баллы. Можно выбрать неделю или период «За всё время»."],
@@ -85,6 +85,42 @@ const pages = {
  archive:["Архив","Архив сотрудников, отчётов и кадровой истории","archive.jpg","Здесь будут архивные записи с поиском и разграничением доступа."],
  notifications:["Уведомления","Объявления и личные служебные уведомления","notifications.jpg","Здесь будет единый центр уведомлений, статусы прочтения и объявления."]
 };
+
+const staffMarkup = `
+ <div class="panel">
+  <h3>Действующий состав</h3>
+  <p class="muted">Демонстрационная запись. После подключения базы здесь будут отображаться все действующие сотрудники и стажёры.</p>
+  <div style="overflow-x:auto">
+   <table class="fakeTable">
+    <thead><tr><th>Должность</th><th>Имя Фамилия</th><th>Номер игрового паспорта</th></tr></thead>
+    <tbody>
+     <tr><th colspan="3">Комиссар</th></tr>
+     <tr><th colspan="3">Заместитель военного комиссара</th></tr>
+     <tr><th colspan="3">Начальник отдела призыва</th></tr>
+     <tr><th colspan="3">Начальник отдела кадров</th></tr>
+     <tr><th colspan="3">Заместитель начальника отдела призыва</th></tr>
+     <tr><th colspan="3">Заместитель начальника отдела кадров</th></tr>
+     <tr><td>Сотрудник ВК</td><td><button type="button" class="action secondary" data-go="profile">Иванов Алексей</button></td><td>014</td></tr>
+     <tr><th colspan="3">Стажёр</th></tr>
+    </tbody>
+   </table>
+  </div>
+ </div>`;
+const profileMarkup = `
+ <div class="panel">
+  <h3>Иванов Алексей</h3>
+  <div class="row">
+   <div class="metric"><span>Номер игрового паспорта</span><b>014</b></div>
+   <div class="metric"><span>Должность</span><b>Сотрудник ВК</b></div>
+   <div class="metric"><span>Звание</span><b>Не указано</b></div>
+  </div>
+  <div class="row" style="margin-top:12px">
+   <div class="metric"><span>Статус</span><b>Действующий</b></div>
+   <div class="metric"><span>Дата вступления</span><b>12.06.2026</b></div>
+  </div>
+  <p class="muted" style="margin-top:14px">Демонстрационные данные. Discord и служебная история будут показываться с учётом прав доступа после подключения авторизации и базы данных.</p>
+  <button type="button" class="action secondary" data-go="staff">← К составу ВК</button>
+ </div>`;
 const host = document.getElementById("otherPages");
 Object.entries(pages).forEach(([id,p]) => {
  const section = document.createElement("section");
@@ -105,6 +141,27 @@ Object.entries(pages).forEach(([id,p]) => {
    <div class="metric"><b>—</b><span>Последнее обновление</span></div>
    <div class="metric"><b>—</b><span>Доступ по роли</span></div>
   </div>`;
+ if (id === "staff") {
+  section.innerHTML = `<div class="pagehero"><img src="staff.jpg" alt=""><div class="pageheroText"><h2>${p[0]}</h2><p>${p[1]}</p></div></div>` + staffMarkup;
+ } else if (id === "profile") {
+  section.innerHTML = `<div class="pagehero"><img src="staff.jpg" alt=""><div class="pageheroText"><h2>Мой профиль</h2><p>Личные данные и служебная информация</p></div></div>` + profileMarkup;
+ } else {
+  section.innerHTML = `
+  <div class="pagehero">
+   <img src="${p[2]}" alt="">
+   <div class="pageheroText"><h2>${p[0]}</h2><p>${p[1]}</p></div>
+  </div>
+  <div class="panel">
+   <h3>Раздел в разработке</h3>
+   <p class="muted">${p[3]}</p>
+   <button type="button" class="action secondary" data-go="home">← На главную</button>
+  </div>
+  <div class="row">
+   <div class="metric"><b>—</b><span>Текущий статус</span></div>
+   <div class="metric"><b>—</b><span>Последнее обновление</span></div>
+   <div class="metric"><b>—</b><span>Доступ по роли</span></div>
+  </div>`;
+ }
  host.appendChild(section);
 });
 function go(id) {
