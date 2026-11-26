@@ -53,6 +53,45 @@ main{padding:24px;max-width:1600px;width:100%;margin:auto}
 .reportSignature span:last-child{text-align:right}
 @media(max-width:600px){.officialDocument{padding:24px 18px}.officialDocument .reportRecipient{max-width:70%}}
 .catalogGroup+.catalogGroup{margin-top:12px}
+/* Report editor and document preview */
+.reportWorkspace{--report-line:#303b49;grid-template-columns:minmax(0,44fr) minmax(0,56fr);gap:21px;color:#eef2f6}
+.reportWorkspace>.reportHeading{grid-column:1/-1;margin:0 0 -7px;font-size:clamp(26px,3.7vw,40px);line-height:1.12;font-weight:800}
+.reportEditor{background:#10141c;border:1px solid var(--report-line);border-radius:18px;padding:19px 17px;scrollbar-color:#41536a #10141c}
+.reportEditor>.panel{padding:0;border:0;border-radius:0;background:transparent;margin:0 0 18px}
+.reportEditor>.panel:first-child h3{font-size:20px;margin:0 0 14px}
+.reportEditor .formGrid{gap:7px 8px}
+.reportEditor .formGrid label,.reportEditor .extraNotes{color:#b8bec7;font-size:12px;gap:4px}
+.reportEditor .formGrid input,.reportEditor .formGrid select,.reportEditor textarea,.reportEditor .catalogTools input[type=search]{min-height:35px;padding:6px 8px;border:1px solid var(--report-line);border-radius:3px;background:#111720;color:#e9edf3}
+.reportEditor input[type=date]{color-scheme:dark}
+.reportEditor .reportFieldWide,.reportEditor .reportFieldGroup{grid-column:1/-1}
+.reportFieldGroup{margin:3px 0 0;color:#e0e4ea;font-size:13px}
+.reportEditor .reportSectionTitle{font-size:14px;font-weight:750;color:#d6e5fb;border-bottom:1px solid var(--report-line);padding-bottom:4px;margin:0 0 8px}
+.reportTransition{font-size:15px;margin:0 0 7px}
+.reportPointsMeter{position:relative;background:#1b5238;border:1px solid #32624a;border-radius:4px;overflow:hidden;text-align:center;margin:0 0 10px;min-height:24px}
+.reportPointsMeter progress{display:block;position:absolute;inset:0;width:100%;height:100%;border:0;appearance:none}
+.reportPointsMeter progress[hidden]{display:none}
+.reportPointsMeter progress::-webkit-progress-bar{background:#18261f}
+.reportPointsMeter progress::-webkit-progress-value{background:#39885c}
+.reportPointsMeter progress::-moz-progress-bar{background:#39885c}
+.reportPointsMeter output{position:relative;font-size:13px;font-weight:750}
+.reportEditor .criteriaList{padding:6px 8px;border:1px solid #3b4d45;border-radius:5px;background:#161d1a;gap:4px}
+.reportEditor .criteriaRow{border:0;background:transparent;padding:1px 0;color:#dce4de}
+.reportEditor .criteriaRow[data-status="met"]{color:#9adb9b}
+.reportEditor .criteriaRow[data-status="unmet"]{color:#f0ad9e}
+.reportEditor .criteriaRow small{display:inline;margin:0 0 0 6px}
+.reportEditor .catalogItem{background:#141b25;border-color:var(--report-line)}
+.reportEditor .catalogItem.selected{background:#17283a;border-color:#4d79a8}
+.reportEditor .catalogGroup>summary,.reportEditor .catalogRate{color:#c5ddff}
+.reportPreview{color:#d6e5fb}
+.reportPreview .previewTop{min-height:25px;margin-bottom:8px;font-size:13px}
+.reportPreview .officialDocument{background:#fff;color:#111;padding:clamp(30px,4.65vw,57px) clamp(20px,6.5vw,83px);font:13px/1.27 "Times New Roman",serif;aspect-ratio:auto;min-height:0}
+.reportPreview .officialDocument::after{content:"";display:block;height:30px}
+.reportPreview .reportPaperMark{font-size:34px;margin-bottom:6px}
+.reportPreview .reportRecipient{margin-bottom:19px}
+.reportPreview .reportSubtitle{margin-bottom:24px}
+@media(min-width:1051px){.reportEditor{max-height:calc(100vh - 114px)}.reportPreview{position:static}}
+@media(max-width:1050px){.reportWorkspace{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:600px){.reportEditor .formGrid{grid-template-columns:repeat(2,minmax(0,1fr))}.reportEditor{padding:14px 12px}.reportPreview .officialDocument{padding:30px 20px}}
 </style>
 </head>
 <body><div class="shell">
@@ -192,7 +231,7 @@ Object.entries(pages).forEach(([id,p]) => {
      </div>
     </div>
     <div class="rankNote">Указанные обязательные критерии не добавляют баллы. Порог баллов и обязательные действия проверяются раздельно. Для перехода на капитана отдельный балльный порог не указан.</div>
-    <div class="panel" style="margin-top:14px"><h3>Калькулятор повышения</h3><p class="muted">В рабочей версии здесь будут фактические результаты сотрудника, необходимые значения и статус каждого требования. Выполненные пункты отмечаются зелёным, невыполненные — красным. Сейчас это демонстрационный просмотр без персональных данных и подтверждённых действий.</p></div>
+    <div class="panel" style="margin-top:14px"><h3 class="reportSectionTitle">Калькулятор повышения</h3><p class="muted">В рабочей версии здесь будут фактические результаты сотрудника, необходимые значения и статус каждого требования. Выполненные пункты отмечаются зелёным, невыполненные — красным. Сейчас это демонстрационный просмотр без персональных данных и подтверждённых действий.</p></div>
    </div>
    <div id="promoPoints" style="display:none">
     <div class="panel">
@@ -221,6 +260,7 @@ Object.entries(pages).forEach(([id,p]) => {
     </div>
    </div>
    <div id="promoReport" class="reportWorkspace" style="display:none">
+    <h2 class="reportHeading">Рапорт на повышение</h2>
     <div class="reportEditor">
      <div class="panel">
       <h3>Рапорт на повышение</h3>
@@ -230,14 +270,17 @@ Object.entries(pages).forEach(([id,p]) => {
       </div>
      </div>
      <div class="panel">
-      <h3>I. Общие сведения</h3>
+      <h3 class="reportSectionTitle">I. Общие сведения</h3>
       <div class="formGrid">
-       <label>Текущее воинское звание<input data-report-field="currentRank" value="${reportEscape(currentProfile.rank)}" placeholder="Укажи звание в профиле" readonly /></label>
+       <h4 class="reportFieldGroup">1. Военнослужащий</h4>
+       <label>Текущее звание<input data-report-field="currentRank" value="${reportEscape(currentProfile.rank)}" placeholder="Укажи звание в профиле" readonly /></label>
        <label>Номер игрового паспорта<input data-report-field="passport" value="${reportEscape(currentProfile.passport)}" readonly /></label>
-       <label>Имя и фамилия<input data-report-field="name" value="${reportEscape(currentProfile.name)}" readonly /></label>
+       <label class="reportFieldWide">Имя и фамилия<input data-report-field="name" value="${reportEscape(currentProfile.name)}" readonly /></label>
+       <h4 class="reportFieldGroup">2. Подразделение и должность</h4>
        <label>Подразделение<input data-report-field="unit" placeholder="Отдел кадров / Отдел призыва" /></label>
        <label>Должность<input data-report-field="position" placeholder="Должность" /></label>
-       <label>Испрашиваемое звание<select data-report-field="requestedRank">
+       <h4 class="reportFieldGroup">3. Звание и период службы в текущем звании</h4>
+       <label class="reportFieldWide">Испрашиваемое звание<select data-report-field="requestedRank">
         <option value="Сержант">Сержант</option><option value="Старший сержант">Старший сержант</option><option value="Старшина">Старшина</option><option value="Прапорщик">Прапорщик</option><option value="Старший прапорщик">Старший прапорщик</option><option value="Младший лейтенант">Младший лейтенант</option><option value="Лейтенант">Лейтенант</option><option value="Старший лейтенант">Старший лейтенант</option><option value="Капитан">Капитан</option>
        </select></label>
        <label>Дата присвоения текущего звания<input data-report-field="rankDate" type="date" /></label>
@@ -246,13 +289,13 @@ Object.entries(pages).forEach(([id,p]) => {
      </div>
      <div class="panel">
       <h3>Калькулятор повышения</h3>
-      <p class="muted">Баллы рассчитываются по заполненным действиям. Доказательства и остальные требования проверяются отдельно.</p>
-      <p id="reportTotal" aria-live="polite"></p><progress id="reportScore" class="reportScore" aria-label="Баллы для повышения" hidden></progress>
+      <p id="reportTransition" class="reportTransition"></p>
+      <div class="reportPointsMeter"><progress id="reportScore" class="reportScore" aria-label="Баллы для повышения" hidden></progress><output id="reportTotal" aria-live="polite"></output></div>
       <div id="reportCriteria" class="criteriaList"><div class="criteriaRow">Выберите запрашиваемое звание — список критериев появится здесь.</div></div>
       <div class="rankNote" style="margin-top:10px">Статус проверки в этом макете — предварительный. Баллы и обязательные критерии проверяются отдельно.</div>
      </div>
      <div class="panel">
-      <h3>II. Результаты служебной деятельности</h3>
+      <h3 class="reportSectionTitle">II. Результаты служебной деятельности</h3>
       <div class="catalogTools">
        <input id="catalogSearch" type="search" aria-label="Найти действие" placeholder="Найти действие">
        <label><input id="catalogSelected" type="checkbox"> Только выбранные</label>
@@ -263,7 +306,7 @@ Object.entries(pages).forEach(([id,p]) => {
      </div>
     </div>
     <div class="reportPreview">
-     <div class="previewTop"><b>Предварительный просмотр документа</b><span class="muted">Обновляется автоматически</span></div>
+     <div class="previewTop"><span>Предпросмотр</span></div>
      <article id="reportDocument" class="officialDocument">
       <div class="docCenter"><b>ВОЕННЫЙ КОМИССАРИАТ</b><div>СЛУЖЕБНЫЙ РАПОРТ</div></div>
       <h2>РАПОРТ НА ПОВЫШЕНИЕ</h2>
@@ -394,13 +437,14 @@ function refreshReport(){
  const criteria = promotionCriteria[reportValue("requestedRank")] || [];
  const threshold = Number(criteria.find((criterion) => /^Набрать \d+ баллов$/.test(criterion))?.match(/\d+/)?.[0] || 0);
  document.getElementById("reportTotal").textContent = threshold ? total+" / "+threshold+" баллов" : total+" баллов";
+ document.getElementById("reportTransition").textContent = (reportValue("currentRank") || "Текущее звание") + " → " + reportValue("requestedRank");
  const progress = document.getElementById("reportScore");
  progress.hidden = !threshold;
  progress.max = threshold || 1;
  progress.value = total;
  document.getElementById("reportCriteria").innerHTML = criteria.map((criterion) => {
   const status = /^Набрать \d+ баллов$/.test(criterion) ? (total >= threshold ? "Выполнено" : "Не выполнено") : "Ожидает проверки";
-  return '<div class="criteriaRow">'+reportEscape(criterion)+'<small>'+status+'</small></div>';
+  return '<div class="criteriaRow" data-status="'+(status === "Выполнено" ? "met" : status === "Не выполнено" ? "unmet" : "pending")+'">'+reportEscape(criterion)+'<small>'+status+'</small></div>';
  }).join("");
 
  const rows = catalog.map((action, index) => {
