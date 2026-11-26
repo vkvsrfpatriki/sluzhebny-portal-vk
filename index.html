@@ -125,7 +125,7 @@ main{padding:24px;max-width:1600px;width:100%;margin:auto}
 }
 .weeklyManualRate{display:flex;align-items:center;gap:8px;margin-top:6px;color:#d6e5fb;font-size:13px}.weeklyManualRate input{width:65px;padding:4px 6px;background:#111720;color:#e9edf3;border:1px solid #303b49;border-radius:4px}
 .homeBrand{color:inherit;text-decoration:none}.homeBrand:hover h1{color:var(--gold)}.homeBrand:focus-visible{outline:2px solid var(--gold);outline-offset:4px;border-radius:5px}
-.shell[hidden],#portalGate [hidden],#portalModeSwitch[hidden],#portalOpenLeadership[hidden],#portalLeadership[hidden],#portalOpenReports[hidden],#portalReportsQueue[hidden],#portalMoreReports[hidden]{display:none!important}
+.shell[hidden],#portalGate [hidden],#portalModeSwitch[hidden],#portalOpenLeadership[hidden],#portalLeadership[hidden],#portalOpenReports[hidden],.portalReportQueue[hidden],.portalReportQueue [hidden],#portalOpenPromotion[hidden]{display:none!important}
 .portalGate{max-width:530px;margin:9vh auto;padding:24px;background:var(--panel);border:1px solid var(--line);border-radius:14px}
 .portalGate .formGrid{grid-template-columns:1fr}
 .portalGate fieldset{border:0;margin:0;padding:0;min-width:0}.portalGate fieldset>.row,.portalGate fieldset>button,.portalGate #portalAccountControls{margin-top:12px}
@@ -133,8 +133,8 @@ main{padding:24px;max-width:1600px;width:100%;margin:auto}
 #portalAssignments>div{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 0}
 #portalAssignments>div>span{flex:1 1 180px;overflow-wrap:anywhere}
 @media(max-width:600px){.portalGate{margin:5vh 12px}}
-#portalReportsList details{margin:8px 0;padding:10px;border:1px solid var(--line);border-radius:8px}
-#portalReportsList summary{cursor:pointer}
+.portalReportsList details{margin:8px 0;padding:10px;border:1px solid var(--line);border-radius:8px}
+.portalReportsList summary{cursor:pointer}
 .portalReportBody{white-space:pre-wrap;overflow-wrap:anywhere}
 .portalReportBody a{color:#a9d6ff}
 .portalTop{height:96px;padding:0;border:0;border-top:1px solid #ffffff1c;background:linear-gradient(103deg,#22272e,#17232e);box-shadow:none}
@@ -178,6 +178,10 @@ main{padding:24px;max-width:1600px;width:100%;margin:auto}
 #employeeProfileLog li{margin:6px 0}
 @media(max-width:850px){.profileFields{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:460px){.profileFields{grid-template-columns:1fr}.accountProfilePanel{padding:16px}}
+.portalPdfActions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:10px 0}
+.portalPdfActions a{color:#baddff;text-decoration:none}
+.portalPdfDanger{color:#ffd4cf;border-color:#984f47}
+.reportPdfStage{position:absolute!important;left:-100000px;top:0;display:block!important;pointer-events:none}
 </style>
 </head>
 <body>
@@ -218,16 +222,22 @@ main{padding:24px;max-width:1600px;width:100%;margin:auto}
 <button type="button" data-page="rating"><span class="ico">★</span>Топ сотрудников недели</button>
 <button type="button" data-page="notifications"><span class="ico">♢</span>Уведомления</button>
 <button id="portalOpenReports" type="button" data-page="portalReportsQueue" hidden><span class="ico" aria-hidden="true">▤</span>Входящие отчёты</button>
+<button id="portalOpenPromotion" type="button" data-page="portalPromotionQueue" hidden><span class="ico" aria-hidden="true">✦</span>Рапорты на повышение</button>
 <button id="portalOpenLeadership" type="button" data-page="portalLeadership" hidden><span class="ico" aria-hidden="true">♟</span>Назначение ролей</button>
 </nav><div class="asidefoot">◉ Защищённый служебный интерфейс<br><br>Демонстрационный макет · данные условные</div></aside>
 <main>
 <div class="row portalSession">
  <span id="portalSessionStatus" role="status"></span>
 </div>
-<section id="portalReportsQueue" class="page panel" hidden>
- <div class="row"><h2>Входящие отчёты</h2><button id="portalCloseReports" class="action secondary" type="button">Закрыть</button></div>
- <p id="portalReportsStatus" role="status"></p><div id="portalReportsList"></div>
- <button id="portalMoreReports" class="action secondary" type="button" hidden>Показать ещё</button>
+<section id="portalReportsQueue" class="page panel portalReportQueue" hidden>
+ <div class="row"><h2>Входящие отчёты</h2><button data-close-queue class="action secondary" type="button">Закрыть</button></div>
+ <p data-queue-status role="status"></p><div class="portalReportsList"></div>
+ <button data-more-reports class="action secondary" type="button" hidden>Показать ещё</button>
+</section>
+<section id="portalPromotionQueue" class="page panel portalReportQueue" hidden>
+ <div class="row"><h2>Рапорты на повышение</h2><button data-close-queue class="action secondary" type="button">Закрыть</button></div>
+ <p data-queue-status role="status"></p><div class="portalReportsList"></div>
+ <button data-more-reports class="action secondary" type="button" hidden>Показать ещё</button>
 </section>
 <section id="portalLeadership" class="page panel" hidden>
  <div class="row"><h2>Назначение ролей</h2><button id="portalCloseLeadership" class="action secondary" type="button">Закрыть</button></div>
@@ -1017,16 +1027,18 @@ let accountRole = null;
 let accountId = null;
 let commissionerMode = true;
 const modeSwitch = document.getElementById("portalModeSwitch");
-const queue = document.getElementById("portalReportsQueue");
-const reportsList = document.getElementById("portalReportsList");
-const reportsStatus = document.getElementById("portalReportsStatus");
-const moreReports = document.getElementById("portalMoreReports");
+const reportQueuePanels = {
+ weekly: document.getElementById("portalReportsQueue"),
+ promotion: document.getElementById("portalPromotionQueue")
+};
 const reportTypes = {
  weekly: {label:"Еженедельный отчёт", documentId:"weeklyDocument"},
  promotion: {label:"Рапорт на повышение", documentId:"reportDocument"}
 };
-let queueVersion = 0;
-let queueOffset = 0;
+const reportQueues = Object.fromEntries(Object.entries(reportQueuePanels).map(([kind,panel]) => [kind,{
+ kind,panel,list:panel.querySelector(".portalReportsList"),status:panel.querySelector("[data-queue-status]"),
+ more:panel.querySelector("[data-more-reports]"),version:0,offset:0,urls:new Set()
+}]));
 
 function canAssignRoles(){
  return accountRole === "deputy" || (accountRole === "commissioner" && commissionerMode);
@@ -1045,9 +1057,10 @@ function updatePortalMode(){
   : roles[accountRole] || "";
  document.getElementById("portalOpenLeadership").hidden = !canAssignRoles();
  document.getElementById("portalOpenReports").hidden = !canAssignRoles();
+ document.getElementById("portalOpenPromotion").hidden = !canAssignRoles();
  if (!canAssignRoles()) {
-  if (queue.classList.contains("active") || leadership.classList.contains("active")) go("home");
-  closeReportsQueue();
+  if (Object.values(reportQueuePanels).some((panel) => panel.classList.contains("active")) || leadership.classList.contains("active")) go("home");
+  Object.values(reportQueues).forEach(closeReportsQueue);
   leadership.hidden = true;
   assignments.replaceChildren();
  }
@@ -1321,12 +1334,17 @@ async function showAssignments(){
  }
 }
 
-function closeReportsQueue(){
- queueVersion++;
- queue.hidden = true;
- reportsList.replaceChildren();
- moreReports.hidden = true;
- reportsStatus.textContent = "";
+function clearReportQueue(queue){
+ queue.version++;
+ for (const url of queue.urls) URL.revokeObjectURL(url);
+ queue.urls.clear();
+ queue.list.replaceChildren();
+ queue.more.hidden = true;
+ queue.status.textContent = "";
+}
+function closeReportsQueue(queue){
+ clearReportQueue(queue);
+ queue.panel.hidden = true;
 }
 
 function renderReportBody(target, body){
@@ -1345,56 +1363,146 @@ function renderReportBody(target, body){
  }
 }
 
-function makeReportRow(report){
+function makeReportRow(queue, report){
  const row = document.createElement("details");
  const title = document.createElement("summary");
+ const actions = document.createElement("div");
  const body = document.createElement("div");
+ actions.className = "portalPdfActions";
  body.className = "portalReportBody";
  title.textContent = reportTypes[report.kind].label + " · " + new Date(report.created_at).toLocaleString("ru-RU");
- row.append(title, body);
+ row.append(title,actions,body);
+ const remove = document.createElement("button");
+ remove.type = "button";
+ remove.className = "action secondary portalPdfDanger";
+ remove.textContent = "Удалить";
+ remove.addEventListener("click", async () => {
+  if (!canAssignRoles() || !window.confirm("Убрать этот документ из входящих?")) return;
+  remove.disabled = true;
+  const {error} = await client.rpc("portal_remove_report",{report_id:report.id});
+  if (!row.isConnected || !canAssignRoles()) return;
+  if (error) {
+   queue.status.textContent = "Не удалось удалить документ.";
+   remove.disabled = false;
+   return;
+  }
+  await loadReports(queue,true);
+  if (!queue.panel.hidden && canAssignRoles() && !queue.status.textContent) queue.status.textContent = "Документ удалён.";
+ });
+ actions.append(remove);
  let loaded = false;
  let loading = false;
  row.addEventListener("toggle", async () => {
   if (!row.open || loaded || loading || !canAssignRoles()) return;
   loading = true;
   body.textContent = "Загрузка…";
-  const {data,error} = await client.from("portal_reports").select("body").eq("id",report.id).single();
-  loading = false;
-  if (!row.isConnected || !canAssignRoles()) return;
-  if (error) {
-   body.textContent = "Не удалось открыть отчёт. Закрой и открой его снова.";
-   return;
+  try {
+   const {data,error} = await client.from("portal_reports").select("body,pdf_base64").eq("id",report.id).single();
+   if (!row.isConnected || !canAssignRoles()) return;
+   if (error) throw error;
+   body.replaceChildren();
+   if (data.pdf_base64) {
+    const bytes = Uint8Array.from(atob(data.pdf_base64), (ch) => ch.charCodeAt(0));
+    const url = URL.createObjectURL(new Blob([bytes],{type:"application/pdf"}));
+    queue.urls.add(url);
+    const open = document.createElement("a");
+    open.className = "action secondary";
+    open.href = url;
+    open.target = "_blank";
+    open.rel = "noopener noreferrer";
+    open.textContent = "Открыть PDF";
+    const download = document.createElement("a");
+    download.className = "action secondary";
+    download.href = url;
+    download.download = (report.kind === "weekly" ? "ezhenedelny-otchet" : "raport-na-povyshenie")+"-"+report.id.slice(0,8)+".pdf";
+    download.textContent = "Скачать PDF";
+    actions.prepend(open,download);
+   } else {
+    body.append("Документ отправлен до появления PDF.\n\n");
+   }
+   renderReportBody(body,data.body);
+   loaded = true;
+  } catch {
+   if (row.isConnected) body.textContent = "Не удалось открыть документ. Закрой и открой его снова.";
+  } finally {
+   loading = false;
   }
-  loaded = true;
-  body.replaceChildren();
-  renderReportBody(body, data.body);
  });
  return row;
 }
 
-async function loadReports(reset){
+async function loadReports(queue, reset){
  if (!canAssignRoles()) return;
- const version = ++queueVersion;
- queue.hidden = false;
  if (reset) {
-  reportsList.replaceChildren();
-  queueOffset = 0;
+  clearReportQueue(queue);
+  queue.offset = 0;
  }
- moreReports.hidden = true;
- reportsStatus.textContent = "Загрузка…";
+ const version = ++queue.version;
+ queue.panel.hidden = false;
+ queue.more.hidden = true;
+ queue.status.textContent = "Загрузка…";
  const pageSize = 30;
- const {data,error} = await client.from("portal_reports").select("id,kind,created_at")
-  .order("created_at",{ascending:false}).order("id",{ascending:false}).range(queueOffset,queueOffset+pageSize-1);
- if (version !== queueVersion || !canAssignRoles()) return;
+ const {data,error} = await client.from("portal_reports").select("id,kind,created_at").eq("kind",queue.kind)
+  .order("created_at",{ascending:false}).order("id",{ascending:false}).range(queue.offset,queue.offset+pageSize-1);
+ if (version !== queue.version || !canAssignRoles()) return;
  if (error) {
-  reportsStatus.textContent = "Не удалось загрузить отчёты.";
-  moreReports.hidden = queueOffset === 0;
+  queue.status.textContent = "Не удалось загрузить документы.";
+  queue.more.hidden = queue.offset === 0;
   return;
  }
- reportsStatus.textContent = !queueOffset && !data.length ? "Отчётов пока нет." : "";
- reportsList.append(...data.map(makeReportRow));
- queueOffset += data.length;
- moreReports.hidden = data.length < pageSize;
+ queue.status.textContent = !queue.offset && !data.length ? "Документов пока нет." : "";
+ queue.list.append(...data.map((report) => makeReportRow(queue,report)));
+ queue.offset += data.length;
+ queue.more.hidden = data.length < pageSize;
+}
+
+async function buildSubmittedPdf(snapshot, width){
+ const [render,{jsPDF}] = await Promise.all([
+  loadReportImageRenderer(),
+  import("https://cdn.jsdelivr.net/npm/jspdf@4.2.1/+esm")
+ ]);
+ const stage = document.createElement("div");
+ stage.className = "reportPreview reportPdfStage";
+ stage.style.width = width+"px";
+ stage.append(snapshot);
+ document.body.append(stage);
+ try {
+  const bounds = snapshot.getBoundingClientRect();
+  const evidence = Array.from(snapshot.querySelectorAll(".reportEvidence a"), (anchor) => ({
+   url:anchor.href, rects:Array.from(anchor.getClientRects())
+  }));
+  const canvas = await render(snapshot,{backgroundColor:"#fff",scale:1.5});
+  if (!canvas.width || !canvas.height) throw new Error("Empty PDF");
+  const pdf = new jsPDF({orientation:"portrait",unit:"mm",format:"a4",compress:true});
+  const margin = 8;
+  const usableWidth = 210-2*margin;
+  const ratio = usableWidth/canvas.width;
+  const maxHeight = Math.floor((297-2*margin)/ratio);
+  const pixelScale = canvas.width/bounds.width;
+  const page = document.createElement("canvas");
+  page.width = canvas.width;
+  for (let offset=0;offset<canvas.height;offset+=maxHeight) {
+   if (offset) pdf.addPage();
+   const height = Math.min(maxHeight,canvas.height-offset);
+   page.height = height;
+   page.getContext("2d").drawImage(canvas,0,offset,canvas.width,height,0,0,canvas.width,height);
+   pdf.addImage(page.toDataURL("image/jpeg",0.88),"JPEG",margin,margin,usableWidth,height*ratio);
+   for (const {url,rects} of evidence) {
+    for (const rect of rects) {
+     const y = (rect.top-bounds.top)*pixelScale;
+     const top = Math.max(y,offset);
+     const bottom = Math.min(y+rect.height*pixelScale,offset+height);
+     if (bottom <= top) continue;
+     pdf.link(margin+(rect.left-bounds.left)*pixelScale*ratio,margin+(top-offset)*ratio,rect.width*pixelScale*ratio,(bottom-top)*ratio,{url});
+    }
+   }
+  }
+  const encoded = pdf.output("datauristring").split(",")[1];
+  if (!encoded?.startsWith("JVBERi0") || encoded.length > 8000000) throw new Error("PDF size");
+  return encoded;
+ } finally {
+  stage.remove();
+ }
 }
 
 const pendingReports = new WeakMap();
@@ -1406,7 +1514,8 @@ async function submitReport(button){
   status.textContent = "Проверь даты отчётной недели.";
   return;
  }
- const body = document.getElementById(reportTypes[kind].documentId).innerText.trim();
+ const documentNode = document.getElementById(reportTypes[kind].documentId);
+ const body = documentNode.innerText.trim();
  if (!body) return;
  const author = accountId;
  let pending = pendingReports.get(button);
@@ -1415,11 +1524,16 @@ async function submitReport(button){
   pendingReports.set(button,pending);
  }
  button.disabled = true;
- status.textContent = "Отправка…";
+ status.textContent = "Формируем PDF…";
  try {
-  const {error} = await client.from("portal_reports").insert({id:pending.id,kind,body});
+  if (!pending.pdf) pending.pdf = await buildSubmittedPdf(documentNode.cloneNode(true),documentNode.offsetWidth);
+  if (accountId !== author || !accountRole) return;
+  status.textContent = "Отправка…";
+  const {error} = await client.from("portal_reports").insert({id:pending.id,kind,body,pdf_base64:pending.pdf});
   if (accountId !== author) return;
   status.textContent = !error || error.code === "23505" ? "Отчёт отправлен руководству." : "Не удалось отправить отчёт. Попробуй ещё раз.";
+ } catch {
+  if (accountId === author) status.textContent = "Не удалось подготовить PDF или отправить документ. Попробуй снова.";
  } finally {
   button.disabled = false;
  }
@@ -1467,9 +1581,15 @@ async function init(){
  });
  document.getElementById("portalOpenLeadership").addEventListener("click", showAssignments);
  document.getElementById("portalCloseLeadership").addEventListener("click", () => { leadership.hidden = true; go("home"); });
- document.getElementById("portalOpenReports").addEventListener("click", () => loadReports(true));
- document.getElementById("portalCloseReports").addEventListener("click", () => { closeReportsQueue(); go("home"); });
- moreReports.addEventListener("click", () => loadReports(false));
+ for (const [kind,buttonId] of [["weekly","portalOpenReports"],["promotion","portalOpenPromotion"]]) {
+  const queue = reportQueues[kind];
+  document.getElementById(buttonId).addEventListener("click", () => {
+   Object.values(reportQueues).filter((other) => other !== queue).forEach(closeReportsQueue);
+   loadReports(queue,true);
+  });
+  queue.panel.querySelector("[data-close-queue]").addEventListener("click", () => { closeReportsQueue(queue); go("home"); });
+  queue.more.addEventListener("click", () => loadReports(queue,false));
+ }
  document.querySelectorAll("[data-submit-report]").forEach((button) => {
   button.addEventListener("click", () => submitReport(button));
  });
