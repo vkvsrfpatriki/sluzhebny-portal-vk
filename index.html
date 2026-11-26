@@ -397,25 +397,25 @@ Object.entries(pages).forEach(([id,p]) => {
     <div class="panel">
      <h3>Начисление баллов Военного комиссариата</h3>
      <p class="muted">Баллы начисляются за подтверждённые служебные действия. Количество выполнений учитывается отдельно; присяга рассчитывается за каждого военнослужащего.</p>
-     <div style="overflow-x:auto"><table class="fakeTable"><thead><tr><th>№</th><th>Действие</th><th>Начисление</th></tr></thead><tbody>
-      <tr><td>16</td><td>Организация ГМП (3 и более организаций, минимум по 5 сотрудников)</td><td>100</td></tr>
-      <tr><td>6</td><td>Организация и проведение экзамена</td><td>50</td></tr>
-      <tr><td>12</td><td>Экскурсия по ВЧ</td><td>50</td></tr>
-      <tr><td>14</td><td>Проведение внутрифракционного мероприятия</td><td>50</td></tr>
-      <tr><td>15</td><td>Участие в ГМП (3 и более организаций, минимум по 5 сотрудников)</td><td>50</td></tr>
-      <tr><td>17</td><td>Агитационная стойка (1 час)</td><td>50</td></tr>
-      <tr><td>7</td><td>Участие в призыве</td><td>35</td></tr>
-      <tr><td>3</td><td>Проведение тренировки (минимум 2 человека)</td><td>30</td></tr>
-      <tr><td>11</td><td>Проведение лекции (минимум 1 человек)</td><td>30</td></tr>
-      <tr><td>5</td><td>Успешное отбитие КРаЗа</td><td>25</td></tr>
-      <tr><td>13</td><td>Участие в вечерней поверке</td><td>25</td></tr>
-      <tr><td>1</td><td>Участие в поставке</td><td>20</td></tr>
-      <tr><td>2</td><td>Участие в отбитии (ВС, ОБ7, РЛС)</td><td>20</td></tr>
-      <tr><td>4</td><td>Участие в отбитии КРаЗа</td><td>20</td></tr>
-      <tr><td>8</td><td>Рассмотрение рапорта военнослужащего из Военной академии</td><td>20</td></tr>
-      <tr><td>18</td><td>Принять экзамен ВА</td><td>20</td></tr>
-      <tr><td>9</td><td>Обработка человека по электронным заявкам</td><td>15</td></tr>
-      <tr><td>10</td><td>Приведение к присяге</td><td>15 за военнослужащего</td></tr>
+     <div style="overflow-x:auto"><table class="fakeTable"><thead><tr><th>Действие</th><th>Начисление</th></tr></thead><tbody>
+      <tr data-action-id="16"><td>Организация ГМП (3 и более организаций, минимум по 5 сотрудников)</td><td>100</td></tr>
+      <tr data-action-id="6"><td>Организация и проведение экзамена</td><td>50</td></tr>
+      <tr data-action-id="12"><td>Экскурсия по ВЧ</td><td>50</td></tr>
+      <tr data-action-id="14"><td>Проведение внутрифракционного мероприятия</td><td>50</td></tr>
+      <tr data-action-id="15"><td>Участие в ГМП (3 и более организаций, минимум по 5 сотрудников)</td><td>50</td></tr>
+      <tr data-action-id="17"><td>Агитационная стойка (1 час)</td><td>50</td></tr>
+      <tr data-action-id="7"><td>Участие в призыве</td><td>35</td></tr>
+      <tr data-action-id="3"><td>Проведение тренировки (минимум 2 человека)</td><td>30</td></tr>
+      <tr data-action-id="11"><td>Проведение лекции (минимум 1 человек)</td><td>30</td></tr>
+      <tr data-action-id="5"><td>Успешное отбитие КРаЗа</td><td>25</td></tr>
+      <tr data-action-id="13"><td>Участие в вечерней поверке</td><td>25</td></tr>
+      <tr data-action-id="1"><td>Участие в поставке</td><td>20</td></tr>
+      <tr data-action-id="2"><td>Участие в отбитии (ВС, ОБ7, РЛС)</td><td>20</td></tr>
+      <tr data-action-id="4"><td>Участие в отбитии КРаЗа</td><td>20</td></tr>
+      <tr data-action-id="8"><td>Рассмотрение рапорта военнослужащего из Военной академии</td><td>20</td></tr>
+      <tr data-action-id="18"><td>Принять экзамен ВА</td><td>20</td></tr>
+      <tr data-action-id="9"><td>Обработка человека по электронным заявкам</td><td>15</td></tr>
+      <tr data-action-id="10"><td>Приведение к присяге</td><td>15 за военнослужащего</td></tr>
      </tbody></table></div>
     </div>
    </div>
@@ -617,11 +617,11 @@ function reportValue(key){const el=document.querySelector('[data-report-field="'
 const catalogGroups = ["Работа ВК", "Доп отчёты"];
 const mainActionIds = new Set(["1", "3", "6", "7", "8", "9", "10", "11", "12", "17", "18"]);
 const catalog = Array.from(document.querySelectorAll("#promoPoints tbody tr"), (row) => ({
- id: row.cells[0].textContent.trim(),
- title: row.cells[1].textContent.trim(),
- group: mainActionIds.has(row.cells[0].textContent.trim()) ? 0 : 1,
- rate: Number.parseInt(row.cells[2].textContent, 10),
- unit: row.cells[2].textContent.includes("за военнослужащего") ? "военнослужащих" : "выполнений",
+ id: row.dataset.actionId,
+ title: row.cells[0].textContent.trim(),
+ group: mainActionIds.has(row.dataset.actionId) ? 0 : 1,
+ rate: Number.parseInt(row.cells[1].textContent, 10),
+ unit: row.cells[1].textContent.includes("за военнослужащего") ? "военнослужащих" : "выполнений",
  count: 0
 }));
 const catalogList = document.getElementById("reportActivities");
@@ -1411,7 +1411,7 @@ async function showAssignments(){
  }
  const table = document.createElement("table");
  table.className = "fakeTable";
- table.innerHTML = "<thead><tr><th>Пользователь</th><th>Игровое имя / статик</th><th>Роль</th><th>Последний вход</th></tr></thead><tbody></tbody>";
+ table.innerHTML = "<thead><tr><th>Пользователь</th><th>Игровое имя / статик</th><th>Роль</th><th>Звание</th><th>Последний вход</th></tr></thead><tbody></tbody>";
  const rows = [];
  for (const account of data) {
   const row = table.tBodies[0].insertRow();
@@ -1458,6 +1458,44 @@ async function showAssignments(){
    });
    controls.append(select,button);
    cell.append(controls);
+  }
+  const rankCell = row.insertCell();
+  rankCell.textContent = account.game_rank || "Не указано";
+  if (account.staff_role && (canEdit || account.user_id === accountId)) {
+   const controls = document.createElement("div");
+   controls.className = "roleAssignment";
+   const select = document.createElement("select");
+   select.setAttribute("aria-label","Звание для "+account.discord_name);
+   select.append(new Option("Выбери звание",""));
+   const allowedRanks = profileRanks.slice(0,profileRanks.indexOf("Подполковник")+1);
+   for (const rank of allowedRanks) select.append(new Option(rank,rank));
+   const currentRank = account.game_rank || "";
+   select.value = allowedRanks.includes(currentRank) ? currentRank : "";
+   const save = document.createElement("button");
+   save.type = "button";
+   save.className = "action secondary";
+   save.textContent = "Сохранить";
+   save.disabled = true;
+   select.addEventListener("change", () => {save.disabled = !select.value || select.value === currentRank;});
+   save.addEventListener("click", async () => {
+    if (version !== stateVersion || !canAssignRoles() || !allowedRanks.includes(select.value)) return;
+    const rank = select.value;
+    select.disabled = save.disabled = true;
+    const {error} = await client.rpc("portal_change_staff_rank",{target_user:account.user_id,target_rank:rank});
+    if (version !== stateVersion || !canAssignRoles()) return;
+    if (error) {
+     roleStatus.textContent = "Не удалось сохранить звание.";
+     select.disabled = save.disabled = false;
+     return;
+    }
+    if (account.user_id === accountId) syncAccountProfile({
+     game_name:currentProfile.name,game_static:currentProfile.passport,game_rank:rank,game_position:currentProfile.position
+    });
+    if (managedProfiles.has(account.user_id)) managedProfiles.get(account.user_id).game_rank = rank;
+    await showAssignments();
+   });
+   controls.append(select,save);
+   rankCell.append(controls);
   }
   row.insertCell().textContent = account.last_sign_in ? new Date(account.last_sign_in).toLocaleString("ru-RU") : "—";
   rows.push({row,search:[account.discord_name,account.discord_id,account.game_name,account.game_static].join(" ").toLocaleLowerCase("ru")});
