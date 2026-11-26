@@ -606,7 +606,7 @@ const trackedCriteria = [
  ["12", /(\d+)\s+экскурси/u]
 ];
 
-const catalogCriterionNames = new Set(["11", "6", "8", "9"]);
+const catalogCriterionNames = new Set(["11", "6", "8", "9", "12"]);
 
 function reportCriterionState(criterion, total, threshold, actions){
  if (/^Набрать \d+ баллов$/.test(criterion)) {
@@ -621,7 +621,7 @@ function reportCriterionState(criterion, total, threshold, actions){
  const met = targets.some(({count, required}) => count >= required);
  const label = targets.length === 1 ? targets[0].count + " / " + targets[0].required : met ? "Выполнено" : "Не выполнено";
  const named = targets.some((target) => target.useCatalogName) && targets.every((target) => target.title);
- const title = named ? (targets.length === 1 ? targets[0].title : "На выбор: " + targets.map((target) => target.title + " — " + target.required).join(" / ")) : criterion;
+ const title = named ? (targets.length === 1 ? targets[0].title : "На выбор: " + targets.map(({title, count, required}) => title + " — " + count + " / " + required).join(" · ")) : criterion;
  return {status: met ? "met" : "unmet", label, title};
 }
 
