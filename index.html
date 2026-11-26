@@ -197,6 +197,16 @@ main{padding:24px;max-width:1600px;width:100%;margin:auto}
 .portalLoginCard button:focus-visible{outline:2px solid #c0d2ff;outline-offset:3px}
 @media(max-width:480px){.portalGate.portalPhotoLogin{padding:16px}.portalLoginCard{padding:28px 20px 24px}}
 .roleSearch{display:block;margin:12px 0}.roleSearch input,.roleAssignment select{color:var(--text);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:8px;font:inherit}.roleSearch input{width:min(100%,420px);display:block;margin-top:5px}#portalAssignments{overflow-x:auto}#portalAssignments .fakeTable{min-width:660px}.roleAssignment{display:flex;gap:8px;align-items:center;margin-top:5px}
+.portalReportCertification{align-items:center;gap:14px;break-inside:avoid;page-break-inside:avoid;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.portalReportSeal{width:112px;height:112px;flex:0 0 112px;border:3px double #23578c;border-radius:50%;color:#23578c;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;transform:rotate(-8deg);font:800 8px/1.3 Arial,sans-serif;letter-spacing:.07em;position:relative}
+.portalReportSeal::before{content:"";position:absolute;inset:7px;border:1px dotted currentColor;border-radius:inherit}
+.portalReportSeal span:last-of-type{text-align:center}
+.portalReportSeal strong{font-size:21px;line-height:1.2}
+.portalReportSeal small{font-size:7px}
+.portalReportSigner{min-width:0;text-align:right}
+.portalReportSigner span{display:block}
+.portalReportSigner .portalReportAutograph{color:#1c4e8d;font:italic 600 21px/1.35 "Segoe Script","Monotype Corsiva",Georgia,serif;margin:4px 0;overflow-wrap:anywhere}
+@media(max-width:600px){.portalReportSeal{width:96px;height:96px;flex-basis:96px;font-size:7px}.portalReportSeal small{font-size:6px}.portalReportSigner .portalReportAutograph{font-size:17px}}
 </style>
 </head>
 <body>
@@ -684,6 +694,15 @@ function reportCriterionState(criterion, total, threshold, actions){
  return {status: met ? "met" : "unmet", label, title};
 }
 
+function reportCertification(rank, name){
+ const stamp = '<div class="portalReportSeal" aria-label="Игровая печать Военного Комиссариата">'+
+  '<span>ВОЕННЫЙ</span><span>КОМИССАРИАТ</span><strong aria-hidden="true">✦</strong><small>ИГРОВОЙ ПОРТАЛ</small></div>';
+ const autograph = name.trim() ? '<span class="portalReportAutograph" aria-label="Игровая подпись">'+reportEscape(name.trim())+'</span>' : '';
+ return '<div class="reportSignature portalReportCertification">'+stamp+
+  '<div class="portalReportSigner"><b>Рапорт составил:</b>'+autograph+
+  '<span>'+reportEscape(rank.trim() || "—")+'<br>'+reportEscape(name.trim() || "—")+'</span></div></div>';
+}
+
 function reportEvidenceLinks(value){
  const urls = [];
  for (const token of value.split(/\s+/)) {
@@ -746,7 +765,7 @@ function refreshReport(){
   '<li><b>Дополнительные сведения:</b> '+field("notes","Отсутствуют")+'.</li></ol>'+
   '<p class="reportProse">На основании изложенного прошу рассмотреть настоящий рапорт и присвоить мне очередное воинское звание «'+field("requestedRank")+'».</p>'+
   '<p><b>Общее количество баллов:</b> '+total+'<br><b>Дата подачи:</b> '+date("date")+'</p>'+
-  '<div class="reportSignature"><span><b>Рапорт составил:</b></span><span>'+field("currentRank")+'<br>'+field("name")+'</span></div>';
+  reportCertification(reportValue("currentRank"),reportValue("name"));
 }
 document.getElementById("catalogSearch").addEventListener("input", filterCatalog);
 document.getElementById("catalogSelected").addEventListener("change", filterCatalog);
@@ -965,7 +984,7 @@ function refreshWeeklyReport(){
   '<p class="reportProse">Прошу принять еженедельный отчёт и учесть представленные результаты при оценке моей работы.</p>'+
   (showPoints ? '<p><b>Общее количество баллов:</b> '+points+'</p>' : '')+
   '<p><b>Дата подачи:</b> '+date("date")+'</p>'+
-  '<div class="reportSignature"><span><b>Рапорт составил:</b></span><span>'+field("rank")+'<br>'+field("name")+'</span></div>';
+  reportCertification(weeklyField("rank").value,weeklyField("name").value);
 }
 function updateWeeklyRow(row, action){
  row.querySelector("output").textContent = action.count;
