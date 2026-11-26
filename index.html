@@ -182,6 +182,7 @@ main{padding:24px;max-width:1600px;width:100%;margin:auto}
 .portalPdfActions a{color:#baddff;text-decoration:none}
 .portalPdfDanger{color:#ffd4cf;border-color:#984f47}
 .reportPdfStage{position:absolute!important;left:-100000px;top:0;display:block!important;pointer-events:none}
+@media(max-width:700px){.hero{flex-wrap:wrap;gap:12px}.heroStats{display:flex;flex-wrap:wrap;margin-left:0}.heroStats .stat{min-width:0}}
 </style>
 </head>
 <body>
@@ -244,7 +245,7 @@ main{padding:24px;max-width:1600px;width:100%;margin:auto}
  <div id="portalAssignments" aria-live="polite"></div>
 </section>
 <section class="page active" id="home">
-<div class="hero"><div><div class="tag">Служебная система · ВК</div><h2>Добро пожаловать<br>на служебный портал</h2><p>Дисциплина. Порядок. Служба.</p></div><div class="heroStats"><div class="stat"><span>Отчёт за неделю</span><b>Черновик</b></div><div class="stat"><span>Баллы за неделю</span><b>—</b></div></div></div>
+<div class="hero"><div><div class="tag">Служебная система · ВК</div><h2>Добро пожаловать<br>на служебный портал</h2><p>Дисциплина. Порядок. Служба.</p></div><div class="heroStats"><div class="stat"><span>Отчёт за неделю</span><b id="homeWeeklyStatus" aria-live="polite">—</b></div><div class="stat"><span>Баллы за неделю</span><b id="homeWeeklyPoints" aria-live="polite">—</b></div></div></div>
 <div class="sectionhead"><div><h3>Быстрые переходы</h3><p>Выберите нужный раздел портала</p></div><span class="muted">Демо-версия</span></div>
 <div class="content"><div class="tiles">
 <div class="tile" data-go="profile"><img src="staff.jpg" alt="Личный профиль"><div class="tilelabel"><span><i>◉</i>Мой профиль</span>↗</div></div>
@@ -895,18 +896,24 @@ function syncWeeklyProfile(){
  weeklyField("passport").value = currentProfile.passport;
  weeklyField("rank").value = currentProfile.rank;
 }
+function weeklyActionAllowed(action){
+ return !action.senior || canUseWeeklySeniorActions(currentProfile.rank);
+}
+function countWeeklyPoints(){
+ return weeklyActions.filter(weeklyActionAllowed).reduce((sum,action) => sum+action.count*action.rate,0);
+}
 function refreshWeeklyReport(){
  const field = (name, fallback = "—") => reportEscape(weeklyField(name).value.trim() || fallback);
  const date = (name) => field(name).replace(/^(\d{4})-(\d{2})-(\d{2})$/, "$3.$2.$1");
  const showPoints = document.getElementById("weeklyShowPoints").checked;
  const seniorAccess = canUseWeeklySeniorActions(currentProfile.rank);
  const availableActions = weeklyActions.filter((action, index) => {
-  const available = !action.senior || seniorAccess;
+  const available = weeklyActionAllowed(action);
   weeklyRows[index].hidden = !available;
   return available;
  });
  const count = availableActions.reduce((sum, action) => sum+action.count, 0);
- const points = availableActions.reduce((sum, action) => sum+action.count*action.rate, 0);
+ const points = countWeeklyPoints();
  document.getElementById("weeklyPoints").textContent = points+" баллов за неделю";
  document.getElementById("weeklyPlan").textContent = "План по баллам: "+points+" / 200 минимум · 400 норма";
  const groups = weeklyGroups.map((title, group) => {
@@ -1228,6 +1235,7 @@ async function showAccount(session){
  }
  accountId = nextId;
  accountRole = null;
+ loadHomeWeeklySummary();
  updatePortalMode();
  shell.hidden = true;
  gate.hidden = false;
@@ -1260,6 +1268,7 @@ async function showAccount(session){
  gate.hidden = true;
  accountRole = data.role;
  syncAccountProfile(data);
+ loadHomeWeeklySummary();
  loadStaffLeadership(version);
  const meta = session.user.user_metadata || {};
  const candidate = meta.full_name || meta.name || meta.preferred_username;
@@ -1387,6 +1396,7 @@ function makeReportRow(queue, report){
    return;
   }
   await loadReports(queue,true);
+  if (report.kind === "weekly") loadHomeWeeklySummary();
   if (!queue.panel.hidden && canAssignRoles() && !queue.status.textContent) queue.status.textContent = "Документ удалён.";
  });
  actions.append(remove);
@@ -1505,6 +1515,27 @@ async function buildSubmittedPdf(snapshot, width){
  }
 }
 
+let homeWeeklyVersion = 0;
+async function loadHomeWeeklySummary(){
+ const version = ++homeWeeklyVersion;
+ const status = document.getElementById("homeWeeklyStatus");
+ const points = document.getElementById("homeWeeklyPoints");
+ status.textContent = accountRole ? "Загрузка…" : "—";
+ points.textContent = "—";
+ if (!accountId || !accountRole) return;
+ const [start,end] = weeklyPeriod(weeklyToday(),0);
+ const {data,error} = await client.from("portal_reports").select("weekly_points")
+  .eq("author_id",accountId).eq("kind","weekly")
+  .eq("week_start",start).eq("week_end",end)
+  .order("created_at",{ascending:false}).order("id",{ascending:false}).limit(1).maybeSingle();
+ if (version !== homeWeeklyVersion) return;
+ if (error) {
+  status.textContent = "Не удалось загрузить";
+  return;
+ }
+ status.textContent = data ? "Отправлен" : "Не отправлен";
+ points.textContent = data ? String(data.weekly_points) : "—";
+}
 const pendingReports = new WeakMap();
 async function submitReport(button){
  const kind = button.dataset.submitReport;
@@ -1518,9 +1549,15 @@ async function submitReport(button){
  const body = documentNode.innerText.trim();
  if (!body) return;
  const author = accountId;
+ const weekly = kind === "weekly" ? {
+  week_start:weeklyField("start").value,
+  week_end:weeklyField("end").value,
+  weekly_points:countWeeklyPoints()
+ } : {};
+ const key = JSON.stringify([body,weekly]);
  let pending = pendingReports.get(button);
- if (!pending || pending.body !== body || pending.author !== author) {
-  pending = {id:crypto.randomUUID(), body, author};
+ if (!pending || pending.key !== key || pending.author !== author) {
+  pending = {id:crypto.randomUUID(), key, author};
   pendingReports.set(button,pending);
  }
  button.disabled = true;
@@ -1529,9 +1566,11 @@ async function submitReport(button){
   if (!pending.pdf) pending.pdf = await buildSubmittedPdf(documentNode.cloneNode(true),documentNode.offsetWidth);
   if (accountId !== author || !accountRole) return;
   status.textContent = "Отправка…";
-  const {error} = await client.from("portal_reports").insert({id:pending.id,kind,body,pdf_base64:pending.pdf});
+  const {error} = await client.from("portal_reports").insert({id:pending.id,kind,body,pdf_base64:pending.pdf,...weekly});
   if (accountId !== author) return;
-  status.textContent = !error || error.code === "23505" ? "Отчёт отправлен руководству." : "Не удалось отправить отчёт. Попробуй ещё раз.";
+  const sent = !error || error.code === "23505";
+  status.textContent = sent ? "Отчёт отправлен руководству." : "Не удалось отправить отчёт. Попробуй ещё раз.";
+  if (sent && kind === "weekly") loadHomeWeeklySummary();
  } catch {
   if (accountId === author) status.textContent = "Не удалось подготовить PDF или отправить документ. Попробуй снова.";
  } finally {
