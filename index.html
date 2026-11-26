@@ -109,6 +109,7 @@ main{padding:24px;max-width:1600px;width:100%;margin:auto}
  body.printingReport .officialDocument::after{display:none}
  body.printingReport .reportPaperHeader,body.printingReport .reportSignature{break-inside:avoid}
 }
+.reportEvidenceLabel{font-weight:bold;margin-top:3px}
 </style>
 </head>
 <body><div class="shell">
@@ -484,6 +485,21 @@ function reportCriterionState(criterion, total, threshold, actions){
  return {status: met ? "met" : "unmet", label, title};
 }
 
+function reportEvidenceLinks(value){
+ const urls = [];
+ for (const token of value.split(/\s+/)) {
+  const address = token.startsWith("<") && token.endsWith(">") ? token.slice(1, -1) : token;
+  if (!/^https?:\/\//i.test(address)) continue;
+  try {
+   const url = new URL(address);
+   urls.push({href: url.href, label: address});
+  } catch {
+   // Skip incomplete links while the user is typing.
+  }
+ }
+ return urls;
+}
+
 function refreshReport(){
  const doc = document.getElementById("reportDocument");
  const field = (key, fallback = "—") => reportEscape(reportValue(key) || fallback);
@@ -506,10 +522,9 @@ function refreshReport(){
 
  const rows = catalog.map((action, index) => {
   if (!action.count) return "";
-  const links = catalogRows[index].querySelector("textarea").value.split(/\r?\n/).map((line) => line.trim())
-   .filter((line) => /^https?:\/\/\S+$/i.test(line));
-  const evidence = links.map((url) => '<li><a href="'+reportEscape(url)+'" target="_blank" rel="noopener noreferrer">'+reportEscape(url)+'</a></li>').join("");
-  return '<li>'+reportEscape(action.title)+' — '+action.unit+': '+action.count+' ('+action.count * action.rate+' баллов)'+(evidence ? '<ol class="reportEvidence">'+evidence+'</ol>' : '')+'</li>';
+  const links = reportEvidenceLinks(catalogRows[index].querySelector("textarea").value);
+  const evidence = links.map(({href, label}) => '<li><a href="'+reportEscape(href)+'" target="_blank" rel="noopener noreferrer">'+reportEscape(label)+'</a></li>').join("");
+  return '<li>'+reportEscape(action.title)+' — '+action.unit+': '+action.count+' ('+action.count * action.rate+' баллов)'+(evidence ? '<div class="reportEvidenceLabel">Доказательства:</div><ol class="reportEvidence">'+evidence+'</ol>' : '')+'</li>';
  });
  const reportGroups = catalogGroups.map((title, group) => {
   const items = rows.filter((row, index) => row && catalog[index].group === group).join("");
