@@ -218,7 +218,7 @@ main{padding:24px;max-width:1600px;width:100%;margin:auto}
 <button type="button" data-page="promotion"><span class="ico">✦</span>Повышение</button>
 <button type="button" data-page="reports"><span class="ico">▤</span>Отчёты</button>
 <button type="button" data-page="training"><span class="ico">▱</span>Обучение</button>
-<button type="button" data-page="staff"><span class="ico">♟</span>Состав ВК</button>
+<button type="button" data-page="staff"><span class="ico">♟</span>Руководящий состав</button>
 <button type="button" data-page="documents"><span class="ico">▣</span>Документация ВК</button>
 <button type="button" data-page="rating"><span class="ico">★</span>Топ сотрудников недели</button>
 <button type="button" data-page="notifications"><span class="ico">♢</span>Уведомления</button>
@@ -252,7 +252,7 @@ main{padding:24px;max-width:1600px;width:100%;margin:auto}
 <div class="tile" data-go="reports"><img src="reports.jpg" alt="Заполнение служебного отчёта"><div class="tilelabel"><span><i>▤</i>Еженедельный отчёт</span>↗</div></div>
 <div class="tile" data-go="promotion"><img src="promotion.jpg" alt="Повышение в звании"><div class="tilelabel"><span><i>✦</i>Рапорт на повышение</span>↗</div></div>
 <div class="tile" data-go="rating"><img src="rating.jpg" alt="Командная подготовка военнослужащих"><div class="tilelabel"><span><i>★</i>Топ сотрудников</span>↗</div></div>
-<div class="tile" data-go="staff"><img src="staff.jpg" alt="Военнослужащие на построении"><div class="tilelabel"><span><i>♟</i>Состав ВК</span>↗</div></div>
+<div class="tile" data-go="staff"><img src="staff.jpg" alt="Военнослужащие на построении"><div class="tilelabel"><span><i>♟</i>Руководящий состав</span>↗</div></div>
 <div class="tile" data-go="documents"><img src="documents.jpg" alt="Служебные документы"><div class="tilelabel"><span><i>▣</i>Документация ВК</span>↗</div></div>
 <div class="tile" data-go="notifications"><img src="notifications.jpg" alt="Служебные уведомления"><div class="tilelabel"><span><i>♢</i>Уведомления</span>↗</div></div>
 <div class="tile" data-go="training"><img src="training.jpg" alt="Занятие в учебном классе"><div class="tilelabel"><span><i>▱</i>Обучение</span>↗</div></div>
@@ -268,7 +268,7 @@ main{padding:24px;max-width:1600px;width:100%;margin:auto}
 const pages = {
  reports:["Отчёты","Еженедельный отчёт и история отправок","reports.jpg","Здесь будет двухпанельный редактор: форма слева и автоматически формируемый официальный документ справа. Доступны PDF и PNG."],
  training:["Обучение","Лекции и единый итоговый экзамен для стажёров","training.jpg","Здесь будут курсы, темы, лекции, материалы, видео, прогресс и единый итоговый экзамен."],
- staff:["Состав ВК","Действующий состав военного комиссариата","staff.jpg","Список действующего состава по должностям. Нажатие на ФИО открывает служебный профиль сотрудника."],
+ staff:["Руководящий состав","Комиссар и заместители военного комиссара","staff.jpg","Список действующего состава по должностям. Нажатие на ФИО открывает служебный профиль сотрудника."],
  documents:["Документация ВК","Служебные документы и полезные ссылки","documents.jpg","Здесь будет простой список документов и полезных ссылок. Открывать ссылки смогут все пользователи, редактировать записи — только Комиссар."],
  promotion:["Повышение","Ступени званий и рапорт на повышение","promotion.jpg","Подразделы: «Ступени» — требования и прогресс по всем званиям; «Рапорт на повышение» — оформление рапорта с доказательствами и калькулятором."],
  rating:["Топ сотрудников недели","Недельный рейтинг и результаты за всё время","rating.jpg","Здесь будет таблица: место, имя и фамилия, номер сотрудника, должность и баллы. Можно выбрать неделю или период «За всё время»."],
@@ -1177,16 +1177,18 @@ async function saveEmployeeProfile(event){
    fillProfileForm(form,saved);
    loadManagedLog();
   }
+  loadStaffLeadership();
   status.textContent = "Профиль сохранён.";
  } finally {
   button.disabled = false;
  }
 }
 
-async function loadStaffLeadership(version){
+async function loadStaffLeadership(){
+ const viewer = accountId;
  const target = document.getElementById("staffLeadershipCards");
  const {data,error} = await client.rpc("portal_staff_leadership");
- if (version !== stateVersion || !accountRole) return;
+ if (viewer !== accountId || !accountRole) return;
  target.replaceChildren();
  if (error) {
   target.textContent = "Не удалось загрузить состав руководства.";
@@ -1261,7 +1263,7 @@ async function showAccount(session){
  accountRole = data.role;
  syncAccountProfile(data);
  loadHomeWeeklySummary();
- loadStaffLeadership(version);
+ loadStaffLeadership();
  const meta = session.user.user_metadata || {};
  const candidate = meta.full_name || meta.name || meta.preferred_username;
  const title = typeof candidate === "string" && candidate.trim() ? candidate.trim().slice(0,80) : "Профиль";
@@ -1327,6 +1329,7 @@ async function showAssignments(){
      row.querySelectorAll("button").forEach((control) => { control.disabled = false; });
      return;
     }
+    loadStaffLeadership();
     await showAssignments();
    });
    row.append(button);
