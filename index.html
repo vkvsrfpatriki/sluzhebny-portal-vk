@@ -29,7 +29,7 @@ main{padding:24px;max-width:1600px;width:100%;margin:auto}
 .page{display:none}.page.active{display:block}.pagehero{height:190px;border-radius:16px;overflow:hidden;position:relative;margin-bottom:18px;border:1px solid var(--line)}.pagehero img{width:100%;height:100%;object-fit:cover;opacity:.72}.pagehero:after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,#07110df0,#07110d44)}.pageheroText{position:absolute;z-index:1;left:25px;bottom:22px}.pageheroText h2{font-size:30px;margin:0 0 4px}.pageheroText p{margin:0;color:#d2ddd2}
 .panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:14px}.panel h3{margin:0 0 12px}.row{display:flex;gap:12px;flex-wrap:wrap}.metric{flex:1;min-width:150px;background:#17241a;border:1px solid #2b4430;border-radius:11px;padding:14px}.metric b{font-size:24px;display:block}.metric span{color:var(--muted);font-size:12px}
 .fakeTable{width:100%;border-collapse:collapse}.fakeTable td,.fakeTable th{text-align:left;padding:12px;border-bottom:1px solid #293d2d;font-size:13px}.fakeTable th{color:#9eaf9f;font-weight:500}
-.action{background:#315f3b;border:1px solid #5b825d;border-radius:9px;padding:9px 13px}.action.secondary{background:#17251b;border-color:#3a5140}.footer{text-align:center;color:#78897a;font-size:11px;padding:24px}
+.action{background:#315f3b;border:1px solid #5b825d;border-radius:9px;padding:9px 13px}.action.secondary{background:#17251b;border-color:#3a5140}.pageNav{display:flex;gap:9px;margin:0 0 14px}.pageNav .action{min-width:112px}.footer{text-align:center;color:#78897a;font-size:11px;padding:24px}
 @media(max-width:1050px){.content{grid-template-columns:1fr}.rightcol{display:grid;grid-template-columns:repeat(2,1fr)}.tiles{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:700px){.top{height:auto;min-height:68px;padding:10px 14px}.brand h1{font-size:15px}.brand small{font-size:11px}.emblem{width:38px;height:38px}.topright .role{display:none}.layout{display:block}aside{position:sticky;top:68px;z-index:4;padding:7px;border-right:0;border-bottom:1px solid var(--line);overflow-x:auto}.nav{display:flex;min-width:max-content}.navtitle,.asidefoot{display:none}.nav button{width:auto;padding:9px 11px;font-size:12px}.nav .ico{display:none}main{padding:14px}.hero{padding:22px;min-height:190px}.heroStats{display:none}.tiles{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.tile{height:125px}.rightcol{display:flex}.pagehero{height:150px}.pageheroText h2{font-size:24px}}
 </style>
@@ -164,9 +164,13 @@ Object.entries(pages).forEach(([id,p]) => {
  }
  host.appendChild(section);
 });
-function go(id) {
+const pageHistory = [];
+let currentPage = "home";
+function go(id, fromHistory = false) {
  const target = document.getElementById(id);
  if (!target || !target.classList.contains("page")) return;
+ if (!fromHistory && id !== currentPage) pageHistory.push(currentPage);
+ currentPage = id;
  document.querySelectorAll("main .page").forEach(page => page.classList.remove("active"));
  target.classList.add("active");
  document.querySelectorAll("#nav button").forEach(button => {
@@ -175,7 +179,19 @@ function go(id) {
  window.scrollTo({top:0, behavior:"smooth"});
 }
 window.go = go;
+function goBack() {
+ const previous = pageHistory.pop() || "home";
+ go(previous, true);
+}
+document.querySelectorAll("main .page:not(#home)").forEach(section => {
+ const controls = document.createElement("div");
+ controls.className = "pageNav";
+ controls.innerHTML = '<button type="button" class="action secondary" data-back>← Назад</button><button type="button" class="action secondary" data-go="home">⌂ Главная</button>';
+ section.insertBefore(controls, section.firstChild);
+});
 document.addEventListener("click", event => {
+ const backButton = event.target.closest("[data-back]");
+ if (backButton) { event.preventDefault(); goBack(); return; }
  const navButton = event.target.closest("#nav button[data-page]");
  if (navButton) {
   event.preventDefault();
