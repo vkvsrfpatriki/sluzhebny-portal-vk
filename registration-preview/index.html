@@ -962,7 +962,9 @@ const leadership = document.getElementById("portalLeadership");
 const assignments = document.getElementById("portalAssignments");
 const accountControls = document.getElementById("portalAccountControls");
 const roles = {employee:"Сотрудник", deputy:"Заместитель комиссара", commissioner:"Комиссар"};
-const redirectTo = new URL(location.pathname, location.origin).href;
+const redirectTo = "https://vkvsrfpatriki.github.io/sluzhebny-portal-vk/registration-preview/";
+const portalHome = "https://vkvsrfpatriki.github.io/sluzhebny-portal-vk/";
+const isCallbackPage = location.pathname.startsWith(new URL(redirectTo).pathname);
 let client;
 let stateVersion = 0;
 let accountRole = null;
@@ -989,6 +991,10 @@ function updatePortalMode(){
 }
 
 async function showAccount(session){
+ if (session && isCallbackPage) {
+  location.replace(portalHome);
+  return;
+ }
  const version = ++stateVersion;
  const nextId = session?.user?.id ?? null;
  if (accountId !== nextId) commissionerMode = true;
@@ -1003,7 +1009,14 @@ async function showAccount(session){
  form.hidden = Boolean(session);
  pending.hidden = true;
  message.textContent = "";
- if (!session) return;
+ if (!session) {
+  const query = new URLSearchParams(location.search);
+  const fragment = new URLSearchParams(location.hash.slice(1));
+  if (query.has("error") || fragment.has("error")) {
+   message.textContent = "Не удалось завершить вход. Попробуй ещё раз.";
+  }
+  return;
+ }
  const {data, error} = await client.from("portal_accounts").select("role")
   .eq("user_id",session.user.id).single();
  if (version !== stateVersion) return;
