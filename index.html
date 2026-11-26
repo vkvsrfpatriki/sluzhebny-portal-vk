@@ -201,7 +201,7 @@ Object.entries(pages).forEach(([id,p]) => {
     </div>
     <p class="muted" style="margin-top:12px">Это пока макет просмотра. Отправка рапорта, загрузка доказательств и автоматическая проверка требуют серверной части.</p>
    </div>`;
- } } else if (id === "staff") {
+ } else if (id === "staff") {
   section.innerHTML = `<div class="pagehero"><img src="staff.jpg" alt=""><div class="pageheroText"><h2>${p[0]}</h2><p>${p[1]}</p></div></div>` + staffMarkup;
  } else if (id === "profile") {
   section.innerHTML = `<div class="pagehero"><img src="staff.jpg" alt=""><div class="pageheroText"><h2>Мой профиль</h2><p>Личные данные и служебная информация</p></div></div>` + profileMarkup;
