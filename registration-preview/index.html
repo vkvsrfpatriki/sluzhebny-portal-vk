@@ -1,0 +1,1092 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<base href="../">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Служебный портал ВК</title>
+<style>
+:root{--bg:#0a100d;--panel:#111b15;--panel2:#17251b;--line:#304936;--green:#315f3b;--green2:#497b4c;--text:#eef2ec;--muted:#aab7aa;--gold:#d8bd79}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.45 Inter,Segoe UI,Arial,sans-serif}
+button{font:inherit;color:inherit;cursor:pointer}.shell{min-height:100vh;background:radial-gradient(ellipse at 70% 0%,#1b3022 0,transparent 45%),var(--bg)}
+.top{height:82px;display:flex;align-items:center;justify-content:space-between;padding:0 28px;border-bottom:1px solid #3b543d;background:#0b130edb;position:sticky;top:0;z-index:5;backdrop-filter:blur(12px)}
+.brand{display:flex;align-items:center;gap:14px}.emblem{width:48px;height:48px;border:1px solid #927d48;border-radius:50%;display:grid;place-items:center;color:var(--gold);font-size:25px;background:#1a2a1c}.brand h1{font-size:20px;margin:0}.brand small{color:var(--muted)}
+.topright{display:flex;align-items:center;gap:18px}.profileShortcut{border:1px solid transparent;background:transparent;padding:12px 18px;text-align:left;min-height:66px;min-width:230px;border-radius:12px;cursor:pointer;transition:background .18s,border-color .18s}.profileShortcut:hover{background:#1b2b1f;border-color:#405b43}.profileShortcut:hover b{color:#d8bd79}.profileShortcut:focus-visible{outline:2px solid var(--gold);outline-offset:2px;border-radius:12px}.role{background:#1b2b1f;border:1px solid var(--line);border-radius:10px;padding:8px 12px;color:#dce8da}.user{display:flex;align-items:center;gap:10px}.avatar{width:38px;height:38px;border-radius:50%;background:#405844;display:grid;place-items:center}
+.layout{display:grid;grid-template-columns:238px 1fr;min-height:calc(100vh - 82px)}aside{border-right:1px solid #263c2c;padding:18px 12px;background:#0e1711}
+.navtitle{font-size:11px;color:#829485;text-transform:uppercase;letter-spacing:1.3px;padding:10px 12px}
+.nav button{width:100%;border:0;background:transparent;text-align:left;padding:12px;border-radius:9px;color:#c9d4ca;margin:2px 0;display:flex;gap:12px;align-items:center}
+.nav button:hover,.nav button.active{background:linear-gradient(90deg,#2c5735,#1b3322);color:white}.nav button.nav-hidden{display:none}.nav .ico{width:22px;text-align:center;color:#c9d6c6;font-size:17px}
+.asidefoot{margin:24px 5px 0;padding:13px;border:1px solid var(--line);border-radius:12px;color:var(--muted);font-size:12px}
+main{padding:24px;max-width:1600px;width:100%;margin:auto}
+.hero{min-height:220px;border-radius:18px;overflow:hidden;position:relative;background:linear-gradient(90deg,#07110cf2 0%,#0a160dc9 48%,#0b150c33 100%),url('staff.jpg') center 46%/cover;border:1px solid #354c38;display:flex;align-items:center;padding:32px;margin-bottom:20px}
+.hero h2{font-size:clamp(26px,3vw,40px);line-height:1.12;margin:0 0 12px;max-width:570px}.hero p{color:#d2ded2;margin:0}.hero .tag{color:var(--gold);font-size:12px;letter-spacing:2px;text-transform:uppercase;margin-bottom:12px}
+.heroStats{margin-left:auto;display:flex;gap:10px;align-self:flex-end}.stat{background:#08110dc9;border:1px solid #536a51;border-radius:12px;padding:13px 16px;min-width:120px}.stat b{display:block;font-size:21px}.stat span{font-size:12px;color:var(--muted)}
+.sectionhead{display:flex;align-items:end;justify-content:space-between;margin:22px 0 13px}.sectionhead h3{margin:0;font-size:20px}.sectionhead p{margin:3px 0 0;color:var(--muted);font-size:13px}
+.content{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:18px}.tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px}
+.tile{height:154px;border-radius:14px;overflow:hidden;position:relative;border:1px solid #405b43;background:#18251b;cursor:pointer;transition:.18s}.tile:hover{transform:translateY(-3px);border-color:#87a27b}
+.tile img{width:100%;height:100%;object-fit:cover;opacity:.72;transition:.2s}.tile:hover img{opacity:.9;transform:scale(1.03)}.tile:after{content:"";position:absolute;inset:0;background:linear-gradient(0deg,#07100df5 0%,#07100d20 80%)}
+.tilelabel{position:absolute;z-index:1;bottom:13px;left:15px;right:14px;display:flex;align-items:center;justify-content:space-between;font-weight:650}.tilelabel span:first-child{display:flex;gap:9px;align-items:center}.tilelabel i{font-style:normal;font-size:19px}
+.rightcol{display:flex;flex-direction:column;gap:13px}.widget{border:1px solid var(--line);background:linear-gradient(145deg,#17271b,#101a13);border-radius:14px;padding:16px}.widget h4{margin:0 0 12px;font-size:15px}.profileRole{font-size:22px;color:var(--gold);font-weight:700}.muted{color:var(--muted);font-size:13px}.notice{padding:10px 0;border-top:1px solid #2a3d2e;font-size:13px}.notice:first-of-type{border-top:0}.dot{display:inline-block;width:7px;height:7px;background:#7bb16d;border-radius:50%;margin-right:8px}
+.page{display:none}.page.active{display:block}.pagehero{height:190px;border-radius:16px;overflow:hidden;position:relative;margin-bottom:18px;border:1px solid var(--line)}.pagehero img{width:100%;height:100%;object-fit:cover;opacity:.72}.pagehero:after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,#07110df0,#07110d44)}.pageheroText{position:absolute;z-index:1;left:25px;bottom:22px}.pageheroText h2{font-size:30px;margin:0 0 4px}.pageheroText p{margin:0;color:#d2ddd2}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:14px}.panel h3{margin:0 0 12px}.row{display:flex;gap:12px;flex-wrap:wrap}.metric{flex:1;min-width:150px;background:#17241a;border:1px solid #2b4430;border-radius:11px;padding:14px}.metric b{font-size:24px;display:block}.metric span{color:var(--muted);font-size:12px}
+.fakeTable{width:100%;border-collapse:collapse}.fakeTable td,.fakeTable th{text-align:left;padding:12px;border-bottom:1px solid #293d2d;font-size:13px}.fakeTable th{color:#9eaf9f;font-weight:500}
+.action{background:#315f3b;border:1px solid #5b825d;border-radius:9px;padding:9px 13px}.action.secondary{background:#17251b;border-color:#3a5140}.subnav{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}.subnav button{background:#17251b;border:1px solid #3a5140;border-radius:9px;padding:10px 15px;color:#cbd7cb}.subnav button.active{background:#315f3b;border-color:#5b825d;color:#fff}.rankGrid{display:flex!important;flex-direction:column!important;flex-wrap:nowrap!important;gap:10px;width:100%}.rankGrid>.rankItem{width:100%;flex:0 0 auto}.rankItem{display:flex;align-items:center;gap:13px;background:#17241a;border:1px solid #2b4430;border-radius:11px;padding:13px}.rankNum{width:34px;height:34px;flex:0 0 34px;border-radius:9px;background:#263b2a;display:grid;place-items:center;color:var(--gold);font-weight:700}.rankItem b{display:block}.rankItem small{display:block;color:var(--muted);border:1px solid #8e7848;border-radius:8px;padding:9px 11px;margin-top:8px;background:#1d2b20;line-height:1.55}.rankItem ul{list-style:none;padding:0;margin:8px 0 0;background:transparent}.rankItem li{display:block;border:1px solid #8e7848;border-radius:8px;padding:9px 11px;margin-top:7px;background:#1d2b20;line-height:1.5}.rankStatus{margin-left:auto;font-size:12px;color:#d8bd79;text-align:right}.rankNote{border-left:3px solid #927d48;padding:10px 13px;background:#17231a;color:#c4d0c4;border-radius:0 8px 8px 0;font-size:13px}.reportWorkspace{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(340px,.95fr);gap:14px;align-items:start}.reportEditor,.reportPreview{min-width:0}.formGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.formGrid label,.activityRow label,.extraNotes{display:flex;flex-direction:column;gap:6px;color:#cbd7cb;font-size:13px}.formGrid input,.formGrid select,.activityRow input,.activityRow textarea,.extraNotes textarea{width:100%;min-width:0;background:#0d1710;border:1px solid #405b43;border-radius:8px;padding:10px;color:#eef2ec;font:inherit}.activityRow{display:grid;grid-template-columns:minmax(0,1fr) 90px;gap:10px;padding:12px;margin:10px 0;border:1px solid #304936;border-radius:10px;background:#121e15}.activityLinks{grid-column:1/-1}.activityRow textarea,.extraNotes textarea{resize:vertical}.removeActivity{justify-self:start}.extraNotes{margin-top:14px}.previewTop{display:flex;justify-content:space-between;gap:10px;align-items:center;margin:0 0 10px}.officialDocument{min-height:720px;background:#f4f1e8;color:#20251f;padding:34px 30px;border-radius:5px;box-shadow:0 8px 26px #0005;font:14px/1.65 Georgia,serif}.docCenter{text-align:center;line-height:1.8;margin-bottom:32px}.officialDocument h2{text-align:center;font-size:18px;margin:20px 0 28px}.officialDocument p{margin:12px 0}.officialDocument .docSection{font-weight:bold;margin-top:24px}.officialDocument ul{padding-left:22px}.criteriaList{display:grid;gap:7px}.criteriaRow{padding:9px 11px;border:1px solid #8e7848;border-radius:8px;background:#1d2b20;color:#dfe8df;font-size:13px}.criteriaRow small{display:block;color:#aab7aa;margin-top:3px}@media(max-width:1050px){.reportWorkspace{grid-template-columns:1fr}.officialDocument{min-height:500px}}@media(max-width:600px){.formGrid{grid-template-columns:1fr}.officialDocument{padding:22px 18px}.previewTop{align-items:flex-start;flex-direction:column}}.footer{text-align:center;color:#78897a;font-size:11px;padding:24px}
+@media(max-width:1050px){.content{grid-template-columns:1fr}.rightcol{display:grid;grid-template-columns:repeat(2,1fr)}.tiles{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:700px){.top{height:auto;min-height:68px;padding:10px 14px}.brand h1{font-size:15px}.brand small{font-size:11px}.emblem{width:38px;height:38px}.topright .role{display:none}.layout{display:block}aside{position:sticky;top:68px;z-index:4;padding:7px;border-right:0;border-bottom:1px solid var(--line);overflow-x:auto}.nav{display:flex;min-width:max-content}.navtitle,.asidefoot{display:none}.nav button{width:auto;padding:9px 11px;font-size:12px}.nav .ico{display:none}main{padding:14px}.hero{padding:22px;min-height:190px}.heroStats{display:none}.tiles{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.tile{height:125px}.rightcol{display:flex}.pagehero{height:150px}.pageheroText h2{font-size:24px}.rankGrid{grid-template-columns:1fr}}
+.catalogTools{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:12px}.catalogTools input[type=search]{flex:1;min-width:12ch;padding:8px;border:1px solid var(--line);border-radius:7px;background:var(--bg);color:var(--text);font:inherit}.catalogGroup>summary,.catalogEvidence>summary{cursor:pointer}.catalogGroup>summary{color:var(--gold);font-weight:700}.catalogItem{padding:10px;margin-top:7px;border:1px solid var(--line);border-radius:8px}.catalogItem.selected{background:#1b3322}.catalogRow{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px}.catalogRow strong{flex:1 1 14ch}.catalogRate{color:var(--gold);font-size:12px}.catalogCount{display:flex;align-items:center;gap:7px}.catalogCount button{padding:2px 9px}.catalogCount output{min-width:2ch;text-align:center}.catalogEvidence{font-size:13px;margin-top:6px}.catalogEvidence textarea{width:100%;margin-top:6px;padding:7px;background:var(--bg);color:var(--text);border:1px solid var(--line);border-radius:6px;font:inherit}.reportScore{width:100%;accent-color:#72a66c}.officialDocument{background:#fff;min-height:auto;aspect-ratio:210/297;overflow-wrap:anywhere}.reportPaperHeader{border-bottom:2px solid;padding-bottom:10px}.reportRecipient{margin-left:auto;width:fit-content}.reportSubtitle{text-align:center}.officialDocument h2{margin-bottom:4px}@media(min-width:1051px){.reportEditor{max-height:calc(100vh - 100px);overflow:auto;padding-right:6px}.reportPreview{position:sticky;top:90px}}
+
+.officialDocument{padding:clamp(24px,4vw,60px) clamp(20px,4.8vw,72px);border-radius:0;color:#141414;font:13px/1.35 "Times New Roman",serif}
+.officialDocument .reportPaperHeader{margin:0 0 12px;padding-bottom:8px;border-bottom:3px double #222;text-transform:uppercase;line-height:1.15}
+.reportPaperMark{display:block;margin-bottom:5px;color:#a47a27;font-size:30px;line-height:1}
+.officialDocument .reportRecipient{width:fit-content;max-width:55%;margin:0 0 18px auto}
+.officialDocument h2{font-size:19px;letter-spacing:.28em;margin:0 0 3px}
+.officialDocument .reportSubtitle{line-height:1.25;margin-bottom:22px}
+.reportDocumentNumber{display:block;margin-top:5px}
+.officialDocument p{margin:8px 0}
+.officialDocument .reportProse{text-align:justify;text-indent:2em}
+.officialDocument .docSection{margin:19px 0 5px}
+.officialDocument ol{margin:0;padding-left:24px}
+.officialDocument li{padding-left:2px;margin-bottom:4px}
+.officialDocument li::marker{font-weight:bold}
+.officialDocument .reportEvidence{list-style-type:lower-alpha;margin-top:3px}
+.officialDocument a{color:#174482;text-decoration:underline;overflow-wrap:anywhere}
+.reportSignature{display:flex;justify-content:space-between;gap:16px;margin-top:22px}
+.reportSignature span:last-child{text-align:right}
+@media(max-width:600px){.officialDocument{padding:24px 18px}.officialDocument .reportRecipient{max-width:70%}}
+.catalogGroup+.catalogGroup{margin-top:12px}
+/* Report editor and document preview */
+.reportWorkspace{--report-line:#303b49;grid-template-columns:minmax(0,44fr) minmax(0,56fr);gap:21px;color:#eef2f6}
+.reportWorkspace>.reportHeading{grid-column:1/-1;margin:0 0 -7px;font-size:clamp(26px,3.7vw,40px);line-height:1.12;font-weight:800}
+.reportEditor{background:#10141c;border:1px solid var(--report-line);border-radius:18px;padding:19px 17px;scrollbar-color:#41536a #10141c}
+.reportEditor>.panel{padding:0;border:0;border-radius:0;background:transparent;margin:0 0 18px}
+.reportEditor>.panel:first-child h3{font-size:20px;margin:0 0 14px}
+.reportEditor .formGrid{gap:7px 8px}
+.reportEditor .formGrid label,.reportEditor .extraNotes{color:#b8bec7;font-size:12px;gap:4px}
+.reportEditor .formGrid input,.reportEditor .formGrid select,.reportEditor textarea,.reportEditor .catalogTools input[type=search]{min-height:35px;padding:6px 8px;border:1px solid var(--report-line);border-radius:3px;background:#111720;color:#e9edf3}
+.reportEditor input[type=date]{color-scheme:dark}
+.reportEditor .reportFieldWide,.reportEditor .reportFieldGroup{grid-column:1/-1}
+.reportFieldGroup{margin:3px 0 0;color:#e0e4ea;font-size:13px}
+.reportEditor .reportSectionTitle{font-size:14px;font-weight:750;color:#d6e5fb;border-bottom:1px solid var(--report-line);padding-bottom:4px;margin:0 0 8px}
+.reportTransition{font-size:15px;margin:0 0 7px}
+.reportPointsMeter{position:relative;background:#1b5238;border:1px solid #32624a;border-radius:4px;overflow:hidden;text-align:center;margin:0 0 10px;min-height:24px}
+.reportPointsMeter progress{display:block;position:absolute;inset:0;width:100%;height:100%;border:0;appearance:none}
+.reportPointsMeter progress[hidden]{display:none}
+.reportPointsMeter progress::-webkit-progress-bar{background:#18261f}
+.reportPointsMeter progress::-webkit-progress-value{background:#39885c}
+.reportPointsMeter progress::-moz-progress-bar{background:#39885c}
+.reportPointsMeter output{position:relative;font-size:13px;font-weight:750}
+.reportEditor .criteriaList{padding:6px 8px;border:1px solid #3b4d45;border-radius:5px;background:#161d1a;gap:4px}
+.reportEditor .criteriaRow{border:0;background:transparent;padding:1px 0;color:#dce4de}
+.reportEditor .criteriaRow[data-status="met"]{color:#9adb9b}
+.reportEditor .criteriaRow[data-status="unmet"]{color:#f0ad9e}
+.reportEditor .criteriaRow small{display:inline;margin:0 0 0 6px}
+.reportEditor .catalogItem{background:#141b25;border-color:var(--report-line)}
+.reportEditor .catalogItem.selected{background:#17283a;border-color:#4d79a8}
+.reportEditor .catalogGroup>summary,.reportEditor .catalogRate{color:#c5ddff}
+.reportPreview{color:#d6e5fb}
+.reportPreview .previewTop{min-height:25px;margin-bottom:8px;font-size:13px}
+.reportPreview .officialDocument{background:#fff;color:#111;padding:clamp(30px,4.65vw,57px) clamp(20px,6.5vw,83px);font:13px/1.27 "Times New Roman",serif;aspect-ratio:auto;min-height:0}
+.reportPreview .officialDocument::after{content:"";display:block;height:30px}
+.reportPreview .reportPaperMark{font-size:34px;margin-bottom:6px}
+.reportPreview .reportRecipient{margin-bottom:19px}
+.reportPreview .reportSubtitle{margin-bottom:24px}
+@media(min-width:1051px){.reportEditor{max-height:calc(100vh - 114px)}.reportPreview{position:static}}
+@media(max-width:1050px){.reportWorkspace{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:600px){.reportEditor .formGrid{grid-template-columns:repeat(2,minmax(0,1fr))}.reportEditor{padding:14px 12px}.reportPreview .officialDocument{padding:30px 20px}}
+.reportEditor .criteriaRow[data-status="met"] .criterionText{text-decoration:line-through}
+.reportExport{display:grid;gap:8px}
+.reportExport .action{width:100%;border-radius:999px}
+.reportExport .action:first-of-type{background:#255da8;border-color:#6194d8}
+#reportExportStatus:empty{display:none}
+@page{size:A4;margin:16mm 19mm}
+@media print{
+ body.printingReport{background:#fff}
+ body.printingReport .top,body.printingReport aside,body.printingReport .footer,
+ body.printingReport main .page:not(#promotion),body.printingReport #promotion>:not(#promoReport),
+ body.printingReport #promoReport>:not(.reportPreview),body.printingReport .previewTop{display:none!important}
+ body.printingReport .shell,body.printingReport .layout,body.printingReport main,
+ body.printingReport #promoReport,body.printingReport .reportPreview{display:block!important;position:static;margin:0;padding:0;min-height:0;background:#fff}
+ body.printingReport .reportPreview .officialDocument{padding:0;box-shadow:none}
+ body.printingReport .officialDocument::after{display:none}
+ body.printingReport .reportPaperHeader,body.printingReport .reportSignature{break-inside:avoid}
+}
+.reportEvidenceLabel{font-weight:bold;margin-top:3px}
+.weeklyWorkspace .reportSectionTitle,.weeklyWorkspace .catalogGroup>summary{color:#f4c952}
+.weeklyWorkspace .catalogGroup{margin-top:12px}
+.weeklyWorkspace .reportExport .action{border-radius:4px}
+.weeklyWorkspace .reportExport .action:first-of-type{background:#8a231e;border-color:#b43f37}
+@media print{
+ body.printingWeekly .top,body.printingWeekly aside,body.printingWeekly .footer,
+ body.printingWeekly main .page:not(#reports),body.printingWeekly .weeklyWorkspace>:not(.reportPreview),
+ body.printingWeekly .previewTop{display:none!important}
+ body.printingWeekly .shell,body.printingWeekly .layout,body.printingWeekly main,
+ body.printingWeekly .weeklyWorkspace,body.printingWeekly .reportPreview{display:block!important;margin:0;padding:0;position:static;min-height:0;background:#fff}
+ body.printingWeekly .officialDocument{padding:0;box-shadow:none}
+ body.printingWeekly .officialDocument::after{display:none}
+}
+.weeklyManualRate{display:flex;align-items:center;gap:8px;margin-top:6px;color:#d6e5fb;font-size:13px}.weeklyManualRate input{width:65px;padding:4px 6px;background:#111720;color:#e9edf3;border:1px solid #303b49;border-radius:4px}
+.homeBrand{color:inherit;text-decoration:none}.homeBrand:hover h1{color:var(--gold)}.homeBrand:focus-visible{outline:2px solid var(--gold);outline-offset:4px;border-radius:5px}
+.shell[hidden],#portalGate [hidden],#portalOpenLeadership[hidden],#portalLeadership[hidden]{display:none!important}
+.portalGate{max-width:530px;margin:9vh auto;padding:24px;background:var(--panel);border:1px solid var(--line);border-radius:14px}
+.portalGate .formGrid{grid-template-columns:1fr}
+.portalGate fieldset{border:0;margin:0;padding:0;min-width:0}.portalGate fieldset>.row,.portalGate fieldset>button,.portalGate #portalAccountControls{margin-top:12px}
+.portalSession{justify-content:flex-end;margin-bottom:12px}
+#portalAssignments>div{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 0}
+#portalAssignments>div>span{flex:1 1 180px;overflow-wrap:anywhere}
+@media(max-width:600px){.portalGate{margin:5vh 12px}}
+</style>
+</head>
+<body>
+<section id="portalGate" class="portalGate">
+ <h1>Служебный портал ВК</h1>
+ <p id="portalAuthStatus" role="status"></p>
+ <form id="portalAuthForm" method="post">
+  <fieldset id="portalAuthFields" disabled>
+  <div class="formGrid">
+   <label>Электронная почта<input type="email" name="email" autocomplete="email" required></label>
+   <label>Пароль<input type="password" name="password" autocomplete="current-password" required></label>
+  </div>
+  <div class="row">
+   <button class="action" type="submit" value="login">Войти</button>
+   <button class="action secondary" type="submit" value="register">Зарегистрироваться</button>
+  </div>
+  <button id="portalDiscord" class="action" type="button">Войти через Discord</button>
+  </fieldset>
+ </form>
+ <section id="portalPending" hidden>
+  <h2>Ожидает назначения роли</h2>
+  <p>Руководство назначит тебе роль. После этого служебные разделы станут доступны.</p>
+  <button class="action secondary" type="button" onclick="location.reload()">Проверить статус</button>
+ </section>
+ <div id="portalAccountControls" hidden><button class="action secondary" type="button" data-portal-signout>Выйти</button></div>
+</section>
+<div class="shell" hidden>
+<header class="top">
+ <a class="brand homeBrand" href="./" data-go="home"><span class="emblem" aria-hidden="true">✦</span><div><h1>Служебный портал ВК</h1><small>Военный комиссариат</small></div></a>
+ <div class="topright"><div class="role" id="roleLabel">● Режим сотрудника</div><button type="button" class="user profileShortcut" data-go="profile" aria-label="Открыть мой профиль"><div class="avatar">АА</div><div><b>Иванов А.А.</b><div class="muted">Сотрудник ВК · № 014</div></div></button></div>
+</header>
+<div class="layout">
+<aside><div class="navtitle">Навигация</div><nav class="nav" id="nav">
+<button type="button" class="active" data-page="home"><span class="ico">⌂</span>Главная</button>
+<button type="button" data-page="promotion"><span class="ico">✦</span>Повышение</button>
+<button type="button" data-page="reports"><span class="ico">▤</span>Отчёты</button>
+<button type="button" data-page="training"><span class="ico">▱</span>Обучение</button>
+<button type="button" data-page="staff"><span class="ico">♟</span>Состав ВК</button>
+<button type="button" data-page="documents"><span class="ico">▣</span>Документация ВК</button>
+<button type="button" data-page="rating"><span class="ico">★</span>Топ сотрудников недели</button>
+<button type="button" data-page="notifications"><span class="ico">♢</span>Уведомления</button>
+</nav><div class="asidefoot">◉ Защищённый служебный интерфейс<br><br>Демонстрационный макет · данные условные</div></aside>
+<main>
+<div class="row portalSession">
+ <button id="portalOpenLeadership" class="action secondary" type="button" hidden>Назначение ролей</button>
+ <button class="action secondary" type="button" data-portal-signout>Выйти</button>
+ <span id="portalSessionStatus" role="status"></span>
+</div>
+<section id="portalLeadership" class="panel" hidden>
+ <div class="row"><h2>Аккаунты без роли</h2><button id="portalCloseLeadership" class="action secondary" type="button">Закрыть</button></div>
+ <div id="portalAssignments" aria-live="polite"></div>
+</section>
+<section class="page active" id="home">
+<div class="hero"><div><div class="tag">Служебная система · ВК</div><h2>Добро пожаловать<br>на служебный портал</h2><p>Дисциплина. Порядок. Служба.</p></div><div class="heroStats"><div class="stat"><span>Отчёт за неделю</span><b>Черновик</b></div><div class="stat"><span>Баллы за неделю</span><b>—</b></div></div></div>
+<div class="sectionhead"><div><h3>Быстрые переходы</h3><p>Выберите нужный раздел портала</p></div><span class="muted">Демо-версия</span></div>
+<div class="content"><div class="tiles">
+<div class="tile" data-go="profile"><img src="staff.jpg" alt="Личный профиль"><div class="tilelabel"><span><i>◉</i>Мой профиль</span>↗</div></div>
+<div class="tile" data-go="reports"><img src="reports.jpg" alt="Заполнение служебного отчёта"><div class="tilelabel"><span><i>▤</i>Еженедельный отчёт</span>↗</div></div>
+<div class="tile" data-go="promotion"><img src="promotion.jpg" alt="Повышение в звании"><div class="tilelabel"><span><i>✦</i>Рапорт на повышение</span>↗</div></div>
+<div class="tile" data-go="rating"><img src="rating.jpg" alt="Командная подготовка военнослужащих"><div class="tilelabel"><span><i>★</i>Топ сотрудников</span>↗</div></div>
+<div class="tile" data-go="staff"><img src="staff.jpg" alt="Военнослужащие на построении"><div class="tilelabel"><span><i>♟</i>Состав ВК</span>↗</div></div>
+<div class="tile" data-go="documents"><img src="documents.jpg" alt="Служебные документы"><div class="tilelabel"><span><i>▣</i>Документация ВК</span>↗</div></div>
+<div class="tile" data-go="notifications"><img src="notifications.jpg" alt="Служебные уведомления"><div class="tilelabel"><span><i>♢</i>Уведомления</span>↗</div></div>
+<div class="tile" data-go="training"><img src="training.jpg" alt="Занятие в учебном классе"><div class="tilelabel"><span><i>▱</i>Обучение</span>↗</div></div>
+</div><div class="rightcol">
+<div class="widget"><h4>★ Ваш профиль</h4><div class="profileRole">Сотрудник ВК</div><p class="muted">Иванов Алексей · № 014</p><p class="muted">Дата вступления: 12.06.2026</p></div>
+<div class="widget"><h4>♢ Последние уведомления</h4><div class="notice"><span class="dot"></span>Напоминание о недельном отчёте</div><div class="notice"><span class="dot"></span>Обновлены документы ВК</div><div class="notice"><span class="dot"></span>Опубликовано объявление руководства</div></div>
+<div class="widget"><h4>Памятка</h4><p class="muted">Проверяйте уведомления и своевременно отправляйте недельный отчёт.</p></div>
+</div></div></section>
+<div id="otherPages"></div>
+<div class="footer">© Служебный портал ВК · Демонстрационный интерфейс · Все данные вымышлены</div>
+</main></div></div>
+<script>
+const pages = {
+ reports:["Отчёты","Еженедельный отчёт и история отправок","reports.jpg","Здесь будет двухпанельный редактор: форма слева и автоматически формируемый официальный документ справа. Доступны PDF и PNG."],
+ training:["Обучение","Лекции и единый итоговый экзамен для стажёров","training.jpg","Здесь будут курсы, темы, лекции, материалы, видео, прогресс и единый итоговый экзамен."],
+ staff:["Состав ВК","Действующий состав военного комиссариата","staff.jpg","Список действующего состава по должностям. Нажатие на ФИО открывает служебный профиль сотрудника."],
+ documents:["Документация ВК","Служебные документы и полезные ссылки","documents.jpg","Здесь будет простой список документов и полезных ссылок. Открывать ссылки смогут все пользователи, редактировать записи — только Комиссар."],
+ promotion:["Повышение","Ступени званий и рапорт на повышение","promotion.jpg","Подразделы: «Ступени» — требования и прогресс по всем званиям; «Рапорт на повышение» — оформление рапорта с доказательствами и калькулятором."],
+ rating:["Топ сотрудников недели","Недельный рейтинг и результаты за всё время","rating.jpg","Здесь будет таблица: место, имя и фамилия, номер сотрудника, должность и баллы. Можно выбрать неделю или период «За всё время»."],
+ profile:["Мой профиль","Личные данные и история повышений в звании","staff.jpg","Здесь будут Discord, имя и фамилия, статик, должность, дата вступления, звание, прогресс и история повышений."],
+ bonuses:["Премии","Расчёт и история премиальных выплат","bonuses.jpg","Здесь будут сумма бюджета, параметры расчёта и персональная премия."],
+ archive:["Архив","Архив сотрудников, отчётов и кадровой истории","archive.jpg","Здесь будут архивные записи с поиском и разграничением доступа."],
+ notifications:["Уведомления","Объявления и личные служебные уведомления","notifications.jpg","Здесь будет единый центр уведомлений, статусы прочтения и объявления."]
+};
+
+const staffMarkup = `
+ <div class="panel">
+  <h3>Действующий состав</h3>
+  <p class="muted">Демонстрационная запись. После подключения базы здесь будут отображаться все действующие сотрудники и стажёры.</p>
+  <div style="overflow-x:auto">
+   <table class="fakeTable">
+    <thead><tr><th>Должность</th><th>Имя Фамилия</th><th>Статик</th></tr></thead>
+    <tbody>
+     <tr><th colspan="3">Комиссар</th></tr>
+     <tr><th colspan="3">Заместитель военного комиссара</th></tr>
+     <tr><th colspan="3">Начальник отдела призыва</th></tr>
+     <tr><th colspan="3">Начальник отдела кадров</th></tr>
+     <tr><th colspan="3">Заместитель начальника отдела призыва</th></tr>
+     <tr><th colspan="3">Заместитель начальника отдела кадров</th></tr>
+     <tr><td>Сотрудник ВК</td><td><button type="button" class="action secondary" data-go="profile">Иванов Алексей</button></td><td>014</td></tr>
+     <tr><th colspan="3">Стажёр</th></tr>
+    </tbody>
+   </table>
+  </div>
+ </div>`;
+const currentProfile = {name: "Иванов Алексей", passport: "014", rank: ""};
+const profileRankKey = "vk.portal.profile.currentRank";
+try {
+ currentProfile.rank = (localStorage.getItem(profileRankKey) || "").trim();
+} catch {
+ // The profile can still be edited for the current session.
+}
+const profileMarkup = `
+ <div class="panel">
+  <h3>${reportEscape(currentProfile.name)}</h3>
+  <div class="row">
+   <div class="metric"><span>Статик</span><b>${reportEscape(currentProfile.passport)}</b></div>
+   <div class="metric"><span>Должность</span><b>Сотрудник ВК</b></div>
+   <div class="metric formGrid" style="display:block"><label>Текущее звание<input id="profileCurrentRank" value="${reportEscape(currentProfile.rank)}" placeholder="Укажи текущее звание" /></label></div>
+  </div>
+  <div class="row" style="margin-top:12px">
+   <div class="metric"><span>Статус</span><b>Действующий</b></div>
+   <div class="metric"><span>Дата вступления</span><b>12.06.2026</b></div>
+  </div>
+  <p class="muted" style="margin-top:14px">Демонстрационный профиль. Звание сохраняется в этом браузере и подставляется в рапорт.</p>
+ </div>`;
+const host = document.getElementById("otherPages");
+Object.entries(pages).forEach(([id,p]) => {
+ const section = document.createElement("section");
+ section.className = "page";
+ section.id = id;
+ section.innerHTML = `
+  <div class="pagehero">
+   <img src="${p[2]}" alt="">
+   <div class="pageheroText"><h2>${p[0]}</h2><p>${p[1]}</p></div>
+  </div>
+  <div class="panel">
+   <h3>Раздел в разработке</h3>
+   <p class="muted">${p[3]}</p>
+   <button type="button" class="action secondary" data-go="home">← На главную</button>
+  </div>
+  <div class="row">
+   <div class="metric"><b>—</b><span>Текущий статус</span></div>
+   <div class="metric"><b>—</b><span>Последнее обновление</span></div>
+   <div class="metric"><b>—</b><span>Доступ по роли</span></div>
+  </div>`;
+ if (id === "promotion") {
+  section.innerHTML = `
+   <div class="pagehero"><img src="promotion.jpg" alt=""><div class="pageheroText"><h2>Повышение</h2><p>Ступени званий, требования и система баллов</p></div></div>
+   <div class="subnav">
+    <button type="button" class="active" data-promo-tab="steps">Ступени и требования</button>
+    <button type="button" data-promo-tab="points">Система баллов</button>
+    <button type="button" data-promo-tab="report">Рапорт на повышение</button>
+   </div>
+   <div id="promoSteps">
+    <div class="panel">
+     <h3>Ступени повышения</h3>
+     <p class="muted">Обязательные критерии отображаются отдельно от начисляемых баллов. В вариантах «на выбор» достаточно выполнить один из перечисленных вариантов.</p>
+     <div class="rankGrid" style="display:flex;flex-direction:column;flex-wrap:nowrap;width:100%">
+      <div class="rankItem"><span class="rankNum">1</span><div><b>Мл. серж. — Серж.</b><ul class="muted"><li>Провести 3 лекции Военной академии</li><li>Провести 1 экзамен Военной академии</li><li>Рассмотреть 4 отчёта Военной академии</li><li>Рассмотреть 1 электронное заявление</li><li>Пройти тестирование и успешно завершить стажировку</li></ul></div></div>
+      <div class="rankItem"><span class="rankNum">2</span><div><b>Серж. — Ст. серж.</b><small>4 лекции · 2 экзамена · 8 отчётов ВА · 3 электронных заявления · стажёрам — тестирование и завершение стажировки</small></div></div>
+      <div class="rankItem"><span class="rankNum">3</span><div><b>Ст. серж. — Старшина</b><small>300 баллов · стажёрам — тестирование и завершение стажировки</small><ul class="muted"><li>На выбор: 6 лекций / 2 экзамена / 2 тренировки / 8 отчётов ВА / 5 электронных заявлений</li><li>Наличие военного билета</li></ul></div></div>
+      <div class="rankItem"><span class="rankNum">4</span><div><b>Старшина — Прапорщик</b><small>350 баллов · стажёрам — тестирование и завершение стажировки</small><ul class="muted"><li>На выбор: 6 лекций / 3 экзамена / 2 тренировки / 10 отчётов ВА / 5 электронных заявлений</li></ul></div></div>
+      <div class="rankItem"><span class="rankNum">5</span><div><b>Прапорщик — Ст. прапорщик</b><small>400 баллов · стажёрам — тестирование и завершение стажировки</small><ul class="muted"><li>На выбор: 10 лекций / 4 экзамена / 3 тренировки / 13 отчётов ВА / 5 электронных заявлений</li></ul></div></div>
+      <div class="rankItem"><span class="rankNum">6</span><div><b>Ст. прапорщик — Мл. лейтенант</b><small>450 баллов · аттестация для получения «Состава инструкторов» · стажёрам — тестирование и завершение стажировки</small><ul class="muted"><li>На выбор: 5 электронных заявлений или 1 экскурсия по части</li><li>Агитационная стойка на КПП-1 — 60 минут</li></ul></div></div>
+      <div class="rankItem"><span class="rankNum">7</span><div><b>Мл. лейтенант — Лейтенант</b><small>500 баллов · 2 экскурсии по части · обработка 10 звонков от граждан · стажёрам — тестирование и завершение стажировки</small></div></div>
+      <div class="rankItem"><span class="rankNum">8</span><div><b>Лейтенант — Ст. лейтенант</b><small>550 баллов · 3 экскурсии по части · обработка 15 звонков от граждан · 3 тренировки · стажёрам — тестирование и завершение стажировки</small></div></div>
+      <div class="rankItem"><span class="rankNum">9</span><div><b>Ст. лейтенант — Капитан</b><small>Требуется одобрение Комиссара или Заместителя комиссара</small><ul class="muted"><li>5 тренировок</li><li>3 успешно проведённые стажировки в ВК</li><li>5 экскурсий по части</li><li>Аттестация по ПОиП, ПГО, ОПС и правилам проведения наборов</li></ul></div></div>
+     </div>
+    </div>
+    <div class="rankNote">Указанные обязательные критерии не добавляют баллы. Порог баллов и обязательные действия проверяются раздельно. Для перехода на капитана отдельный балльный порог не указан.</div>
+    <div class="panel" style="margin-top:14px"><h3 class="reportSectionTitle">Калькулятор повышения</h3><p class="muted">В рабочей версии здесь будут фактические результаты сотрудника, необходимые значения и статус каждого требования. Выполненные пункты отмечаются зелёным, невыполненные — красным. Сейчас это демонстрационный просмотр без персональных данных и подтверждённых действий.</p></div>
+   </div>
+   <div id="promoPoints" style="display:none">
+    <div class="panel">
+     <h3>Начисление баллов Военного комиссариата</h3>
+     <p class="muted">Баллы начисляются за подтверждённые служебные действия. Количество выполнений учитывается отдельно; присяга рассчитывается за каждого военнослужащего.</p>
+     <div style="overflow-x:auto"><table class="fakeTable"><thead><tr><th>№</th><th>Действие</th><th>Начисление</th></tr></thead><tbody>
+      <tr><td>16</td><td>Организация ГМП (3 и более организаций, минимум по 5 сотрудников)</td><td>100</td></tr>
+      <tr><td>6</td><td>Организация и проведение экзамена</td><td>50</td></tr>
+      <tr><td>12</td><td>Экскурсия по ВЧ</td><td>50</td></tr>
+      <tr><td>14</td><td>Проведение внутрифракционного мероприятия</td><td>50</td></tr>
+      <tr><td>15</td><td>Участие в ГМП (3 и более организаций, минимум по 5 сотрудников)</td><td>50</td></tr>
+      <tr><td>17</td><td>Агитационная стойка (1 час)</td><td>50</td></tr>
+      <tr><td>7</td><td>Участие в призыве</td><td>35</td></tr>
+      <tr><td>3</td><td>Проведение тренировки (минимум 2 человека)</td><td>30</td></tr>
+      <tr><td>11</td><td>Проведение лекции (минимум 1 человек)</td><td>30</td></tr>
+      <tr><td>5</td><td>Успешное отбитие КРаЗа</td><td>25</td></tr>
+      <tr><td>13</td><td>Участие в вечерней поверке</td><td>25</td></tr>
+      <tr><td>1</td><td>Участие в поставке</td><td>20</td></tr>
+      <tr><td>2</td><td>Участие в отбитии (ВС, ОБ7, РЛС)</td><td>20</td></tr>
+      <tr><td>4</td><td>Участие в отбитии КРаЗа</td><td>20</td></tr>
+      <tr><td>8</td><td>Рассмотрение рапорта военнослужащего из Военной академии</td><td>20</td></tr>
+      <tr><td>18</td><td>Принять экзамен ВА</td><td>20</td></tr>
+      <tr><td>9</td><td>Обработка человека по электронным заявкам</td><td>15</td></tr>
+      <tr><td>10</td><td>Приведение к присяге</td><td>15 за военнослужащего</td></tr>
+     </tbody></table></div>
+    </div>
+   </div>
+   <div id="promoReport" class="reportWorkspace" style="display:none">
+    <h2 class="reportHeading">Рапорт на повышение</h2>
+    <div class="reportEditor">
+     <div class="panel">
+      <h3>Рапорт на повышение</h3>
+      <div class="formGrid">
+       <label>Номер рапорта<input data-report-field="number" placeholder="Будет присвоен системой" value="ДЕМО-0001" /></label>
+       <label>Дата подачи<input data-report-field="date" type="date" value="2026-11-26" /></label>
+      </div>
+     </div>
+     <div class="panel">
+      <h3 class="reportSectionTitle">I. Общие сведения</h3>
+      <div class="formGrid">
+       <h4 class="reportFieldGroup">1. Военнослужащий</h4>
+       <label>Текущее звание<input data-report-field="currentRank" value="${reportEscape(currentProfile.rank)}" placeholder="Укажи звание в профиле" readonly /></label>
+       <label>Статик<input data-report-field="passport" value="${reportEscape(currentProfile.passport)}" readonly /></label>
+       <label class="reportFieldWide">Имя и фамилия<input data-report-field="name" value="${reportEscape(currentProfile.name)}" readonly /></label>
+       <h4 class="reportFieldGroup">2. Подразделение и должность</h4>
+       <label>Подразделение<input data-report-field="unit" placeholder="Отдел кадров / Отдел призыва" /></label>
+       <label>Должность<input data-report-field="position" placeholder="Должность" /></label>
+       <h4 class="reportFieldGroup">3. Испрашиваемое звание</h4>
+       <label class="reportFieldWide">Испрашиваемое звание<select data-report-field="requestedRank">
+        <option value="Сержант">Сержант</option><option value="Старший сержант">Старший сержант</option><option value="Старшина">Старшина</option><option value="Прапорщик">Прапорщик</option><option value="Старший прапорщик">Старший прапорщик</option><option value="Младший лейтенант">Младший лейтенант</option><option value="Лейтенант">Лейтенант</option><option value="Старший лейтенант">Старший лейтенант</option><option value="Капитан">Капитан</option>
+       </select></label>
+
+      </div>
+     </div>
+     <div class="panel">
+      <h3>Калькулятор повышения</h3>
+      <p id="reportTransition" class="reportTransition"></p>
+      <div class="reportPointsMeter"><progress id="reportScore" class="reportScore" aria-label="Баллы для повышения" hidden></progress><output id="reportTotal" aria-live="polite"></output></div>
+      <div id="reportCriteria" class="criteriaList"><div class="criteriaRow">Выберите запрашиваемое звание — список критериев появится здесь.</div></div>
+      <div class="rankNote" style="margin-top:10px">Статус проверки в этом макете — предварительный. Баллы и обязательные критерии проверяются отдельно.</div>
+     </div>
+     <div class="panel">
+      <h3 class="reportSectionTitle">II. Результаты служебной деятельности</h3>
+      <div class="catalogTools">
+       <input id="catalogSearch" type="search" aria-label="Найти действие" placeholder="Найти действие">
+       <label><input id="catalogSelected" type="checkbox"> Только выбранные</label>
+      </div>
+      <div id="reportActivities"></div>
+      <p id="catalogEmpty" class="muted" hidden>Действия не найдены.</p>
+     </div>
+     <div class="panel">
+      <h3 class="reportSectionTitle">III. Итоговая информация</h3>
+      <label class="extraNotes">Общий результат работы за период<textarea data-report-field="summary" rows="2" placeholder="Заполняется автоматически по выполненным работам"></textarea></label>
+      <label class="extraNotes">Дополнительные сведения<textarea data-report-field="notes" rows="3" placeholder="При необходимости укажи дополнительные сведения"></textarea></label>
+     </div>
+     <div class="panel reportExport">
+      <h3 class="reportSectionTitle">Выгрузка</h3>
+      <button type="button" id="reportPdf" class="action">Сохранить PDF</button>
+      <button type="button" id="reportPng" class="action secondary">Скачать PNG</button>
+      <button type="button" id="reportReset" class="action secondary">Обнулить достижения</button>
+      <p id="reportExportStatus" class="muted" role="status"></p>
+     </div>
+    </div>
+    <div class="reportPreview">
+     <div class="previewTop"><span>Предпросмотр</span></div>
+     <article id="reportDocument" class="officialDocument">
+      <div class="docCenter"><b>ВОЕННЫЙ КОМИССАРИАТ</b><div>СЛУЖЕБНЫЙ РАПОРТ</div></div>
+      <h2>РАПОРТ НА ПОВЫШЕНИЕ</h2>
+      <p>Номер: ДЕМО-0001</p><p>Дата: 26.11.2026</p>
+      <p>Прошу рассмотреть вопрос о моём повышении в воинском звании.</p>
+      <p>Документ будет автоматически заполняться по мере ввода данных слева.</p>
+     </article>
+    </div>
+   </div>
+   <p class="muted" style="margin-top:12px">Это интерактивный демонстрационный макет: данные пока не сохраняются на сервере, рапорт нельзя отправить, а доказательства не проходят реальную проверку.</p>`;
+ } else if (id === "reports") {
+  section.innerHTML = `
+   <div class="reportWorkspace weeklyWorkspace">
+    <h2 class="reportHeading">Еженедельный отчёт</h2>
+    <div class="reportEditor">
+     <div class="panel formGrid">
+      <label>Номер рапорта<input data-week-field="number" inputmode="numeric" value="1"></label>
+      <label>Дата подачи<input data-week-field="date" type="date"></label>
+      <label class="reportFieldWide">Кому<input data-week-field="recipient" value="Военному комиссару"></label>
+     </div>
+     <div class="panel">
+      <h3 class="reportSectionTitle">I. Общие сведения</h3>
+      <div class="formGrid">
+       <h4 class="reportFieldGroup">1. Военнослужащий</h4>
+       <label>Текущее звание<input data-week-field="rank" readonly></label>
+       <label>Статик<input data-week-field="passport" readonly></label>
+       <label class="reportFieldWide">Имя и фамилия<input data-week-field="name" readonly></label>
+       <h4 class="reportFieldGroup">2. Подразделение и должность</h4>
+       <label>Подразделение<input data-week-field="unit"></label>
+       <label>Должность<input data-week-field="position"></label>
+       <h4 class="reportFieldGroup">3. Отчётный период</h4>
+       <label>Начало недели<input data-week-field="start" type="date"></label>
+       <label>Конец недели<input data-week-field="end" type="date"></label>
+       <button type="button" class="action secondary" data-week-offset="0">Текущая неделя</button>
+       <button type="button" class="action secondary" data-week-offset="-1">Прошлая неделя</button>
+      </div>
+     </div>
+     <div class="panel">
+      <h3 class="reportSectionTitle">II. Результаты служебной деятельности</h3>
+      <div class="reportPointsMeter"><output id="weeklyPoints" aria-live="polite"></output></div>
+      <label><input type="checkbox" id="weeklyShowPoints" checked> Указывать баллы в документе</label>
+      <p id="weeklyPlan" class="muted" aria-live="polite"></p>
+      <div id="weeklyActions"></div>
+     </div>
+     <div class="panel">
+      <h3 class="reportSectionTitle">III. Итоговая информация</h3>
+      <label class="extraNotes">Общий результат работы за неделю<textarea data-week-field="summary" rows="2" placeholder="Подставляется автоматически"></textarea></label>
+      <label class="extraNotes">Дополнительные сведения<textarea data-week-field="notes" rows="3"></textarea></label>
+     </div>
+     <div class="panel reportExport">
+      <h3 class="reportSectionTitle">Выгрузка</h3>
+      <button type="button" id="weeklyPdf" class="action">Сохранить PDF</button>
+      <button type="button" id="weeklyPng" class="action secondary">Скачать PNG</button>
+      <button type="button" id="weeklyReset" class="action secondary">Обнулить неделю</button>
+      <p class="muted" id="weeklyExportStatus" role="status"></p>
+     </div>
+    </div>
+    <div class="reportPreview">
+     <div class="previewTop">Предпросмотр</div>
+     <article id="weeklyDocument" class="officialDocument"></article>
+    </div>
+   </div>`;
+ } else if (id === "staff") {
+  section.innerHTML = `<div class="pagehero"><img src="staff.jpg" alt=""><div class="pageheroText"><h2>${p[0]}</h2><p>${p[1]}</p></div></div>` + staffMarkup;
+ } else if (id === "profile") {
+  section.innerHTML = `<div class="pagehero"><img src="staff.jpg" alt=""><div class="pageheroText"><h2>Мой профиль</h2><p>Личные данные и служебная информация</p></div></div>` + profileMarkup;
+ } else {
+  section.innerHTML = `
+  <div class="pagehero">
+   <img src="${p[2]}" alt="">
+   <div class="pageheroText"><h2>${p[0]}</h2><p>${p[1]}</p></div>
+  </div>
+  <div class="panel">
+   <h3>Раздел в разработке</h3>
+   <p class="muted">${p[3]}</p>
+   <button type="button" class="action secondary" data-go="home">← На главную</button>
+  </div>
+  <div class="row">
+   <div class="metric"><b>—</b><span>Текущий статус</span></div>
+   <div class="metric"><b>—</b><span>Последнее обновление</span></div>
+   <div class="metric"><b>—</b><span>Доступ по роли</span></div>
+  </div>`;
+ }
+ host.appendChild(section);
+});
+function go(id) {
+ const target = document.getElementById(id);
+ if (!target || !target.classList.contains("page")) return;
+ document.querySelectorAll("main .page").forEach(page => page.classList.remove("active"));
+ target.classList.add("active");
+ document.querySelectorAll("#nav button").forEach(button => {
+  button.classList.toggle("active", button.dataset.page === id);
+  button.classList.toggle("nav-hidden", id === "profile" && button.dataset.page === "staff");
+ });
+ window.scrollTo({top:0, behavior:"smooth"});
+}
+window.go = go;
+document.addEventListener("click", event => {
+ const promoTab = event.target.closest("[data-promo-tab]");
+ if (promoTab) {
+  const selected = promoTab.dataset.promoTab;
+  document.querySelectorAll("[data-promo-tab]").forEach(tab => tab.classList.toggle("active", tab === promoTab));
+  const panels = {steps:document.getElementById("promoSteps"),points:document.getElementById("promoPoints"),report:document.getElementById("promoReport")};
+  Object.entries(panels).forEach(([key,panel]) => { if(panel) panel.style.display = key === selected ? (key === "report" ? "grid" : "block") : "none"; });
+  return;
+ }
+ const navButton = event.target.closest("#nav button[data-page]");
+ if (navButton) {
+  event.preventDefault();
+  go(navButton.dataset.page);
+  return;
+ }
+ const goButton = event.target.closest("[data-go]");
+ if (goButton) {
+  event.preventDefault();
+  go(goButton.dataset.go);
+ }
+});
+
+const promotionCriteria = {
+ "Сержант":["Провести 3 лекции Военной академии","Провести 1 экзамен Военной академии","Рассмотреть 4 отчёта Военной академии","Рассмотреть 1 электронное заявление","Пройти тестирование и успешно завершить стажировку"],
+ "Старший сержант":["Провести 4 лекции Военной академии","Провести 2 экзамена Военной академии","Рассмотреть 8 отчётов Военной академии","Рассмотреть 3 электронных заявления","Пройти тестирование и успешно завершить стажировку"],
+ "Старшина":["Набрать 300 баллов","На выбор: 6 лекций / 2 экзамена / 2 тренировки / 8 отчётов ВА / 5 электронных заявлений","Наличие военного билета","Стажёрам: пройти тестирование и успешно завершить стажировку"],
+ "Прапорщик":["Набрать 350 баллов","На выбор: 6 лекций / 3 экзамена / 2 тренировки / 10 отчётов ВА / 5 электронных заявлений","Стажёрам: пройти тестирование и успешно завершить стажировку"],
+ "Старший прапорщик":["Набрать 400 баллов","На выбор: 10 лекций / 4 экзамена / 3 тренировки / 13 отчётов ВА / 5 электронных заявлений","Стажёрам: пройти тестирование и успешно завершить стажировку"],
+ "Младший лейтенант":["Набрать 450 баллов","На выбор: 5 электронных заявлений или 1 экскурсия по части","Пост «Агитационная стойка на КПП-1» — 60 минут","Аттестация для получения «Состава инструкторов»","Стажёрам: пройти тестирование и успешно завершить стажировку"],
+ "Лейтенант":["Набрать 500 баллов","Провести 2 экскурсии по части","Обработать 10 звонков от граждан","Стажёрам: пройти тестирование и успешно завершить стажировку"],
+ "Старший лейтенант":["Набрать 550 баллов","Провести 3 экскурсии по части","Обработать 15 звонков от граждан","Провести 3 тренировки","Стажёрам: пройти тестирование и успешно завершить стажировку"],
+ "Капитан":["Провести 5 тренировок","Провести 3 успешные стажировки в ВК","Провести 5 экскурсий по части","Аттестация по ПОиП, ПГО, ОПС и правилам проведения наборов","Одобрение Комиссара или Заместителя комиссара"]
+};
+function reportEscape(value){return String(value??"").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));}
+function reportValue(key){const el=document.querySelector('[data-report-field="'+key+'"]');return el?el.value.trim():"";}
+const catalogGroups = ["Работа ВК", "Доп отчёты"];
+const mainActionIds = new Set(["1", "3", "6", "7", "8", "9", "10", "11", "12", "17", "18"]);
+const catalog = Array.from(document.querySelectorAll("#promoPoints tbody tr"), (row) => ({
+ id: row.cells[0].textContent.trim(),
+ title: row.cells[1].textContent.trim(),
+ group: mainActionIds.has(row.cells[0].textContent.trim()) ? 0 : 1,
+ rate: Number.parseInt(row.cells[2].textContent, 10),
+ unit: row.cells[2].textContent.includes("за военнослужащего") ? "военнослужащих" : "выполнений",
+ count: 0
+}));
+const catalogList = document.getElementById("reportActivities");
+const itemMarkup = catalog.map((action, index) => {
+ const title = reportEscape(action.title);
+ return '<div class="catalogItem" data-catalog-index="'+index+'"><div class="catalogRow"><strong>'+title+'</strong>'+
+  '<span class="catalogRate">'+("+"+action.rate+" баллов"+(action.unit === "военнослужащих" ? " за военнослужащего" : ""))+'</span>'+
+  '<span class="catalogCount"><button type="button" class="action secondary" data-step="-1" aria-label="Уменьшить: '+title+'" disabled>−</button>'+
+  '<output aria-label="Количество: '+title+'">0</output><button type="button" class="action secondary" data-step="1" aria-label="Увеличить: '+title+'">+</button></span></div>'+
+  '<details class="catalogEvidence"><summary>Доказательства</summary><textarea rows="2" aria-label="Доказательства: '+title+'" placeholder="По одной ссылке на строку"></textarea></details></div>';
+});
+catalogList.innerHTML = catalogGroups.map((title, group) =>
+ '<details class="catalogGroup"'+(group === 0 ? ' open' : '')+'><summary>'+title+'</summary>'+
+ itemMarkup.filter((_, index) => catalog[index].group === group).join("")+'</details>'
+).join("");
+const catalogRows = Array.from(catalogList.querySelectorAll("[data-catalog-index]"));
+catalogRows.sort((a, b) => Number(a.dataset.catalogIndex) - Number(b.dataset.catalogIndex));
+
+function filterCatalog(){
+ const query = document.getElementById("catalogSearch").value.trim().toLocaleLowerCase("ru");
+ const selectedOnly = document.getElementById("catalogSelected").checked;
+ let visible = 0;
+ catalog.forEach((action, index) => {
+  const row = catalogRows[index];
+  row.hidden = !action.title.toLocaleLowerCase("ru").includes(query) || (selectedOnly && !action.count);
+  if (!row.hidden) visible++;
+ });
+ document.getElementById("catalogEmpty").hidden = visible > 0;
+ for (const group of catalogList.children) {
+  group.hidden = !group.querySelector(".catalogItem:not([hidden])");
+  if ((query || selectedOnly) && !group.hidden) group.open = true;
+ }
+}
+
+const trackedCriteria = [
+ ["11", /(\d+)\s+лекци/u],
+ ["6", /(\d+)\s+экзамен/u],
+ ["8", /(\d+)\s+отч[её]т/u],
+ ["9", /(\d+)\s+электронн/u],
+ ["3", /(\d+)\s+трениров/u],
+ ["12", /(\d+)\s+экскурси/u]
+];
+
+const catalogCriterionNames = new Set(["11", "6", "8", "9"]);
+
+function reportCriterionState(criterion, total, threshold, actions){
+ if (/^Набрать \d+ баллов$/.test(criterion)) {
+  return {status: total >= threshold ? "met" : "unmet", label: total + " / " + threshold + " баллов"};
+ }
+ const targets = trackedCriteria.flatMap(([id, pattern]) => {
+  const match = criterion.match(pattern);
+  const action = actions.get(id);
+  return match ? [{title: action?.title, useCatalogName: catalogCriterionNames.has(id), count: action?.count ?? 0, required: Number(match[1])}] : [];
+ });
+ if (!targets.length) return {status: "pending", label: "Ожидает проверки"};
+ const met = targets.some(({count, required}) => count >= required);
+ const label = targets.length === 1 ? targets[0].count + " / " + targets[0].required : met ? "Выполнено" : "Не выполнено";
+ const named = targets.some((target) => target.useCatalogName) && targets.every((target) => target.title);
+ const title = named ? (targets.length === 1 ? targets[0].title : "На выбор: " + targets.map((target) => target.title + " — " + target.required).join(" / ")) : criterion;
+ return {status: met ? "met" : "unmet", label, title};
+}
+
+function reportEvidenceLinks(value){
+ const urls = [];
+ for (const token of value.split(/\s+/)) {
+  const address = token.startsWith("<") && token.endsWith(">") ? token.slice(1, -1) : token;
+  if (!/^https?:\/\//i.test(address)) continue;
+  try {
+   const url = new URL(address);
+   urls.push({href: url.href, label: address});
+  } catch {
+   // Skip incomplete links while the user is typing.
+  }
+ }
+ return urls;
+}
+
+function refreshReport(){
+ const doc = document.getElementById("reportDocument");
+ const field = (key, fallback = "—") => reportEscape(reportValue(key) || fallback);
+ const date = (key) => field(key).replace(/^(\d{4})-(\d{2})-(\d{2})$/, "$3.$2.$1");
+ const total = catalog.reduce((sum, action) => sum + action.count * action.rate, 0);
+ const count = catalog.reduce((sum, action) => sum + action.count, 0);
+ const criteria = promotionCriteria[reportValue("requestedRank")] || [];
+ const threshold = Number(criteria.find((criterion) => /^Набрать \d+ баллов$/.test(criterion))?.match(/\d+/)?.[0] || 0);
+ document.getElementById("reportTotal").textContent = threshold ? total+" / "+threshold+" баллов" : total+" баллов";
+ document.getElementById("reportTransition").textContent = (reportValue("currentRank") || "Текущее звание") + " → " + reportValue("requestedRank");
+ const progress = document.getElementById("reportScore");
+ progress.hidden = !threshold;
+ progress.max = threshold || 1;
+ progress.value = total;
+ const actions = new Map(catalog.map((action) => [action.id, action]));
+ document.getElementById("reportCriteria").innerHTML = criteria.map((criterion) => {
+  const {status, label, title = criterion} = reportCriterionState(criterion, total, threshold, actions);
+  return '<div class="criteriaRow" data-status="'+status+'"><span class="criterionText">'+reportEscape(title)+'</span><small>'+reportEscape(label)+'</small></div>';
+ }).join("");
+
+ const rows = catalog.map((action, index) => {
+  if (!action.count) return "";
+  const links = reportEvidenceLinks(catalogRows[index].querySelector("textarea").value);
+  const evidence = links.map(({href, label}) => '<li><a href="'+reportEscape(href)+'" target="_blank" rel="noopener noreferrer">'+reportEscape(label)+'</a></li>').join("");
+  return '<li>'+reportEscape(action.title)+' — '+action.unit+': '+action.count+' ('+action.count * action.rate+' баллов)'+(evidence ? '<div class="reportEvidenceLabel">Доказательства:</div><ol class="reportEvidence">'+evidence+'</ol>' : '')+'</li>';
+ });
+ const reportGroups = catalogGroups.map((title, group) => {
+  const items = rows.filter((row, index) => row && catalog[index].group === group).join("");
+  return items ? '<li><b>'+title+':</b><ol>'+items+'</ol></li>' : "";
+ }).join("");
+
+ doc.innerHTML =
+  '<header class="docCenter reportPaperHeader"><span class="reportPaperMark" aria-hidden="true">✦</span>'+
+  '<b>МИНИСТЕРСТВО ОБОРОНЫ РОССИЙСКОЙ ФЕДЕРАЦИИ<br>ВОЕННЫЙ КОМИССАРИАТ</b></header>'+
+  '<div class="reportRecipient"><b>Кому:</b> Военному комиссару<br><b>От:</b> '+field("currentRank")+' '+field("name")+'<br>'+field("position")+'</div>'+
+  '<h2>РАПОРТ</h2><div class="reportSubtitle"><b>О присвоении очередного воинского звания</b><span class="reportDocumentNumber">№ '+field("number")+'</span></div>'+
+  '<p class="reportProse">Докладываю Вам о результатах служебной деятельности за период службы в текущем воинском звании и прошу рассмотреть вопрос о присвоении мне очередного воинского звания.</p>'+
+  '<p class="docSection">I. ОБЩИЕ СВЕДЕНИЯ</p><ol>'+
+  '<li><b>Военнослужащий:</b> '+field("currentRank")+' '+field("name")+', статик № '+field("passport")+'.</li>'+
+  '<li><b>Подразделение и должность:</b> '+field("unit")+', '+field("position")+'.</li>'+
+  '<li><b>Испрашиваемое звание:</b> '+field("requestedRank")+'.</li></ol>'+ 
+  '<p class="docSection">II. РЕЗУЛЬТАТЫ СЛУЖЕБНОЙ ДЕЯТЕЛЬНОСТИ</p>'+
+  (reportGroups ? '<ol start="4">'+reportGroups+'</ol>' : '<p>Действия пока не добавлены.</p>')+
+  '<p class="docSection">III. ИТОГОВАЯ ИНФОРМАЦИЯ</p><ol start="'+(4 + catalogGroups.filter((_, group) => catalog.some((action) => action.group === group && action.count)).length)+'">'+
+  '<li><b>Общий результат работы за период:</b><br>'+field("summary", "Выполнено мероприятий и служебных действий: "+count+".")+'</li>'+
+  '<li><b>Дополнительные сведения:</b> '+field("notes","Отсутствуют")+'.</li></ol>'+
+  '<p class="reportProse">На основании изложенного прошу рассмотреть настоящий рапорт и присвоить мне очередное воинское звание «'+field("requestedRank")+'».</p>'+
+  '<p><b>Общее количество баллов:</b> '+total+'<br><b>Дата подачи:</b> '+date("date")+'</p>'+
+  '<div class="reportSignature"><span><b>Рапорт составил:</b><br>'+field("position")+'</span><span>'+field("currentRank")+'<br>'+field("name")+'</span></div>';
+}
+document.getElementById("profileCurrentRank").addEventListener("input", (event) => {
+ currentProfile.rank = event.target.value.trim();
+ try {
+  localStorage.setItem(profileRankKey, currentProfile.rank);
+ } catch {
+  // Keep the new rank available until the page is reloaded.
+ }
+ document.querySelector('[data-report-field="currentRank"]').value = currentProfile.rank;
+ refreshReport();
+});
+document.getElementById("catalogSearch").addEventListener("input", filterCatalog);
+document.getElementById("catalogSelected").addEventListener("change", filterCatalog);
+document.getElementById("promoReport").addEventListener("input", (event) => {
+ if (event.target.matches("[data-report-field], .catalogEvidence textarea")) refreshReport();
+});
+catalogList.addEventListener("click", (event) => {
+ const button = event.target.closest("[data-step]");
+ if (!button) return;
+ const row = button.closest("[data-catalog-index]");
+ const action = catalog[Number(row.dataset.catalogIndex)];
+ action.count = Math.max(0, action.count + Number(button.dataset.step));
+ row.querySelector("output").textContent = action.count;
+ row.querySelector('[data-step="-1"]').disabled = action.count === 0;
+ row.classList.toggle("selected", action.count > 0);
+ filterCatalog();
+ refreshReport();
+});
+document.getElementById("reportPdf").addEventListener("click", () => {
+ document.body.classList.add("printingReport");
+ try {
+  window.print();
+ } finally {
+  document.body.classList.remove("printingReport");
+ }
+});
+
+let reportImageRenderer;
+function loadReportImageRenderer(){
+ if (!reportImageRenderer) {
+  reportImageRenderer = new Promise((resolve, reject) => {
+   const script = document.createElement("script");
+   script.src = "https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js";
+   script.onload = () => typeof window.html2canvas === "function" ? resolve(window.html2canvas) : reject(new Error("Renderer unavailable"));
+   script.onerror = reject;
+   document.head.appendChild(script);
+  }).catch((error) => {
+   reportImageRenderer = null;
+   throw error;
+  });
+ }
+ return reportImageRenderer;
+}
+
+async function downloadReportPng(button, documentId, statusId, filename, replaceLinks = false){
+ const status = document.getElementById(statusId);
+ button.disabled = true;
+ status.textContent = "Готовим изображение…";
+ try {
+  const render = await loadReportImageRenderer();
+  const canvas = await render(document.getElementById(documentId), {
+   backgroundColor:"#fff",
+   scale:2,
+   onclone: (copy) => {
+    if (!replaceLinks) return;
+    copy.getElementById(documentId).querySelectorAll(".reportEvidence a").forEach((anchor, index) => {
+     anchor.replaceWith(copy.createTextNode("Приложение №"+(index+1)));
+    });
+   }
+  });
+  const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/png"));
+  if (!blob) throw new Error("PNG is empty");
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  status.textContent = "Изображение готово.";
+ } catch {
+  status.textContent = "Не удалось создать PNG. Попробуй ещё раз или сохрани PDF.";
+ } finally {
+  button.disabled = false;
+ }
+}
+document.getElementById("reportPng").addEventListener("click", (event) => {
+ downloadReportPng(event.currentTarget, "reportDocument", "reportExportStatus", "raport-na-povyshenie.png");
+});
+
+document.getElementById("reportReset").addEventListener("click", () => {
+ if (!window.confirm("Обнулить количество выполненных работ и очистить ссылки на доказательства?")) return;
+ catalog.forEach((action, index) => {
+  action.count = 0;
+  const row = catalogRows[index];
+  row.querySelector("output").textContent = "0";
+  row.querySelector("textarea").value = "";
+  row.querySelector('[data-step="-1"]').disabled = true;
+  row.classList.remove("selected");
+ });
+ filterCatalog();
+ refreshReport();
+});
+refreshReport();
+
+const weeklyPage = document.getElementById("reports");
+const weeklyField = (name) => weeklyPage.querySelector('[data-week-field="'+name+'"]');
+const weeklyGroups = ["Работа ВК", "Доп отчёты"];
+const weeklySeniorRanks = new Set([
+ "капитан", "майор", "подполковник", "полковник", "генерал-майор",
+ "генерал-лейтенант", "генерал-полковник", "генерал армии", "маршал российской федерации"
+]);
+function canUseWeeklySeniorActions(rank){
+ return weeklySeniorRanks.has(rank.trim().toLocaleLowerCase("ru").replace(/[‐‑–—]/g, "-").replace(/\s+/g, " "));
+}
+// Weekly rates are separate from the promotion rates.
+const weeklyRates = new Map([["1",20],["2",20],["3",3],["procedure",10],["academyOath",1],["dismissal",15],["enlistment",15],["promote",10]]);
+const weeklyActions = [
+ ...catalog,
+ {id:"procedure", title:"Передать проц. действия правоохранительным органам"},
+ {id:"academyOath", title:"Принятие присяги у ВА"},
+ {id:"thanks", title:"Благодарность от руководства"},
+ {id:"dismissal", title:"Уволил военнослужащего", group:0, senior:true},
+ {id:"enlistment", title:"Принял граждан на службу", group:0, senior:true},
+ {id:"promote", title:"Повысил военнослужащих", group:0, senior:true}
+].map((action) => ({
+ title:action.title,
+ count:0,
+ rate:weeklyRates.get(action.id) ?? action.rate ?? 0,
+ manualRate:action.id === "thanks",
+ unit:action.unit === "военнослужащих" ? action.unit : "штук",
+ group:action.group ?? (action.id === "thanks" ? 1 : 0),
+ senior:action.senior === true
+}));
+const weeklyList = document.getElementById("weeklyActions");
+weeklyList.innerHTML = weeklyGroups.map((title, group) =>
+ '<details class="catalogGroup"'+(group === 0 ? ' open' : '')+'><summary>'+title+'</summary>'+
+ weeklyActions.map((action, index) => {
+  if (action.group !== group) return "";
+  const name = reportEscape(action.title);
+  return '<div class="catalogItem" data-week-action="'+index+'"><div class="catalogRow"><strong>'+name+'</strong>'+
+   (action.manualRate ? '' : '<span class="catalogRate">+'+action.rate+' баллов'+(action.unit === "военнослужащих" ? " за военнослужащего" : "")+'</span>')+
+   '<span class="catalogCount"><button type="button" class="action secondary" data-week-step="-1" aria-label="Уменьшить: '+name+'" disabled>−</button>'+
+   '<output aria-label="Количество: '+name+'">0</output><button type="button" class="action secondary" data-week-step="1" aria-label="Увеличить: '+name+'">+</button></span></div>'+
+   (action.manualRate ? '<label class="weeklyManualRate">Баллы за одну благодарность <input type="number" min="0" step="1" value="0" data-week-rate></label>' : '')+
+   '<details class="catalogEvidence"><summary>Доказательства</summary><textarea rows="2" aria-label="Доказательства: '+name+'" placeholder="По одной ссылке на строку"></textarea></details></div>';
+ }).join("")+'</details>'
+).join("");
+const weeklyRows = weeklyActions.map((_, index) => weeklyList.querySelector('[data-week-action="'+index+'"]'));
+const weeklyDocument = document.getElementById("weeklyDocument");
+
+function weeklyToday(){
+ const parts = Object.fromEntries(new Intl.DateTimeFormat("en-GB", {timeZone:"Europe/Minsk", year:"numeric", month:"2-digit", day:"2-digit"})
+  .formatToParts(new Date()).map(({type,value}) => [type,value]));
+ return parts.year+"-"+parts.month+"-"+parts.day;
+}
+
+function weeklyPeriod(today, offset){
+ const start = new Date(today+"T00:00:00Z");
+ start.setUTCDate(start.getUTCDate() - (start.getUTCDay()+6)%7 + offset*7);
+ const end = new Date(start);
+ end.setUTCDate(end.getUTCDate()+6);
+ return [start, end].map((day) => day.toISOString().slice(0,10));
+}
+
+function setWeeklyPeriod(offset){
+ const [start,end] = weeklyPeriod(weeklyToday(), offset);
+ weeklyField("start").value = start;
+ weeklyField("end").value = end;
+}
+function syncWeeklyProfile(){
+ weeklyField("name").value = currentProfile.name;
+ weeklyField("passport").value = currentProfile.passport;
+ weeklyField("rank").value = currentProfile.rank;
+}
+function refreshWeeklyReport(){
+ const field = (name, fallback = "—") => reportEscape(weeklyField(name).value.trim() || fallback);
+ const date = (name) => field(name).replace(/^(\d{4})-(\d{2})-(\d{2})$/, "$3.$2.$1");
+ const showPoints = document.getElementById("weeklyShowPoints").checked;
+ const seniorAccess = canUseWeeklySeniorActions(currentProfile.rank);
+ const availableActions = weeklyActions.filter((action, index) => {
+  const available = !action.senior || seniorAccess;
+  weeklyRows[index].hidden = !available;
+  return available;
+ });
+ const count = availableActions.reduce((sum, action) => sum+action.count, 0);
+ const points = availableActions.reduce((sum, action) => sum+action.count*action.rate, 0);
+ document.getElementById("weeklyPoints").textContent = points+" баллов за неделю";
+ document.getElementById("weeklyPlan").textContent = "План по баллам: "+points+" / 200 минимум · 400 норма";
+ const groups = weeklyGroups.map((title, group) => {
+  const items = weeklyActions.map((action, index) => {
+   if (!action.count || action.group !== group || (action.senior && !seniorAccess)) return "";
+   const evidence = reportEvidenceLinks(weeklyRows[index].querySelector("textarea").value).map(({href,label}) =>
+    '<li><a href="'+reportEscape(href)+'" target="_blank" rel="noopener noreferrer">'+reportEscape(label)+'</a></li>'
+   ).join("");
+   return '<li>'+reportEscape(action.title)+' — '+action.unit+': <b>'+action.count+'</b>'+
+    (showPoints ? ' ('+action.count*action.rate+' баллов)' : '')+
+    (evidence ? '<div class="reportEvidenceLabel">Доказательства:</div><ol class="reportEvidence">'+evidence+'</ol>' : '')+'</li>';
+  }).join("");
+  return items ? '<li><b>'+title+':</b><ol>'+items+'</ol></li>' : "";
+ }).filter(Boolean);
+ const start = weeklyField("start");
+ const end = weeklyField("end");
+ const invalidPeriod = start.value && end.value && start.value > end.value;
+ end.setCustomValidity(invalidPeriod ? "Конец периода должен быть не раньше начала." : "");
+ weeklyDocument.innerHTML =
+  '<header class="docCenter reportPaperHeader"><span class="reportPaperMark" aria-hidden="true">✦</span><b>МИНИСТЕРСТВО ОБОРОНЫ РОССИЙСКОЙ ФЕДЕРАЦИИ<br>ВОЕННЫЙ КОМИССАРИАТ</b></header>'+
+  '<div class="reportRecipient"><b>Кому:</b> '+field("recipient")+'<br><b>От:</b> '+field("rank")+' '+field("name")+'<br>'+field("position")+'</div>'+
+  '<h2>РАПОРТ</h2><div class="reportSubtitle"><b>О результатах служебной деятельности за отчётную неделю</b><span class="reportDocumentNumber">№ '+field("number")+'</span></div>'+
+  '<p class="reportProse">Докладываю Вам о результатах выполнения служебных обязанностей и проведённых мероприятиях за установленный отчётный период.</p>'+
+  '<p class="docSection">I. ОБЩИЕ СВЕДЕНИЯ</p><ol>'+
+  '<li><b>Военнослужащий:</b> '+field("rank")+' '+field("name")+', статик № '+field("passport")+'.</li>'+
+  '<li><b>Подразделение и должность:</b> '+field("unit")+', '+field("position")+'.</li>'+
+  '<li><b>Отчётный период:</b> '+date("start")+' — '+date("end")+'.</li></ol>'+
+  '<p class="docSection">II. РЕЗУЛЬТАТЫ СЛУЖЕБНОЙ ДЕЯТЕЛЬНОСТИ</p>'+
+  (groups.length ? '<ol start="4">'+groups.join("")+'</ol>' : '<p>Действия пока не добавлены.</p>')+
+  '<p class="docSection">III. ИТОГОВАЯ ИНФОРМАЦИЯ</p><ol start="'+(4+groups.length)+'">'+
+  '<li><b>Общий результат работы за неделю:</b> '+field("summary","Выполнено мероприятий и служебных действий: "+count+".")+'</li>'+
+  '<li><b>Дополнительные сведения:</b> '+field("notes","Отсутствуют")+'</li></ol>'+
+  '<p class="reportProse">Прошу принять еженедельный отчёт и учесть представленные результаты при оценке моей работы.</p>'+
+  (showPoints ? '<p><b>Общее количество баллов:</b> '+points+'</p>' : '')+
+  '<p><b>Дата подачи:</b> '+date("date")+'</p>'+
+  '<div class="reportSignature"><span><b>Рапорт составил:</b><br>'+field("position")+'</span><span>'+field("rank")+'<br>'+field("name")+'</span></div>';
+}
+function updateWeeklyRow(row, action){
+ row.querySelector("output").textContent = action.count;
+ row.querySelector('[data-week-step="-1"]').disabled = action.count === 0;
+ row.classList.toggle("selected", action.count > 0);
+}
+weeklyPage.addEventListener("input", (event) => {
+ const input = event.target.closest("[data-week-rate]");
+ if (input) {
+  const action = weeklyActions[Number(input.closest("[data-week-action]").dataset.weekAction)];
+  action.rate = Math.max(0, Math.floor(input.valueAsNumber || 0));
+ }
+ refreshWeeklyReport();
+});
+weeklyPage.addEventListener("click", (event) => {
+ const offset = event.target.closest("[data-week-offset]");
+ if (offset) {
+  setWeeklyPeriod(Number(offset.dataset.weekOffset));
+  refreshWeeklyReport();
+ }
+ const step = event.target.closest("[data-week-step]");
+ if (step) {
+  const row = step.closest("[data-week-action]");
+  const action = weeklyActions[Number(row.dataset.weekAction)];
+  if (action.senior && !canUseWeeklySeniorActions(currentProfile.rank)) return;
+  action.count = Math.max(0, action.count + Number(step.dataset.weekStep));
+  updateWeeklyRow(row, action);
+  refreshWeeklyReport();
+ }
+});
+document.getElementById("profileCurrentRank").addEventListener("input", () => {
+ syncWeeklyProfile();
+ refreshWeeklyReport();
+});
+document.getElementById("weeklyPdf").addEventListener("click", () => {
+ if (!weeklyField("end").reportValidity()) return;
+ document.body.classList.add("printingWeekly");
+ try {
+  window.print();
+ } finally {
+  document.body.classList.remove("printingWeekly");
+ }
+});
+document.getElementById("weeklyPng").addEventListener("click", (event) => {
+ if (!weeklyField("end").reportValidity()) return;
+ downloadReportPng(event.currentTarget, "weeklyDocument", "weeklyExportStatus", "ezhenedelny-otchet.png", true);
+});
+document.getElementById("weeklyReset").addEventListener("click", () => {
+ if (!window.confirm("Очистить выполненные работы, доказательства и итог за неделю?")) return;
+ weeklyActions.forEach((action, index) => {
+  action.count = 0;
+  weeklyRows[index].querySelector("textarea").value = "";
+  if (action.manualRate) {
+   action.rate = 0;
+   weeklyRows[index].querySelector("[data-week-rate]").value = "0";
+  }
+  updateWeeklyRow(weeklyRows[index], action);
+ });
+ weeklyField("summary").value = "";
+ weeklyField("notes").value = "";
+ refreshWeeklyReport();
+});
+weeklyField("date").value = weeklyToday();
+setWeeklyPeriod(0);
+syncWeeklyProfile();
+refreshWeeklyReport();
+</script>
+<script type="module">
+// Use only the project's publishable key here.
+const config = {"url":"https://zrcimhwyrunblodtssne.supabase.co","publishableKey":"sb_publishable_VQZm8JVpSO1xVY2g4_Y0IQ_e-0ucq3K"};
+const gate = document.getElementById("portalGate");
+const shell = document.querySelector(".shell");
+const message = document.getElementById("portalAuthStatus");
+const form = document.getElementById("portalAuthForm");
+const pending = document.getElementById("portalPending");
+const leadership = document.getElementById("portalLeadership");
+const assignments = document.getElementById("portalAssignments");
+const accountControls = document.getElementById("portalAccountControls");
+const roles = {employee:"Сотрудник", deputy:"Заместитель комиссара", commissioner:"Комиссар"};
+const redirectTo = new URL(location.pathname, location.origin).href;
+let client;
+let stateVersion = 0;
+
+async function showAccount(session){
+ const version = ++stateVersion;
+ shell.hidden = true;
+ gate.hidden = false;
+ leadership.hidden = true;
+ assignments.replaceChildren();
+ accountControls.hidden = !session;
+ form.hidden = Boolean(session);
+ pending.hidden = true;
+ message.textContent = "";
+ if (!session) return;
+ const {data, error} = await client.from("portal_accounts").select("role")
+  .eq("user_id",session.user.id).single();
+ if (version !== stateVersion) return;
+ if (error) {
+  message.textContent = "Не удалось загрузить аккаунт. Обнови страницу или войди снова.";
+  return;
+ }
+ if (!Object.hasOwn(roles, data.role)) {
+  pending.hidden = false;
+  return;
+ }
+ shell.hidden = false;
+ gate.hidden = true;
+ document.getElementById("roleLabel").textContent = roles[data.role];
+ const canAssign = data.role === "commissioner" || data.role === "deputy";
+ document.getElementById("portalOpenLeadership").hidden = !canAssign;
+}
+
+async function showAssignments(){
+ const version = stateVersion;
+ leadership.hidden = false;
+ assignments.textContent = "Загрузка…";
+ const {data, error} = await client.from("portal_accounts").select("user_id,email").is("role",null);
+ if (version !== stateVersion) return;
+ assignments.replaceChildren();
+ if (error || !data.length) {
+  assignments.textContent = error ? "Не удалось загрузить заявки." : "Нет аккаунтов без роли.";
+  return;
+ }
+ for (const account of data) {
+  const row = document.createElement("div");
+  const label = document.createElement("span");
+  label.textContent = account.email || account.user_id;
+  row.append(label);
+  const commissioner = document.getElementById("roleLabel").textContent === roles.commissioner;
+  for (const role of commissioner ? ["employee","deputy"] : ["employee"]) {
+   const button = document.createElement("button");
+   button.type = "button";
+   button.className = "action secondary";
+   button.textContent = roles[role];
+   button.addEventListener("click", async () => {
+    row.querySelectorAll("button").forEach((control) => { control.disabled = true; });
+    const {error} = await client.rpc("portal_assign_role",{target_user:account.user_id,target_role:role});
+    if (version !== stateVersion) return;
+    if (error) {
+     label.textContent = (account.email || account.user_id) + " · Назначение недоступно. Проверь, подтверждён ли аккаунт.";
+     row.querySelectorAll("button").forEach((control) => { control.disabled = false; });
+     return;
+    }
+    await showAssignments();
+   });
+   row.append(button);
+  }
+  assignments.append(row);
+ }
+}
+
+async function signOut(){
+ const {error} = await client.auth.signOut();
+ if (error) (shell.hidden ? message : document.getElementById("portalSessionStatus")).textContent = "Не удалось выйти. Попробуй ещё раз.";
+}
+
+async function init(){
+ if (!config.url || !config.publishableKey) {
+  message.textContent = "Регистрация ещё не подключена.";
+  return;
+ }
+ try {
+  const {createClient} = await import("https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm");
+  client = createClient(config.url,config.publishableKey);
+  const {data,error} = await client.auth.getSession();
+  if (error) throw error;
+  await showAccount(data.session);
+  client.auth.onAuthStateChange((event, session) => {
+   if (event === "SIGNED_IN" || event === "SIGNED_OUT" || event === "USER_UPDATED") {
+    setTimeout(() => showAccount(session),0);
+   }
+  });
+ } catch {
+  message.textContent = "Не удалось подключиться к регистрации.";
+  return;
+ }
+
+ form.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const email = form.elements.email.value.trim();
+  const password = form.elements.password.value;
+  const register = event.submitter?.value === "register";
+  const {data,error} = register
+   ? await client.auth.signUp({email,password,options:{emailRedirectTo:redirectTo}})
+   : await client.auth.signInWithPassword({email,password});
+  if (error) {
+   message.textContent = register ? "Не удалось зарегистрироваться. Проверь адрес и пароль." : "Не удалось войти. Проверь почту, пароль и подтверждение аккаунта.";
+  } else if (data.session) {
+   form.reset();
+   await showAccount(data.session);
+  } else {
+   form.reset();
+   message.textContent = "Проверь почту и подтверди регистрацию по ссылке.";
+  }
+ });
+ document.getElementById("portalDiscord").addEventListener("click",async () => {
+  const {error} = await client.auth.signInWithOAuth({provider:"discord",options:{redirectTo}});
+  if (error) message.textContent = "Не удалось открыть вход через Discord.";
+ });
+ document.querySelectorAll("[data-portal-signout]").forEach((button) => button.addEventListener("click", signOut));
+ document.getElementById("portalOpenLeadership").addEventListener("click", showAssignments);
+ document.getElementById("portalCloseLeadership").addEventListener("click", () => { leadership.hidden = true; });
+ document.getElementById("portalAuthFields").disabled = false;
+}
+init();
+
+</script>
+</body></html>
