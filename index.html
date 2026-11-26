@@ -158,6 +158,11 @@ main{padding:24px;max-width:1600px;width:100%;margin:auto}
 .discordEntry{background:#4355bd;border-color:#7887df}
 @media(max-width:820px){.portalTopInner{padding:0 16px}.portalTop .brand h1{font-size:13px}.portalTop .emblem{width:36px;flex-basis:36px}}
 @media(max-width:700px){.portalTop{height:auto;min-height:68px;padding:10px 0;position:relative}.portalTopInner{flex-wrap:wrap;gap:8px}.portalTop .topright{margin-left:auto;flex-wrap:wrap;justify-content:flex-end}.headerMode{margin-right:0}.headerMode button{padding:5px 8px}.headerProfile b{max-width:12ch}.portalTop+.layout>aside{top:0}}
+.staffLeadership{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,205px),1fr));gap:12px}
+.staffLeader{padding:15px;background:#17251c;border:1px solid #364b3b;border-radius:10px}
+.staffLeader p{margin:0 0 5px;color:#d8bd79;font-size:13px}
+.staffLeader strong{display:block;overflow-wrap:anywhere;font-size:17px}
+.staffLeader:first-child{border-color:#837248}
 </style>
 </head>
 <body>
@@ -247,26 +252,18 @@ const pages = {
  notifications:["Уведомления","Объявления и личные служебные уведомления","notifications.jpg","Здесь будет единый центр уведомлений, статусы прочтения и объявления."]
 };
 
+const staffTopMarkup = `
+ <section class="panel staffSection">
+  <h3>Топ сотрудников</h3>
+  <p class="muted">Недельный рейтинг пока не опубликован.</p>
+ </section>`;
 const staffMarkup = `
- <div class="panel">
-  <h3>Действующий состав</h3>
-  <p class="muted">Демонстрационная запись. После подключения базы здесь будут отображаться все действующие сотрудники и стажёры.</p>
-  <div style="overflow-x:auto">
-   <table class="fakeTable">
-    <thead><tr><th>Должность</th><th>Имя Фамилия</th><th>Статик</th></tr></thead>
-    <tbody>
-     <tr><th colspan="3">Комиссар</th></tr>
-     <tr><th colspan="3">Заместитель военного комиссара</th></tr>
-     <tr><th colspan="3">Начальник отдела призыва</th></tr>
-     <tr><th colspan="3">Начальник отдела кадров</th></tr>
-     <tr><th colspan="3">Заместитель начальника отдела призыва</th></tr>
-     <tr><th colspan="3">Заместитель начальника отдела кадров</th></tr>
-     <tr><td>Сотрудник ВК</td><td><button type="button" class="action secondary" data-go="profile">Иванов Алексей</button></td><td>014</td></tr>
-     <tr><th colspan="3">Стажёр</th></tr>
-    </tbody>
-   </table>
+ <section class="panel staffSection">
+  <h3>Руководство</h3>
+  <div id="staffLeadershipCards" class="staffLeadership" aria-live="polite">
+   <p class="muted">Загрузка состава руководства…</p>
   </div>
- </div>`;
+ </section>` + staffTopMarkup;
 const currentProfile = {name: "Иванов Алексей", passport: "014", rank: ""};
 const profileRankKey = "vk.portal.profile.currentRank";
 try {
@@ -485,6 +482,8 @@ Object.entries(pages).forEach(([id,p]) => {
      <article id="weeklyDocument" class="officialDocument"></article>
     </div>
    </div>`;
+ } else if (id === "rating") {
+  section.innerHTML = staffTopMarkup;
  } else if (id === "staff") {
   section.innerHTML = `<div class="pagehero"><img src="staff.jpg" alt=""><div class="pageheroText"><h2>${p[0]}</h2><p>${p[1]}</p></div></div>` + staffMarkup;
  } else if (id === "profile") {
@@ -1035,6 +1034,30 @@ function updatePortalMode(){
  }
 }
 
+async function loadStaffLeadership(version){
+ const target = document.getElementById("staffLeadershipCards");
+ const {data,error} = await client.rpc("portal_staff_leadership");
+ if (version !== stateVersion || !accountRole) return;
+ target.replaceChildren();
+ if (error) {
+  target.textContent = "Не удалось загрузить состав руководства.";
+  return;
+ }
+ for (const role of ["commissioner","deputy"]) {
+  const names = data.filter((person) => person.staff_role === role).map((person) => person.display_name);
+  for (const name of names.length ? names : ["Не назначен"]) {
+   const card = document.createElement("article");
+   const position = document.createElement("p");
+   const displayName = document.createElement("strong");
+   card.className = "staffLeader";
+   position.textContent = roles[role];
+   displayName.textContent = name;
+   card.append(position,displayName);
+   target.append(card);
+  }
+ }
+}
+
 async function showAccount(session){
  if (session && isCallbackPage) {
   location.replace(portalHome);
@@ -1076,6 +1099,7 @@ async function showAccount(session){
  shell.hidden = false;
  gate.hidden = true;
  accountRole = data.role;
+ loadStaffLeadership(version);
  const meta = session.user.user_metadata || {};
  const candidate = meta.full_name || meta.name || meta.preferred_username;
  const title = typeof candidate === "string" && candidate.trim() ? candidate.trim().slice(0,80) : "Профиль";
