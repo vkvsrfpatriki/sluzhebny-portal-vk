@@ -42,27 +42,28 @@ main{padding:24px;max-width:1600px;width:100%;margin:auto}
 <div class="layout">
 <aside><div class="navtitle">Навигация</div><nav class="nav" id="nav">
 <button type="button" class="active" data-page="home"><span class="ico">⌂</span>Главная</button>
+<button type="button" data-page="promotion"><span class="ico">✦</span>Повышение</button>
 <button type="button" data-page="reports"><span class="ico">▤</span>Отчёты</button>
 <button type="button" data-page="training"><span class="ico">▱</span>Обучение</button>
 <button type="button" data-page="staff"><span class="ico">♟</span>Состав ВК</button>
-<button type="button" data-page="documents"><span class="ico">▣</span>Документы ВК</button>
-<button type="button" data-page="promotion"><span class="ico">✦</span>Повышение</button>
-<button type="button" data-page="rating"><span class="ico">★</span>Рейтинг и баллы</button>
-<button type="button" data-page="bonuses"><span class="ico">◈</span>Премии</button>
-<button type="button" data-page="archive"><span class="ico">▧</span>Архив</button>
+<button type="button" data-page="documents"><span class="ico">▣</span>Документация ВК</button>
+<button type="button" data-page="rating"><span class="ico">★</span>Топ сотрудников недели</button>
 <button type="button" data-page="notifications"><span class="ico">♢</span>Уведомления</button>
+<button type="button" data-page="profile"><span class="ico">◉</span>Мой профиль</button>
 </nav><div class="asidefoot">◉ Защищённый служебный интерфейс<br><br>Демонстрационный макет · данные условные</div></aside>
 <main>
 <section class="page active" id="home">
 <div class="hero"><div><div class="tag">Служебная система · ВК</div><h2>Добро пожаловать<br>на служебный портал</h2><p>Дисциплина. Порядок. Служба.</p></div><div class="heroStats"><div class="stat"><span>Отчёт за неделю</span><b>Черновик</b></div><div class="stat"><span>Баллы за неделю</span><b>—</b></div></div></div>
 <div class="sectionhead"><div><h3>Рабочие разделы</h3><p>Выберите нужный раздел портала</p></div><span class="muted">Демо-версия</span></div>
 <div class="content"><div class="tiles">
+<div class="tile" data-go="profile"><img src="staff.jpg" alt="Личный профиль"><div class="tilelabel"><span><i>◉</i>Мой профиль</span>↗</div></div>
+<div class="tile" data-go="reports"><img src="reports.jpg" alt="Заполнение служебного отчёта"><div class="tilelabel"><span><i>▤</i>Еженедельный отчёт</span>↗</div></div>
+<div class="tile" data-go="promotion"><img src="promotion.jpg" alt="Повышение в звании"><div class="tilelabel"><span><i>✦</i>Рапорт на повышение</span>↗</div></div>
+<div class="tile" data-go="rating"><img src="rating.jpg" alt="Командная подготовка военнослужащих"><div class="tilelabel"><span><i>★</i>Топ сотрудников</span>↗</div></div>
 <div class="tile" data-go="staff"><img src="staff.jpg" alt="Военнослужащие на построении"><div class="tilelabel"><span><i>♟</i>Состав ВК</span>↗</div></div>
-<div class="tile" data-go="reports"><img src="reports.jpg" alt="Заполнение служебного отчёта"><div class="tilelabel"><span><i>▤</i>Отчёты</span>↗</div></div>
+<div class="tile" data-go="documents"><img src="documents.jpg" alt="Служебные документы"><div class="tilelabel"><span><i>▣</i>Документация ВК</span>↗</div></div>
+<div class="tile" data-go="notifications"><img src="notifications.jpg" alt="Служебные уведомления"><div class="tilelabel"><span><i>♢</i>Уведомления</span>↗</div></div>
 <div class="tile" data-go="training"><img src="training.jpg" alt="Занятие в учебном классе"><div class="tilelabel"><span><i>▱</i>Обучение</span>↗</div></div>
-<div class="tile" data-go="documents"><img src="documents.jpg" alt="Служебные папки и документы"><div class="tilelabel"><span><i>▣</i>Документы ВК</span>↗</div></div>
-<div class="tile" data-go="promotion"><img src="promotion.jpg" alt="Торжественное вручение знака отличия"><div class="tilelabel"><span><i>✦</i>Повышение</span>↗</div></div>
-<div class="tile" data-go="rating"><img src="rating.jpg" alt="Командная подготовка военнослужащих"><div class="tilelabel"><span><i>★</i>Рейтинг и баллы</span>↗</div></div>
 </div><div class="rightcol">
 <div class="widget"><h4>★ Ваш профиль</h4><div class="profileRole">Сотрудник ВК</div><p class="muted">Иванов Алексей · № 014</p><p class="muted">Дата вступления: 12.06.2026</p></div>
 <div class="widget"><h4>♢ Последние уведомления</h4><div class="notice"><span class="dot"></span>Напоминание о недельном отчёте</div><div class="notice"><span class="dot"></span>Обновлены документы ВК</div><div class="notice"><span class="dot"></span>Опубликовано объявление руководства</div></div>
@@ -73,12 +74,13 @@ main{padding:24px;max-width:1600px;width:100%;margin:auto}
 </main></div></div>
 <script>
 const pages = {
- reports:["Отчёты","Работа с недельными отчётами и историей отправок","reports.jpg","Здесь будет форма отчёта, автосохранение, ссылки на доказательства и история проверок."],
- training:["Обучение","Лекции и итоговый экзамен для стажёров","training.jpg","Здесь будут лекции, прогресс обучения, попытки экзамена и результаты проверки."],
- staff:["Состав ВК","Список сотрудников, должности и служебные карточки","staff.jpg","Здесь будут поиск сотрудников, фильтры по должностям и карточки состава."],
- documents:["Документы ВК","Уставы, инструкции, регламенты и распоряжения","documents.jpg","Здесь будет библиотека документов с категориями, просмотром и скачиванием."],
- promotion:["Повышение в звании","Требования, прогресс и рапорты на повышение","promotion.jpg","Здесь будут текущее и следующее звание, требования, доказательства и история рапортов."],
- rating:["Рейтинг и баллы","Недельный рейтинг и результаты за всё время","rating.jpg","Здесь будет рейтинг сотрудников, баллы и история недельных результатов."],
+ reports:["Отчёты","Еженедельный отчёт и история отправок","reports.jpg","Здесь будет двухпанельный редактор: форма слева и автоматически формируемый официальный документ справа. Доступны PDF и PNG."],
+ training:["Обучение","Лекции и единый итоговый экзамен для стажёров","training.jpg","Здесь будут курсы, темы, лекции, материалы, видео, прогресс и единый итоговый экзамен."],
+ staff:["Состав ВК","Действующий состав военного комиссариата","staff.jpg","Здесь будет простой список: должность, имя и фамилия, номер игрового паспорта. Нажатие на ФИО откроет профиль сотрудника."],
+ documents:["Документация ВК","Служебные документы и полезные ссылки","documents.jpg","Здесь будет простой список документов и полезных ссылок. Открывать ссылки смогут все пользователи, редактировать записи — только Комиссар."],
+ promotion:["Повышение","Ступени званий и рапорт на повышение","promotion.jpg","Подразделы: «Ступени» — требования и прогресс по всем званиям; «Рапорт на повышение» — оформление рапорта с доказательствами и калькулятором."],
+ rating:["Топ сотрудников недели","Недельный рейтинг и результаты за всё время","rating.jpg","Здесь будет таблица: место, имя и фамилия, номер сотрудника, должность и баллы. Можно выбрать неделю или период «За всё время»."],
+ profile:["Мой профиль","Личные данные и история повышений в звании","staff.jpg","Здесь будут Discord, имя и фамилия, номер игрового паспорта, должность, дата вступления, звание, прогресс и история повышений."],
  bonuses:["Премии","Расчёт и история премиальных выплат","bonuses.jpg","Здесь будут сумма бюджета, параметры расчёта и персональная премия."],
  archive:["Архив","Архив сотрудников, отчётов и кадровой истории","archive.jpg","Здесь будут архивные записи с поиском и разграничением доступа."],
  notifications:["Уведомления","Объявления и личные служебные уведомления","notifications.jpg","Здесь будет единый центр уведомлений, статусы прочтения и объявления."]
