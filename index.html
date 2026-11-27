@@ -232,6 +232,14 @@ body>.portalGate.portalPhotoLogin,body>.portalLoading{flex:1;min-height:0}
 .bonusWeekPeriod{display:grid;gap:5px;padding:4px 8px 4px 0}
 .bonusWeekPeriod span{font-size:13px;color:var(--muted)}
 .bonusWeekPeriod output{font-weight:700;white-space:nowrap}
+.trainingLesson{margin-bottom:16px}
+.trainingLesson summary{cursor:pointer;font-size:clamp(17px,3vw,20px);font-weight:700;color:var(--gold)}
+.trainingLessonBody{max-width:76ch}
+.trainingLessonBody ol{padding-inline-start:24px}
+.trainingLessonBody li + li{margin-top:12px}
+.trainingLessonExample{margin:18px 0;padding:12px 16px;border-inline-start:3px solid var(--gold);background:var(--panel2);border-radius:8px}
+.trainingLessonExample h3,.trainingLessonExample p{margin:0}
+.trainingLessonExample h3{margin-bottom:6px}
 </style>
 </head>
 <body>
@@ -625,6 +633,25 @@ Object.entries(pages).forEach(([id,p]) => {
   </div>`;
  } else if (id === "documents" || id === "training") {
   section.innerHTML = `<div class="pagehero"><img loading="lazy" decoding="async" src="${p[2]}" alt=""><div class="pageheroText"><h2>${p[0]}</h2><p>${p[1]}</p></div></div>
+${id === "training" ? `
+   <details class="panel trainingLesson" open>
+    <summary>Как сдать еженедельный отчёт</summary>
+    <div class="trainingLessonBody">
+     <p>В еженедельном отчёте ты указываешь, что сделал за неделю, и отправляешь результат руководству на проверку.</p>
+     <ol>
+      <li><strong>Открой форму и проверь профиль.</strong> Зайди в «Отчёты». Имя и фамилия, звание и статик подставляются из профиля. Проверь также дату подачи.</li>
+      <li><strong>Выбери отчётную неделю.</strong> Нажми «Текущая неделя» или «Прошлая неделя». Проверь даты. Отчёт охватывает период с понедельника по воскресенье.</li>
+      <li><strong>Заполни результаты.</strong> Найди выполненные действия в разделе «Результаты служебной деятельности» и кнопками «+» и «−» укажи количество. Если для действия нужны подтверждения, раскрой «Доказательства» и вставь по одной ссылке на строку. Портал сам подсчитает баллы.</li>
+      <li><strong>Проверь и отправь.</strong> В «Предпросмотре» сверь даты, действия и ссылки, затем нажми «Отправить руководству». Дождись сообщения «Отчёт отправлен руководству». Кнопка «Скачать PDF» нужна для копии себе.</li>
+      <li><strong>Проверь статус.</strong> В той же форме нажми «Мои отправки». Там видны период и статус отчёта. Если стоит «Отклонён», открой запись и проверь, указало ли руководство причину.</li>
+     </ol>
+     <div class="trainingLessonExample">
+      <h3>Пример заполнения</h3>
+      <p>Если за неделю ты дважды участвовал в поставке, найди это действие и нажми «+» два раза. Если нужны подтверждения, добавь ссылки на обе поставки отдельными строками. Перед отправкой проверь, что в предпросмотре указано количество 2.</p>
+     </div>
+     <button type="button" class="action" data-go="reports">Открыть еженедельный отчёт</button>
+    </div>
+   </details>` : ""}
    <div class="panel"><h3>Файлы</h3>
     <form class="row materialUpload" hidden><label>Документ до 10 МБ<input type="file" required></label><button class="action" type="submit">Добавить файл</button></form>
     <p class="materialStatus muted" role="status"></p><ul class="materialList"></ul>
