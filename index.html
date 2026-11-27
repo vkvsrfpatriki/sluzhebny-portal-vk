@@ -248,6 +248,10 @@ body>.portalGate.portalPhotoLogin,body>.portalLoading{flex:1;min-height:0}
 .trainingLessonExample{margin:18px 0;padding:12px 16px;border-inline-start:3px solid var(--gold);background:var(--panel2);border-radius:8px}
 .trainingLessonExample h3,.trainingLessonExample p{margin:0}
 .trainingLessonExample h3{margin-bottom:6px}
+.reportEditor [aria-invalid="true"]{outline:2px solid #ee9b8e;outline-offset:2px}
+.reportFieldError{display:block;color:#ffb6aa;margin-top:5px;font-size:13px}
+.reportCorrection:not([hidden]){margin-bottom:16px;padding:12px;background:var(--panel2);border-radius:8px}
+.reportCorrection p{margin:0 0 8px;overflow-wrap:anywhere}
 </style>
 </head>
 <body>
@@ -499,6 +503,7 @@ Object.entries(pages).forEach(([id,p]) => {
    <div id="promoReport" class="reportWorkspace" style="display:none">
     <h2 class="reportHeading">Рапорт на повышение</h2>
     <div class="reportEditor">
+     <div class="reportCorrection" data-report-correction="promotion" hidden><p></p><button type="button" class="action secondary">Вернуться к обычному черновику</button></div>
      <div class="panel">
       <h3>Рапорт на повышение</h3>
       <div class="formGrid">
@@ -515,6 +520,7 @@ Object.entries(pages).forEach(([id,p]) => {
        <label class="reportFieldWide">Имя и фамилия<input data-report-field="name" value="${reportEscape(currentProfile.name)}" readonly /></label>
        <h4 class="reportFieldGroup">2. Испрашиваемое звание</h4>
        <label class="reportFieldWide">Испрашиваемое звание<select data-report-field="requestedRank">
+        <option value="">Выбери звание</option>
         <option value="Сержант">Сержант</option><option value="Старший сержант">Старший сержант</option><option value="Старшина">Старшина</option><option value="Прапорщик">Прапорщик</option><option value="Старший прапорщик">Старший прапорщик</option><option value="Младший лейтенант">Младший лейтенант</option><option value="Лейтенант">Лейтенант</option><option value="Старший лейтенант">Старший лейтенант</option><option value="Капитан">Капитан</option>
        </select></label>
 
@@ -568,6 +574,7 @@ Object.entries(pages).forEach(([id,p]) => {
    <div class="reportWorkspace weeklyWorkspace">
     <h2 class="reportHeading">Еженедельный отчёт</h2>
     <div class="reportEditor">
+     <div class="reportCorrection" data-report-correction="weekly" hidden><p></p><button type="button" class="action secondary">Вернуться к обычному черновику</button></div>
      <div class="panel formGrid">
       <label>Номер рапорта<input data-week-field="number" inputmode="numeric" value="1"></label>
       <label>Дата подачи<input data-week-field="date" type="date"></label>
@@ -839,7 +846,7 @@ function reportEvidenceLinks(value){
  const urls = [];
  for (const token of value.split(/\s+/)) {
   const address = token.startsWith("<") && token.endsWith(">") ? token.slice(1, -1) : token;
-  if (!/^https?:\/\//i.test(address)) continue;
+ if (!/^https?:\/\/[^/\\?#]/i.test(address)) continue;
   try {
    const url = new URL(address);
    urls.push({href: url.href, label: address});
@@ -1493,6 +1500,7 @@ async function showAccount(session){
  const nextId = session?.user?.id ?? null;
  if (accountId !== nextId) {
   draftOwner = nextId;
+  for (const kind of Object.keys(reportCorrections)) setReportCorrection(kind, null);
   restoreReportDraft("weekly");
   restoreReportDraft("promotion");
   document.querySelectorAll("[data-my-report-list]").forEach((list) => list.replaceChildren());
@@ -2111,14 +2119,59 @@ async function loadHomeWeeklySummary(){
  points.textContent = data ? String(data.weekly_points) : "—";
 }
 const pendingReports = new WeakMap();
+const reportValidationFields = new Map();
+function clearReportValidation(kind){
+ const field = reportValidationFields.get(kind);
+ if (!field) return;
+ document.getElementById("report-error-"+kind)?.remove();
+ field.removeAttribute("aria-invalid");
+ field.removeAttribute("aria-describedby");
+ reportValidationFields.delete(kind);
+ document.querySelector('[data-report-submit-status="'+kind+'"]').textContent = "";
+}
+function showReportValidation(kind, field, message){
+ field.closest(".catalogGroup")?.setAttribute("open","");
+ field.closest(".catalogEvidence")?.setAttribute("open","");
+ const error = document.createElement("span");
+ error.id = "report-error-"+kind;
+ error.className = "reportFieldError";
+ error.textContent = message;
+ field.after(error);
+ field.setAttribute("aria-invalid","true");
+ field.setAttribute("aria-describedby",error.id);
+ reportValidationFields.set(kind,field);
+ document.querySelector('[data-report-submit-status="'+kind+'"]').textContent = message;
+ field.focus();
+ return false;
+}
+function validateReport(kind){
+ clearReportValidation(kind);
+ const weekly = kind === "weekly";
+ const field = (name) => weekly ? weeklyField(name) : document.querySelector('[data-report-field="'+name+'"]');
+ const rank = field(weekly ? "rank" : "currentRank");
+ if (!rank.value.trim()) return showReportValidation(kind,rank,"Попроси руководство назначить тебе звание.");
+ for (const [name,label] of [["name","имя и фамилию"],["passport","статик"]]) {
+  if (!field(name).value.trim()) return showReportValidation(kind,field(name),"Укажи "+label+" в разделе «Мой профиль».");
+ }
+ if (!weekly && !field("requestedRank").value) return showReportValidation(kind,field("requestedRank"),"Выбери звание, на которое подаёшь рапорт.");
+ if (!field("date").value) return showReportValidation(kind,field("date"),"Укажи дату подачи.");
+ if (weekly && (!field("start").value || weeklyPeriod(field("start").value,0).join(",") !== [field("start").value,field("end").value].join(","))) {
+  return showReportValidation(kind,field("start"),"Выбери отчётную неделю с понедельника по воскресенье.");
+ }
+ const [actions,rows] = reportDraftRows(kind);
+ for (const [index,action] of actions.entries()) {
+  if (!action.count || (weekly && !weeklyActionAllowed(action))) continue;
+  const evidence = rows[index].querySelector("textarea");
+  if (evidence.value.trim().split(/\s+/).some(token => token && !reportEvidenceLinks(token).length)) {
+   return showReportValidation(kind,evidence,"Вставь полную ссылку, начинающуюся с https:// или http://.");
+  }
+ }
+ return true;
+}
 async function submitReport(button){
  const kind = button.dataset.submitReport;
  const status = document.querySelector('[data-report-submit-status="'+kind+'"]');
- if (!accountRole || !accountId || button.disabled) return;
- if (kind === "weekly" && (!weeklyField("start").value || !weeklyField("end").value || !weeklyField("end").reportValidity())) {
-  status.textContent = "Проверь даты отчётной недели.";
-  return;
- }
+ if (!accountRole || !accountId || button.disabled || !validateReport(kind)) return;
  const documentNode = document.getElementById(reportTypes[kind].documentId);
  const body = documentNode.innerText.trim();
  if (!body) return;
@@ -2128,11 +2181,9 @@ async function submitReport(button){
   week_end:weeklyField("end").value,
   actions:Object.fromEntries(weeklyActions.filter((action) => weeklyActionAllowed(action) && action.count > 0).map((action) => [action.id,action.count]))
  } : {};
- if (kind === "weekly" && weeklyPeriod(weekly.week_start,0).join(",") !== [weekly.week_start,weekly.week_end].join(",")) {
-  status.textContent = "Выбери неделю с понедельника по воскресенье.";
-  return;
- }
- const key = JSON.stringify([body,weekly]);
+ const correction = reportCorrections[kind];
+ const formData = captureReportDraft(kind, true);
+ const key = JSON.stringify([body,weekly,formData,correction?.id]);
  let pending = pendingReports.get(button);
  if (!pending || pending.key !== key || pending.author !== author) {
   pending = {id:crypto.randomUUID(), key, author};
@@ -2145,14 +2196,18 @@ async function submitReport(button){
   if (accountId !== author || !accountRole) return;
   status.textContent = "Отправка…";
   const {error} = kind === "weekly"
-   ? await client.rpc("portal_submit_weekly",{report_id:pending.id,report_body:body,report_pdf:pending.pdf,start_date:weekly.week_start,end_date:weekly.week_end,actions:weekly.actions})
-   : await client.from("portal_reports").insert({id:pending.id,kind,body,pdf_base64:pending.pdf});
-  if (accountId !== author) return;
+   ? await client.rpc("portal_submit_weekly_with_form",{report_id:pending.id,report_body:body,report_pdf:pending.pdf,start_date:weekly.week_start,end_date:weekly.week_end,actions:weekly.actions,form_data:formData})
+   : await client.from("portal_reports").insert({id:pending.id,kind,body,pdf_base64:pending.pdf,form_data:formData});
+  if (accountId !== author || reportCorrections[kind] !== correction) return;
   const sent = !error || error.code === "23505";
-  status.textContent = sent ? "Отчёт отправлен руководству." : "Не удалось отправить отчёт. Попробуй ещё раз.";
-  if (sent) {saveReportDraft(kind);if (kind === "weekly") loadHomeWeeklySummary();}
+  status.textContent = sent ? (correction ? "Исправленный документ отправлен руководству." : "Отчёт отправлен руководству.") : "Не удалось отправить отчёт. Попробуй ещё раз.";
+  if (sent) {
+   saveReportDraft(kind);
+   if (kind === "weekly") loadHomeWeeklySummary();
+   if (correction) loadMyReports(kind);
+  }
  } catch {
-  if (accountId === author) status.textContent = "Не удалось подготовить PDF или отправить документ. Попробуй снова.";
+  if (accountId === author && reportCorrections[kind] === correction) status.textContent = "Не удалось подготовить PDF или отправить документ. Попробуй снова.";
  } finally {
   button.disabled = false;
  }
@@ -2570,7 +2625,7 @@ async function uploadMaterial(event){
 }
 
 let draftOwner = null;
-let draftWeek = "";
+const reportCorrections = {weekly:null,promotion:null};
 function reportDraftFields(kind){
  const selector = kind === "weekly" ? '[data-week-field]:not([readonly]):not([data-week-field="start"]),#weeklyShowPoints' : '[data-report-field]:not([readonly])';
  return Array.from(document.querySelectorAll(selector));
@@ -2579,20 +2634,40 @@ function reportDraftRows(kind){
  return kind === "weekly" ? [weeklyActions,weeklyRows] : [catalog,catalogRows];
 }
 function draftKey(kind){
- return "portal.draft."+draftOwner+"."+kind+(kind === "weekly" ? "."+weeklyField("start").value : "");
+ const key = "portal.draft."+draftOwner+"."+kind;
+ const correction = reportCorrections[kind];
+ return correction ? key+".correction."+correction.id : key+(kind === "weekly" ? "."+weeklyField("start").value : "");
+}
+function setReportCorrection(kind, correction){
+ reportCorrections[kind] = correction;
+ const banner = document.querySelector('[data-report-correction="'+kind+'"]');
+ banner.hidden = !correction;
+ banner.querySelector("p").textContent = correction
+  ? "Исправление отклонённого документа. "+(correction.review_reason ? "Причина отказа: "+correction.review_reason : "Проверь данные перед повторной отправкой.")
+  : "";
+ clearReportValidation(kind);
+ document.querySelector('[data-report-submit-status="'+kind+'"]').textContent = "";
+}
+function captureReportDraft(kind, forSubmission = false){
+ const [actions,rows] = reportDraftRows(kind);
+ const fields = Object.fromEntries(reportDraftFields(kind).map((field) => [field.dataset.weekField || field.dataset.reportField || field.id,field.type === "checkbox" ? field.checked : field.value]));
+ const entries = Object.fromEntries(actions.flatMap((action,index) => {
+  if (forSubmission && (!action.count || (kind === "weekly" && !weeklyActionAllowed(action)))) return [];
+  return [[action.id,{count:action.count,links:rows[index].querySelector("textarea").value}]];
+ }));
+ return {fields,entries};
 }
 function saveReportDraft(kind){
  if (!draftOwner) return;
  try {
-  const [actions,rows] = reportDraftRows(kind);
-  const fields = Object.fromEntries(reportDraftFields(kind).map((field) => [field.dataset.weekField || field.dataset.reportField || field.id,field.type === "checkbox" ? field.checked : field.value]));
-  const entries = Object.fromEntries(actions.map((action,index) => [action.id,{count:action.count,links:rows[index].querySelector("textarea").value}]));
-  localStorage.setItem(draftKey(kind),JSON.stringify({fields,entries}));
+  localStorage.setItem(draftKey(kind),JSON.stringify(captureReportDraft(kind)));
  } catch {}
 }
-function restoreReportDraft(kind){
+function restoreReportDraft(kind, fallback){
+ clearReportValidation(kind);
  let draft;
  try {if (draftOwner) draft = JSON.parse(localStorage.getItem(draftKey(kind)));} catch {}
+ draft ??= fallback;
  for (const field of reportDraftFields(kind)) {
   const value = draft?.fields?.[field.dataset.weekField || field.dataset.reportField || field.id];
   if (field.type === "checkbox") field.checked = value ?? field.defaultChecked;
@@ -2612,10 +2687,96 @@ function restoreReportDraft(kind){
    row.classList.toggle("selected",!!action.count);
   }
  });
- if (kind === "weekly") {
-  draftWeek = weeklyField("start").value;
-  refreshWeeklyReport();
- } else {filterCatalog();refreshReport();}
+ if (kind === "weekly") refreshWeeklyReport();
+ else {filterCatalog();refreshReport();}
+}
+function legacyReportPeriod(body){
+ const period = body.match(/Отч[её]тный период:\s*(\d{2}\.\d{2}\.\d{4})\s*[—–-]\s*(\d{2}\.\d{2}\.\d{4})/i);
+ return period?.slice(1).map(date => date.split(".").reverse().join("-")) || [];
+}
+function recoverLegacyReport(kind, body, breakdown){
+ const lines = body.split(/\r?\n/).map(line => line.trim()).filter(Boolean);
+ const textAfter = (prefix,end) => {
+  const index = lines.findIndex(line => line.startsWith(prefix));
+  if (index < 0) return undefined;
+  const value = lines[index].slice(prefix.length).trim();
+  if (!end) return value;
+  const limit = lines.findIndex((line,i) => i > index && line.startsWith(end));
+  return [value,...lines.slice(index+1,limit < 0 ? index+1 : limit)].filter(Boolean).join("\n");
+ };
+ const weekly = kind === "weekly";
+ const summary = textAfter(weekly ? "Общий результат работы за неделю:" : "Общий результат работы за период:","Дополнительные сведения:");
+ const notes = textAfter("Дополнительные сведения:",weekly ? "Прошу принять" : "На основании изложенного");
+ const date = textAfter("Дата подачи:");
+ const number = lines.find(line => line.startsWith("№ "))?.slice(2) ?? textAfter("Номер:");
+ const fields = {
+  number: number === "—" ? "" : number,
+  date: /^\d{2}\.\d{2}\.\d{4}$/.test(date || "") ? date.split(".").reverse().join("-") : undefined,
+  summary: /^Выполнено мероприятий и служебных действий: \d+\.$/.test(summary || "") ? "" : summary,
+  notes: notes === "Отсутствуют" ? "" : notes
+ };
+ if (weekly) {
+  fields.recipient = textAfter("Кому:");
+  fields.weeklyShowPoints = lines.some(line => line.startsWith("Общее количество баллов:"));
+ } else fields.requestedRank = textAfter("Испрашиваемое звание:")?.replace(/\.$/,"");
+ const [actions] = reportDraftRows(kind);
+ const start = lines.findIndex(line => line.startsWith("II. РЕЗУЛЬТАТЫ"));
+ const end = lines.findIndex(line => line.startsWith("III. ИТОГОВАЯ"));
+ const entries = Object.fromEntries((breakdown || []).flatMap(item => {
+  const action = actions.find(action => action.title === item.title);
+  return action ? [[action.id,{count:item.count,links:""}]] : [];
+ }));
+ let active = null;
+ for (const line of lines.slice(start < 0 ? 0 : start+1,end < 0 ? lines.length : end)) {
+  const action = actions.find(action => line.startsWith(action.title+" — "+action.unit+":"));
+  if (action) {
+   const count = Number(line.slice((action.title+" — "+action.unit+":").length).trim().match(/^\d+/)?.[0]);
+   if (Number.isSafeInteger(count) && count > 0) {
+    active = entries[action.id] = {count,links:""};
+    continue;
+   }
+  }
+  if (!active) continue;
+  const links = reportEvidenceLinks(line);
+  if (links.length) active.links = [active.links,...links.map(link => link.label)].filter(Boolean).join("\n");
+  else if (line !== "Доказательства:") active = null;
+ }
+ return {fields,entries};
+}
+async function openReportCorrection(item, row, button, user){
+ const kind = item.kind;
+ const submit = document.querySelector('[data-submit-report="'+kind+'"]');
+ if (submit.disabled) return;
+ const list = row.parentElement;
+ const buttons = list.querySelectorAll("[data-edit-rejected]");
+ buttons.forEach(button => {button.disabled = true;});
+ const status = document.querySelector('[data-report-submit-status="'+kind+'"]');
+ status.textContent = "Загружаем исходный документ…";
+ try {
+  const {data,error} = await client.from("portal_reports").select("body,form_data,review_reason,week_start,week_end,weekly_breakdown")
+   .eq("id",item.id).eq("author_id",user).eq("kind",kind).eq("review_status","rejected").single();
+  if (accountId !== user || !accountRole || !row.isConnected) return;
+  if (error || !data) throw new Error("Report unavailable");
+  if (submit.disabled) return;
+  if (kind === "weekly") {
+   const [start,end] = data.week_start && data.week_end ? [data.week_start,data.week_end] : legacyReportPeriod(data.body);
+   if (!start || !end || weeklyPeriod(start,0).join(",") !== [start,end].join(",")) {
+    status.textContent = "Не удалось восстановить неделю из старого документа. Скачай PDF и перенеси данные в форму.";
+    return;
+   }
+   weeklyField("start").value = start;
+   weeklyField("end").value = end;
+  } else document.querySelector('[data-promo-tab="report"]').click();
+  setReportCorrection(kind,{id:item.id,review_reason:data.review_reason,week_start:kind === "weekly" ? weeklyField("start").value : null});
+  restoreReportDraft(kind,data.form_data || recoverLegacyReport(kind,data.body,data.weekly_breakdown));
+  saveReportDraft(kind);
+  go(kind === "weekly" ? "reports" : "promotion");
+  document.querySelector('[data-report-correction="'+kind+'"] button').focus({preventScroll:true});
+ } catch {
+  if (accountId === user && row.isConnected) status.textContent = "Не удалось открыть исправление. Попробуй ещё раз.";
+ } finally {
+  buttons.forEach(button => {button.disabled = false;});
+ }
 }
 async function openNotificationReport(item){
  const user = accountId;
@@ -2623,6 +2784,7 @@ async function openNotificationReport(item){
  if (item.reminder_week) {
   const [start,end] = weeklyPeriod(item.reminder_week,0);
   go("reports");
+  if (reportCorrections.weekly?.week_start !== start) setReportCorrection("weekly",null);
   weeklyField("start").value = start;
   weeklyField("end").value = end;
   restoreReportDraft("weekly");
@@ -2695,18 +2857,13 @@ async function loadMyReports(kind, reportId){
    setTimeout(() => URL.revokeObjectURL(url),1000);
   };
   row.append(button);
-  if (item.kind === "weekly" && item.week_start) {
+  if (item.review_status === "rejected") {
    const edit = document.createElement("button");
    edit.type = "button";
    edit.className = "action secondary";
-   edit.textContent = "Подготовить исправление";
-   edit.onclick = () => {
-    go("reports");
-    weeklyField("start").value = item.week_start;
-    weeklyField("end").value = item.week_end;
-    restoreReportDraft("weekly");
-    document.querySelector('[data-report-submit-status="weekly"]').textContent = "Проверь данные и отправь исправленный отчёт за ту же неделю.";
-   };
+   edit.dataset.editRejected = "";
+   edit.textContent = "Исправить и отправить снова";
+   edit.onclick = () => openReportCorrection(item,row,edit,user);
    row.append(edit);
   }
   list.append(row);
@@ -2716,16 +2873,26 @@ async function loadMyReports(kind, reportId){
 function setupReportDrafts(){
  for (const kind of ["weekly","promotion"]) {
   const editor = document.getElementById(kind === "weekly" ? "reports" : "promoReport");
+  document.querySelector('[data-report-correction="'+kind+'"] button').onclick = () => {
+   setReportCorrection(kind,null);
+   restoreReportDraft(kind);
+  };
   editor.addEventListener("input",(event) => {
-   if (kind === "weekly" && event.target === weeklyField("start") && weeklyField("start").value) {
+   if (reportValidationFields.get(kind) === event.target) clearReportValidation(kind);
+   if (kind === "weekly" && event.target === weeklyField("start")) {
+    if (!weeklyField("start").value) return;
     const [start,end] = weeklyPeriod(weeklyField("start").value,0);
     weeklyField("start").value = start;
     weeklyField("end").value = end;
+    if (reportCorrections.weekly && reportCorrections.weekly.week_start !== start) setReportCorrection(kind,null);
     restoreReportDraft(kind);
    } else saveReportDraft(kind);
   });
   editor.addEventListener("click",(event) => {
-   if (event.target.closest("[data-week-offset]")) restoreReportDraft(kind);
+   if (event.target.closest("[data-week-offset]")) {
+    if (reportCorrections.weekly && reportCorrections.weekly.week_start !== weeklyField("start").value) setReportCorrection(kind,null);
+    restoreReportDraft(kind);
+   }
    if (event.target.closest("[data-week-step],[data-step],#weeklyReset,#reportReset")) saveReportDraft(kind);
   });
   document.querySelector('[data-my-reports="'+kind+'"]').onclick = () => loadMyReports(kind);
