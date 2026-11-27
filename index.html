@@ -30,6 +30,13 @@ main{padding:24px;max-width:1600px;width:100%;margin:auto}
 .submittedReportLayout .portalPdfActions{margin-top:0}
 .submittedReportPaper{min-width:0}
 .submittedPdfSheet{position:relative;max-width:816px;margin:0 auto 12px;background:#fff;box-shadow:0 2px 10px #0005}
+.reportDraftState{margin:8px 0 0;font-size:12px;color:var(--muted)}
+.reportEvidenceReview ul{padding-left:20px;margin:6px 0 12px}
+.reportEvidenceReview a{overflow-wrap:anywhere}
+.submittedPdfSheet{container-type:inline-size}
+.submittedPdfSheet .pdfTextLayer{position:absolute;inset:0;overflow:hidden;user-select:text}
+.submittedPdfSheet .pdfTextLayer span{position:absolute;white-space:pre;color:transparent;line-height:1;cursor:text}
+.submittedPdfSheet a{z-index:1}
 .submittedPdfSheet canvas{display:block;width:100%;height:auto}
 .submittedPdfSheet a{position:absolute}
 .submittedPdfSheet a:focus-visible{outline:2px solid #326abd;outline-offset:2px}
@@ -330,7 +337,9 @@ body>.portalGate.portalPhotoLogin,body>.portalLoading{flex:1;min-height:0}
   <label>Дата недели <input name="week" type="date"></label>
   <button type="submit" class="action secondary">Найти</button>
  </form>
- <p data-queue-status role="status"></p><div class="portalReportsList"></div>
+ <p data-queue-count class="muted" aria-live="polite"></p>
+ <p data-queue-status role="status"></p><button data-next-pending type="button" class="action secondary" hidden>Открыть следующий на проверке</button>
+ <div class="portalReportsList"></div>
  <button data-more-reports class="action secondary" type="button" hidden>Показать ещё</button>
 </section>
 <section id="portalPromotionQueue" class="page panel portalReportQueue" hidden>
@@ -341,7 +350,9 @@ body>.portalGate.portalPhotoLogin,body>.portalLoading{flex:1;min-height:0}
   <label>Дата недели <input name="week" type="date"></label>
   <button type="submit" class="action secondary">Найти</button>
  </form>
- <p data-queue-status role="status"></p><div class="portalReportsList"></div>
+ <p data-queue-count class="muted" aria-live="polite"></p>
+ <p data-queue-status role="status"></p><button data-next-pending type="button" class="action secondary" hidden>Открыть следующий на проверке</button>
+ <div class="portalReportsList"></div>
  <button data-more-reports class="action secondary" type="button" hidden>Показать ещё</button>
 </section>
 <section id="portalLeadership" class="page panel" hidden>
@@ -368,6 +379,8 @@ body>.portalGate.portalPhotoLogin,body>.portalLoading{flex:1;min-height:0}
  <div id="weeklyDeadlineCountdown" class="weeklyDeadlineCountdown" role="timer">—</div>
  <p id="weeklyDeadlineDate" class="muted"></p>
  <button type="button" class="action secondary" data-go="reports">Открыть отчёт</button>
+ <button type="button" class="action secondary" id="continueWeeklyDraft" hidden>Продолжить черновик</button>
+ <p class="reportDraftState" id="homeWeeklyDraftState" hidden></p>
 </div>
 </div></div></section>
 <div id="otherPages"></div>
@@ -585,6 +598,7 @@ Object.entries(pages).forEach(([id,p]) => {
    <div class="reportWorkspace weeklyWorkspace">
     <h2 class="reportHeading">Еженедельный отчёт</h2>
     <div class="reportEditor">
+     <p class="reportDraftState" id="weeklyDraftState" aria-live="polite"></p>
      <div class="reportCorrection" data-report-correction="weekly" hidden><p></p><button type="button" class="action secondary">Вернуться к обычному черновику</button></div>
      <div class="panel formGrid">
       <label>Номер рапорта<input data-week-field="number" inputmode="numeric" value="1"></label>
@@ -1230,7 +1244,8 @@ const reportTypes = {
 };
 const reportQueues = Object.fromEntries(Object.entries(reportQueuePanels).map(([kind,panel]) => [kind,{
  kind,panel,list:panel.querySelector(".portalReportsList"),status:panel.querySelector("[data-queue-status]"),
- more:panel.querySelector("[data-more-reports]"),version:0,offset:0,urls:new Set()
+ more:panel.querySelector("[data-more-reports]"),next:panel.querySelector("[data-next-pending]"),
+ count:panel.querySelector("[data-queue-count]"),version:0,offset:0,urls:new Set()
 }]));
 
 function canAssignRoles(){
@@ -1280,6 +1295,18 @@ function fillProfileForm(form, data){
  form.elements.player_rank.value = profileRanks.find((rank) => rank.toLocaleLowerCase("ru") === savedRank) || "";
  form.elements.player_static.value = data.game_static || "";
 }
+function allowedPromotionRanks(currentRank){
+ const current = profileRanks.findIndex((rank) => rank.toLocaleLowerCase("ru") === currentRank.trim().toLocaleLowerCase("ru"));
+ return current < 0 ? [] : profileRanks.slice(current+1).filter((rank) => Object.hasOwn(promotionCriteria,rank));
+}
+function syncPromotionRankOptions(){
+ const select = document.querySelector('[data-report-field="requestedRank"]');
+ const previous = select.value;
+ const available = allowedPromotionRanks(currentProfile.rank);
+ select.replaceChildren(new Option(available.length ? "Выбери звание" : "Нет доступных званий",""),
+  ...available.map((rank) => new Option(rank,rank)));
+ if (available.includes(previous)) select.value = previous;
+}
 function syncAccountProfile(data){
  fillProfileForm(selfProfileForm, data);
  selfProfileForm.querySelector("fieldset").disabled = false;
@@ -1295,6 +1322,7 @@ function syncAccountProfile(data){
  document.getElementById("homeProfileName").textContent = currentProfile.name.trim() || "Имя и фамилия не указаны";
  document.getElementById("homeProfileStatic").textContent = currentProfile.passport.trim() || "—";
  syncWeeklyProfile();
+ syncPromotionRankOptions();
  refreshReport();
  refreshWeeklyReport();
  renderHomeWeeklyPoints();
@@ -1795,6 +1823,8 @@ function clearReportQueue(queue){
  queue.urls.clear();
  queue.list.replaceChildren();
  queue.more.hidden = true;
+ queue.next.hidden = true;
+ queue.count.textContent = "";
  queue.status.textContent = "";
 }
 function closeReportsQueue(queue){
@@ -1859,12 +1889,13 @@ function loadPdfJs(){
 async function renderPdfPages(container,bytes,label){
  container.textContent = "Загрузка PDF…";
  let task;
+ const links = [];
  try {
   const pdfjs = await loadPdfJs();
-  if (!container.isConnected) return;
+  if (!container.isConnected) return links;
   task = pdfjs.getDocument({data:bytes,standardFontDataUrl:pdfJsPath+"standard_fonts/"});
   const pdf = await task.promise;
-  if (!container.isConnected) return;
+  if (!container.isConnected) return links;
   container.replaceChildren();
   const scale = Math.min(2,window.devicePixelRatio || 1);
   for (let number=1;number<=pdf.numPages;number++) {
@@ -1881,9 +1912,28 @@ async function renderPdfPages(container,bytes,label){
    canvas.setAttribute("aria-label",label+", страница "+number+" из "+pdf.numPages);
    await page.render({canvas,viewport}).promise;
    sheet.append(canvas);
+   const textContent = await page.getTextContent().catch(() => null);
+   if (textContent?.items.length) {
+    const layer = document.createElement("div");
+    layer.className = "pdfTextLayer";
+    for (const item of textContent.items) {
+     if (!item.str || !item.transform) continue;
+     const [, , , ,x,y] = pdfjs.Util.transform(viewport.transform,item.transform);
+     const fontHeight = item.height*viewport.scale;
+     const span = document.createElement("span");
+     span.textContent = item.str;
+     span.style.left = x/viewport.width*100+"%";
+     span.style.top = (y-fontHeight*0.84)/viewport.height*100+"%";
+     span.style.fontSize = fontHeight/viewport.width*100+"cqw";
+     layer.append(span);
+     if (item.hasEOL) layer.append(document.createElement("br"));
+    }
+    sheet.append(layer);
+   }
    const annotations = await page.getAnnotations().catch(() => []);
    for (const annotation of annotations) {
     if (!annotation.rect || !/^https?:\/\//i.test(annotation.url ?? "")) continue;
+    links.push({href:annotation.url});
     const [left,bottom,right,top] = annotation.rect;
     const [x1,y1] = viewport.convertToViewportPoint(left,bottom);
     const [x2,y2] = viewport.convertToViewportPoint(right,top);
@@ -1907,6 +1957,7 @@ async function renderPdfPages(container,bytes,label){
  } finally {
   await task?.destroy().catch(() => {});
  }
+ return links;
 }
 function appendReportPdf(actions,container,report,encoded,urls){
  if (!encoded) {
@@ -1929,7 +1980,85 @@ function appendReportPdf(actions,container,report,encoded,urls){
  download.textContent = "Скачать PDF";
  actions.prepend(open,download);
  const label = report.kind === "weekly" ? "PDF еженедельного отчёта" : "PDF рапорта на повышение";
- renderPdfPages(container,bytes,label);
+ return renderPdfPages(container,bytes,label);
+}
+function renderReviewEvidence(target, report, snapshot, legacy, pdfBody){
+ const [actions] = reportDraftRows(report.kind);
+ const entries = snapshot?.entries || recoverLegacyReport(report.kind,legacy || "",null).entries;
+ const groups = actions.flatMap((action) => {
+  const entry = entries[action.id];
+  const links = entry?.count && typeof entry.links === "string" ? reportEvidenceLinks(entry.links) : [];
+  return links.length ? [[action.title,links]] : [];
+ });
+ if (!groups.length && !pdfBody) return;
+ const panel = document.createElement("div");
+ panel.className = "reportEvidenceReview";
+ target.append(panel);
+ const show = (sections) => {
+  if (!sections.length) {panel.remove();return;}
+  const heading = document.createElement("h3");
+  heading.textContent = "Доказательства";
+  panel.append(heading);
+  for (const [name,links] of sections) {
+   const unique = [...new Map(links.map((link) => [link.href,link])).values()];
+   const group = document.createElement("details");
+   const summary = document.createElement("summary");
+   summary.textContent = name+" · "+unique.length;
+   const list = document.createElement("ul");
+   for (const [index,item] of unique.entries()) {
+    const row = document.createElement("li");
+    const link = document.createElement("a");
+    link.href = item.href;
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    link.title = item.href;
+    link.textContent = "Открыть "+(index+1)+" · "+new URL(item.href).hostname;
+    row.append(link);list.append(row);
+   }
+   group.append(summary,list);panel.append(group);
+  }
+ };
+ if (groups.length) show(groups);
+ else pdfBody.then((links) => show(links.length ? [["Ссылки в PDF",links]] : []));
+}
+async function loadPendingReportCount(queue){
+ const version = queue.version;
+ const {count,error} = await client.from("portal_reports").select("id",{count:"exact",head:true})
+  .eq("kind",queue.kind).eq("review_status","pending");
+ if (version !== queue.version || !canAssignRoles() || error || count == null) return;
+ queue.count.textContent = "На проверке: "+count;
+}
+async function fetchReportAuthors(){
+ const {data,error} = await client.rpc("portal_role_directory");
+ return new Map((error ? [] : data || []).map((person) => [person.user_id,person.game_name?.trim() || person.discord_name]));
+}
+async function openNextPendingReport(queue){
+ if (!canAssignRoles() || queue.next.disabled) return;
+ const version = queue.version;
+ queue.next.disabled = true;
+ try {
+  let row = queue.list.querySelector('details[data-review-status="pending"]');
+  if (!row) {
+   const {data,error} = await client.from("portal_reports")
+    .select("id,author_id,kind,created_at,review_status,weekly_points").eq("kind",queue.kind).eq("review_status","pending")
+    .order("created_at",{ascending:true}).order("id",{ascending:true}).limit(1).maybeSingle();
+   if (version !== queue.version || !canAssignRoles()) return;
+   if (error) throw error;
+   if (!data) {queue.status.textContent = "Документов на проверке больше нет.";queue.next.hidden = true;return;}
+   const authors = await fetchReportAuthors();
+   if (version !== queue.version || !canAssignRoles()) return;
+   row = makeReportRow(queue,{...data,author_name:authors.get(data.author_id)});
+   queue.list.prepend(row);
+  }
+  row.open = true;
+  row.querySelector("summary").focus({preventScroll:true});
+  row.scrollIntoView({block:"nearest"});
+  queue.next.hidden = true;
+ } catch {
+  if (version === queue.version) queue.status.textContent = "Не удалось открыть следующий документ.";
+ } finally {
+  queue.next.disabled = false;
+ }
 }
 function makeReportRow(queue, report){
  const row = document.createElement("details");
@@ -1944,7 +2073,8 @@ function makeReportRow(queue, report){
  controls.append(actions);
  layout.append(controls,body);
  const updateTitle = () => {
-  title.textContent = reportTypes[report.kind].label + " · " + new Date(report.created_at).toLocaleString("ru-RU") +
+  row.dataset.reviewStatus = report.review_status;
+  title.textContent = [report.author_name,reportTypes[report.kind].label].filter(Boolean).join(" · ") + " · " + new Date(report.created_at).toLocaleString("ru-RU") +
    " · " + reviewLabels[report.review_status] +
    (report.weekly_points == null ? "" : " · " + report.weekly_points + " баллов");
  };
@@ -2001,7 +2131,12 @@ function makeReportRow(queue, report){
     if (report.kind === "weekly") {
      loadHomeWeeklySummary();
      loadWeeklyTop();
-     if (decision === "approved" || isWeeklyRoster(queue)) loadReports(queue,true);
+     if (decision === "approved" || isWeeklyRoster(queue)) await loadReports(queue,true);
+    }
+    if (!queue.panel.hidden && canAssignRoles()) {
+     queue.status.textContent = "Решение сохранено.";
+     queue.next.hidden = false;
+     loadPendingReportCount(queue);
     }
    });
    buttons.push(review);
@@ -2015,21 +2150,20 @@ function makeReportRow(queue, report){
   loading = true;
   body.textContent = "Загрузка…";
   try {
-   const {data,error} = await client.from("portal_reports").select("pdf_base64,review_reason").eq("id",report.id).single();
+   const {data,error} = await client.from("portal_reports").select("pdf_base64,review_reason,form_data,body").eq("id",report.id).single();
    if (!row.isConnected || !canAssignRoles()) return;
    if (error) throw error;
    body.replaceChildren();
-   appendReportPdf(actions,body,report,data.pdf_base64,queue.urls);
+   const pdfLinks = appendReportPdf(actions,body,report,data.pdf_base64,queue.urls);
+   renderReviewEvidence(controls,report,data.form_data,data.body,pdfLinks);
    if (!data.pdf_base64) {
-    const legacy = await client.from("portal_reports").select("body").eq("id",report.id).single();
-    if (!row.isConnected || !canAssignRoles()) return;
-    if (legacy.data?.body) {
+    if (data.body) {
      const fallback = document.createElement("details");
      const heading = document.createElement("summary");
      const text = document.createElement("div");
      text.className = "portalReportBody";
      heading.textContent = "Текст старого документа";
-     renderReportBody(text,legacy.data.body);
+     renderReportBody(text,data.body);
      fallback.append(heading,text);
      body.append(fallback);
     }
@@ -2110,9 +2244,9 @@ async function loadWeeklyRoster(queue,version,filter){
   row.insertCell().textContent = (person.report_points ?? "—")+(previous ? " · учтено: "+(person.approved_points ?? "—") : "");
   const documents = row.insertCell();
   if (!person.report_id) {documents.textContent = "—";continue;}
-  documents.append(makeReportRow(queue,{id:person.report_id,kind:"weekly",created_at:person.report_created_at,
+  documents.append(makeReportRow(queue,{id:person.report_id,author_name:person.employee_name,kind:"weekly",created_at:person.report_created_at,
    review_status:person.report_status,weekly_points:person.report_points}));
-  if (previous) documents.append(makeReportRow(queue,{id:person.approved_id,kind:"weekly",created_at:person.approved_created_at,
+  if (previous) documents.append(makeReportRow(queue,{id:person.approved_id,author_name:person.employee_name,kind:"weekly",created_at:person.approved_created_at,
    review_status:"approved",weekly_points:person.approved_points}));
  }
  const wrap = document.createElement("div");
@@ -2130,13 +2264,14 @@ async function loadReports(queue, reset){
   queue.offset = 0;
  }
  const version = ++queue.version;
+ loadPendingReportCount(queue);
  queue.panel.hidden = false;
  queue.more.hidden = true;
  queue.status.textContent = "Загрузка…";
  const filter = queue.panel.querySelector("[data-queue-filters]").elements;
  if (isWeeklyRoster(queue)) return loadWeeklyRoster(queue,version,filter);
  const pageSize = 30;
- let query = client.from("portal_reports").select("id,kind,created_at,review_status,weekly_points").eq("kind",queue.kind);
+ let query = client.from("portal_reports").select("id,author_id,kind,created_at,review_status,weekly_points").eq("kind",queue.kind);
  if (monday) {
   query = queue.archived
    ? query.eq("review_status","approved").lt("week_end",monday)
@@ -2157,8 +2292,10 @@ async function loadReports(queue, reset){
   if (!ids.length) {queue.status.textContent = "Документы не найдены.";return;}
   query = query.in("author_id",ids);
  }
- const {data,error} = await query
-  .order("created_at",{ascending:false}).order("id",{ascending:false}).range(queue.offset,queue.offset+pageSize-1);
+ const [{data,error},authors] = await Promise.all([
+  query.order("created_at",{ascending:false}).order("id",{ascending:false}).range(queue.offset,queue.offset+pageSize-1),
+  fetchReportAuthors()
+ ]);
  if (version !== queue.version || !canAssignRoles()) return;
  if (error) {
   queue.status.textContent = "Не удалось загрузить документы.";
@@ -2166,7 +2303,7 @@ async function loadReports(queue, reset){
   return;
  }
  queue.status.textContent = !queue.offset && !data.length ? "Документов пока нет." : "";
- queue.list.append(...data.map((report) => makeReportRow(queue,report)));
+ queue.list.append(...data.map((report) => makeReportRow(queue,{...report,author_name:authors.get(report.author_id)})));
  queue.offset += data.length;
  queue.more.hidden = data.length < pageSize;
 }
@@ -2203,10 +2340,72 @@ document.getElementById("weeklyPdf").addEventListener("click",(event) => {
  downloadReportPdf(event.currentTarget,"weeklyDocument","weeklyExportStatus","ezhenedelny-otchet.pdf");
 });
 
+let reportTextFont;
+function loadReportTextFont(){
+ reportTextFont ??= fetch("./vendor/report-text.ttf").then(async (response) => {
+  if (!response.ok) throw new Error("Report font unavailable");
+  const bytes = new Uint8Array(await response.arrayBuffer());
+  let binary = "";
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return btoa(binary);
+ }).catch((error) => {reportTextFont = undefined;throw error;});
+ return reportTextFont;
+}
+function findReportText(node){
+ const runs = [];
+ const walker = document.createTreeWalker(node,NodeFilter.SHOW_TEXT);
+ const range = document.createRange();
+ for (let text=walker.nextNode();text;text=walker.nextNode()) {
+  for (const word of text.data.matchAll(/\S+/gu)) {
+   range.setStart(text,word.index);
+   range.setEnd(text,word.index+word[0].length);
+   const rects = Array.from(range.getClientRects());
+   if (rects.length === 1) {runs.push({word:word[0],rect:rects[0]});continue;}
+   let part = "";
+   let partStart = word.index;
+   let partTop;
+   let offset = word.index;
+   const addPart = () => {
+    if (!part) return;
+    range.setStart(text,partStart);
+    range.setEnd(text,partStart+part.length);
+    runs.push({word:part,rect:range.getBoundingClientRect()});
+   };
+   for (const character of word[0]) {
+    range.setStart(text,offset);
+    range.setEnd(text,offset+character.length);
+    const top = range.getBoundingClientRect().top;
+    if (part && top !== partTop) {addPart();part = "";partStart = offset;}
+    partTop = top;
+    part += character;
+    offset += character.length;
+   }
+   addPart();
+  }
+ }
+ return runs;
+}
+function reportCanvasContentHeight(canvas,pageHeight){
+ if (canvas.height <= pageHeight) return canvas.height;
+ const context = canvas.getContext("2d",{willReadFrequently:true});
+ for (let bottom=canvas.height;bottom>pageHeight;) {
+  const top = Math.max(pageHeight,bottom-128);
+  const pixels = context.getImageData(0,top,canvas.width,bottom-top).data;
+  const stride = canvas.width*4;
+  for (let row=bottom-top-1;row>=0;row--) {
+   for (let i=row*stride;i<(row+1)*stride;i+=4) {
+    if (pixels[i+3] && Math.min(pixels[i],pixels[i+1],pixels[i+2]) < 248) return top+row+1;
+   }
+  }
+  bottom = top;
+ }
+ return pageHeight;
+}
 async function buildSubmittedPdf(snapshot, width){
- const [render,{jsPDF}] = await Promise.all([
+ const [render,{jsPDF},font] = await Promise.all([
   loadReportImageRenderer(),
-  import("https://cdn.jsdelivr.net/npm/jspdf@4.2.1/+esm")
+  import("https://cdn.jsdelivr.net/npm/jspdf@4.2.1/+esm"),
+  loadReportTextFont().catch(() => null)
  ]);
  const stage = document.createElement("div");
  stage.className = "reportPreview reportPdfStage";
@@ -2215,25 +2414,42 @@ async function buildSubmittedPdf(snapshot, width){
  document.body.append(stage);
  try {
   const bounds = snapshot.getBoundingClientRect();
+  const textRuns = font ? findReportText(snapshot) : [];
   const evidence = Array.from(snapshot.querySelectorAll(".reportEvidence a"), (anchor) => ({
    url:anchor.href, rects:Array.from(anchor.getClientRects())
   }));
   const canvas = await render(snapshot,{backgroundColor:"#fff",scale:1.5});
   if (!canvas.width || !canvas.height) throw new Error("Empty PDF");
   const pdf = new jsPDF({orientation:"portrait",unit:"mm",format:"a4",compress:true});
+  if (font) {
+   pdf.addFileToVFS("report-text.ttf",font);
+   pdf.addFont("report-text.ttf","Report text","normal");
+   pdf.setFont("Report text");
+  }
   const margin = 8;
   const usableWidth = 210-2*margin;
   const ratio = usableWidth/canvas.width;
   const maxHeight = Math.floor((297-2*margin)/ratio);
+  const contentHeight = reportCanvasContentHeight(canvas,maxHeight);
   const pixelScale = canvas.width/bounds.width;
   const page = document.createElement("canvas");
   page.width = canvas.width;
-  for (let offset=0;offset<canvas.height;offset+=maxHeight) {
+  for (let offset=0;offset<contentHeight;offset+=maxHeight) {
    if (offset) pdf.addPage();
-   const height = Math.min(maxHeight,canvas.height-offset);
+   const height = Math.min(maxHeight,contentHeight-offset);
    page.height = height;
    page.getContext("2d").drawImage(canvas,0,offset,canvas.width,height,0,0,canvas.width,height);
    pdf.addImage(page.toDataURL("image/jpeg",0.88),"JPEG",margin,margin,usableWidth,height*ratio);
+   for (const {word,rect} of textRuns) {
+    const y = (rect.top-bounds.top+rect.height*0.84)*pixelScale;
+    if (rect.width <= 0 || y < offset || y >= offset+height) continue;
+    pdf.setFontSize(rect.height*pixelScale*ratio*72/25.4*0.84);
+    const textWidth = pdf.getTextWidth(word);
+    if (textWidth <= 0) continue;
+    const horizontalScale = rect.width*pixelScale*ratio/textWidth;
+    pdf.text(word,margin+(rect.left-bounds.left)*pixelScale*ratio,margin+(y-offset)*ratio,
+     {renderingMode:"invisible",horizontalScale});
+   }
    for (const {url,rects} of evidence) {
     for (const rect of rects) {
      const y = (rect.top-bounds.top)*pixelScale;
@@ -2254,7 +2470,23 @@ async function buildSubmittedPdf(snapshot, width){
 
 let homeWeeklyVersion = 0;
 let homeWeeklyReport = null;
+function updateWeeklyDraftStatus(){
+ const button = document.getElementById("continueWeeklyDraft");
+ const homeStatus = document.getElementById("homeWeeklyDraftState");
+ const editorStatus = document.getElementById("weeklyDraftState");
+ const [start] = weeklyPeriod(weeklyToday(),0);
+ const draft = accountRole && draftOwner === accountId ? readReportDraft(reportDraftKey("weekly")+"."+start) : null;
+ const hasDraft = Boolean(draft && !draft.submitted && (draft.savedAt || Object.values(draft.entries || {}).some((entry) => entry?.count || entry?.links)));
+ const label = (value) => value?.savedAt
+  ? "Сохранено в "+new Date(value.savedAt).toLocaleTimeString("ru-RU",{hour:"2-digit",minute:"2-digit"})
+  : value ? "Черновик сохранён" : "";
+ button.hidden = !hasDraft;
+ homeStatus.hidden = !hasDraft;
+ homeStatus.textContent = hasDraft ? label(draft) : "";
+ editorStatus.textContent = draftOwner ? label(readReportDraft(draftKey("weekly"))) : "";
+}
 function renderHomeWeeklyPoints(){
+ updateWeeklyDraftStatus();
  const output = document.getElementById("homeWeeklyPoints");
  if (!accountRole || !draftOwner || draftOwner !== accountId) {
   output.textContent = "—";
@@ -2335,7 +2567,9 @@ function validateReport(kind){
  for (const [name,label] of [["name","имя и фамилию"],["passport","статик"]]) {
   if (!field(name).value.trim()) return showReportValidation(kind,field(name),"Укажи "+label+" в разделе «Мой профиль».");
  }
- if (!weekly && !field("requestedRank").value) return showReportValidation(kind,field("requestedRank"),"Выбери звание, на которое подаёшь рапорт.");
+ if (!weekly && !allowedPromotionRanks(rank.value).includes(field("requestedRank").value)) {
+  return showReportValidation(kind,field("requestedRank"),"Выбери звание выше текущего из доступного списка.");
+ }
  if (!field("date").value) return showReportValidation(kind,field("date"),"Укажи дату подачи.");
  if (weekly && (!field("start").value || weeklyPeriod(field("start").value,0).join(",") !== [field("start").value,field("end").value].join(","))) {
   return showReportValidation(kind,field("start"),"Выбери отчётную неделю с понедельника по воскресенье.");
@@ -2374,7 +2608,7 @@ async function submitReport(button){
  button.disabled = true;
  status.textContent = "Формируем PDF…";
  try {
-  if (!pending.pdf) pending.pdf = await buildSubmittedPdf(documentNode.cloneNode(true),documentNode.offsetWidth);
+  if (!pending.pdf) pending.pdf = await buildSubmittedPdf(documentNode.cloneNode(true),794);
   if (accountId !== author || !accountRole) return;
   status.textContent = "Отправка…";
   const {error} = kind === "weekly"
@@ -2455,6 +2689,7 @@ async function init(){
   });
   queue.panel.querySelector("[data-close-queue]").addEventListener("click", () => { closeReportsQueue(queue); go("home"); });
   queue.more.addEventListener("click", () => loadReports(queue,false));
+  queue.next.addEventListener("click",() => openNextPendingReport(queue));
   queue.panel.querySelector("[data-queue-filters]").addEventListener("submit",(event) => {
    event.preventDefault();
    loadReports(queue,true);
@@ -2504,6 +2739,14 @@ async function init(){
  document.getElementById("weeklyTopDate").addEventListener("change",loadWeeklyTop);
  setupReportDrafts();
  document.getElementById("closeWeeklySubmittedView").onclick = closeWeeklySubmittedView;
+ document.getElementById("continueWeeklyDraft").onclick = () => {
+  closeWeeklySubmittedView();
+  setReportCorrection("weekly",null);
+  setWeeklyPeriod(0);
+  rememberWeeklyDraftPeriod();
+  restoreReportDraft("weekly");
+  go("reports");
+ };
  document.getElementById("homeWeeklyButton").addEventListener("click",(event) => {
   const id = event.currentTarget.dataset.reportId;
   if (!id || !accountRole) return;
@@ -2583,6 +2826,10 @@ function bonusMissingReason(item){
 function bonusReportStatus(item){
  return item.submitted ? "Одобрен" : bonusMissingReason(item);
 }
+function formatBonusStatementRow(name,staticId,payout){
+ const cell = (value) => String(value ?? "").replace(/[|\r\n]+/g," ").trim() || "—";
+ return [cell(name),cell(staticId),cell(payout)].join(" | ");
+}
 async function savedBonusStatement(save){
  const week = bonusForm.elements.week.value;
  if (!canAssignRoles() || !week || (save && !bonusStatement)) return;
@@ -2619,22 +2866,20 @@ async function openBonusReport(item){
  const title = document.createElement("h3");
  title.textContent = item.employee_name+" · "+bonusReportStatus(item);
  bonusReportPreview.replaceChildren(title);
- if (data.pdf_base64) {
-  try {
-   const bytes = Uint8Array.from(atob(data.pdf_base64),(character) => character.charCodeAt(0));
-   bonusReportUrl = URL.createObjectURL(new Blob([bytes],{type:"application/pdf"}));
-   const link = document.createElement("a");
-   link.href = bonusReportUrl;
-   link.target = "_blank";
-   link.rel = "noopener noreferrer";
-   link.textContent = "Открыть PDF";
-   bonusReportPreview.append(link);
-  } catch {bonusReportPreview.append("PDF недоступен.");}
+ const actions = document.createElement("div");
+ actions.className = "portalPdfActions";
+ const paper = document.createElement("div");
+ paper.className = "submittedReportPaper";
+ bonusReportPreview.append(actions,paper);
+ const urls = new Set();
+ appendReportPdf(actions,paper,{kind:"weekly",id:item.report_id},data.pdf_base64,urls);
+ bonusReportUrl = urls.values().next().value || "";
+ if (!data.pdf_base64 && data.body) {
+  const legacy = document.createElement("div");
+  legacy.className = "portalReportBody";
+  renderReportBody(legacy,data.body);
+  paper.append(legacy);
  }
- const body = document.createElement("div");
- body.className = "portalReportBody";
- renderReportBody(body,data.body || "");
- bonusReportPreview.append(body);
  bonusReportPreview.scrollIntoView({block:"nearest"});
 }
 async function calculateBonuses(event){
@@ -2660,9 +2905,17 @@ async function calculateBonuses(event){
  button.disabled = true;
  bonusStatus.textContent = "Загрузка отчётов…";
  try {
-  const {data,error} = await client.rpc("portal_bonus_statement_details",{start_date:start,end_date:end});
+  const [{data,error},directory] = await Promise.all([
+   client.rpc("portal_bonus_statement_for_export",{start_date:start,end_date:end}),
+   own > 0 ? client.rpc("portal_role_directory") : Promise.resolve({data:[]})
+  ]);
   if (version !== bonusRequest || !canAssignRoles()) return;
   if (error) throw error;
+  const commissioner = directory.data?.find((person) => person.staff_role === "commissioner");
+  if (own > 0 && !commissioner) {
+   bonusStatus.textContent = "Не удалось загрузить профиль комиссара для ведомости.";
+   return;
+  }
   if (data.some((item) => item.submitted && item.points == null)) {
    bonusStatus.textContent = "У одного из отчётов нет сохранённых баллов. Для расчёта его нужно отправить заново.";
    return;
@@ -2701,7 +2954,7 @@ async function calculateBonuses(event){
   }
   const table = document.createElement("table");
   table.className = "fakeTable";
-  table.innerHTML = "<thead><tr><th>ФИО</th><th>Баллы</th><th>Статус отчёта</th><th>Основание</th><th>Премия</th></tr></thead><tbody></tbody>";
+  table.innerHTML = "<thead><tr><th>ФИО</th><th>Статик</th><th>Баллы</th><th>Статус отчёта</th><th>Основание</th><th>Премия</th></tr></thead><tbody></tbody>";
   const lines = [];
   for (const [index,item] of data.entries()) {
    const row = table.tBodies[0].insertRow();
@@ -2717,9 +2970,9 @@ async function calculateBonuses(event){
    } else employee.textContent = item.employee_name;
    const basis = !item.submitted ? "Фиксированная: без одобренного отчёта" : item.points < 200 ? "Фиксированная: меньше 200" : "Доля от остатка";
    const payout = formatBonus(result.payouts[index]);
-   const cells = [item.submitted ? item.points : "—",bonusReportStatus(item),basis,payout];
+   const cells = [item.employee_static || "—",item.submitted ? item.points : "—",bonusReportStatus(item),basis,payout];
    for (const value of cells) row.insertCell().textContent = value;
-   lines.push([item.employee_name,...cells].join(" · "));
+   lines.push(formatBonusStatementRow(item.employee_name,item.employee_static,payout));
   }
   const tableBox = document.createElement("div");
   tableBox.className = "bonusTable";
@@ -2739,7 +2992,8 @@ async function calculateBonuses(event){
   }
   bonusResults.append(tableBox);
   bonusStatus.textContent = period+(pendingCount ? " · Сотрудников с отчётами на проверке: "+pendingCount : "");
-  bonusStatement = ["Премии ВК · "+period,"Бюджет: "+formatBonus(budget),...figures.map(([label,value]) => label+": "+value),...lines].filter(Boolean).join("\n");
+  if (commissioner) lines.unshift(formatBonusStatementRow(commissioner.game_name,commissioner.game_static,formatBonus(own)));
+  bonusStatement = lines.join("\n");
   bonusCopy.hidden = false;
   document.getElementById("bonusSave").disabled = false;
  } catch {
@@ -2812,6 +3066,7 @@ function captureReportDraft(kind, forSubmission = false){
 function saveReportDraft(kind, submitted = false){
  if (!draftOwner || (kind === "weekly" && !weeklyField("start").value)) return;
  const draft = captureReportDraft(kind);
+ draft.savedAt = new Date().toISOString();
  if (submitted) draft.submitted = true;
  try {
   localStorage.setItem(draftKey(kind),JSON.stringify(draft));
@@ -2967,8 +3222,11 @@ async function openNotificationReport(item){
   clearReportQueue(queue);
   queue.panel.hidden = false;
   go(queue.panel.id);
-  const row = makeReportRow(queue,data);
+  const authors = await fetchReportAuthors();
+  if (version !== notificationOpenVersion || !canAssignRoles() || accountId !== user) return;
+  const row = makeReportRow(queue,{...data,author_name:authors.get(data.author_id)});
   queue.list.append(row);
+  loadPendingReportCount(queue);
   row.open = true;
  } else {
   go("notifications");
@@ -2995,11 +3253,11 @@ async function withdrawWeeklyReport(item, row, button, author){
   if (pendingReports.get(submit)?.id === item.id) pendingReports.delete(submit);
   if (item.week_start && draftOwner === author) {
    const key = reportDraftKey("weekly")+"."+item.week_start;
-   if (!readReportDraft(key)) {
-    const draft = item.form_data || recoverLegacyReport("weekly",item.body,item.weekly_breakdown);
-    try {localStorage.setItem(key,JSON.stringify(draft));} catch {}
-    if (!reportCorrections.weekly && weeklyField("start").value === item.week_start) restoreReportDraft("weekly",draft);
-   }
+   const draft = readReportDraft(key) || item.form_data || recoverLegacyReport("weekly",item.body,item.weekly_breakdown);
+   delete draft.submitted;
+   draft.savedAt = new Date().toISOString();
+   try {localStorage.setItem(key,JSON.stringify(draft));} catch {}
+   if (!reportCorrections.weekly && weeklyField("start").value === item.week_start) restoreReportDraft("weekly",draft);
   }
   const list = row.parentElement;
   if (list?.id === "weeklySubmittedReport") closeWeeklySubmittedView();
