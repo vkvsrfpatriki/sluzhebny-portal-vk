@@ -22,6 +22,11 @@ main{padding:24px;max-width:1600px;width:100%;margin:auto}
 .hero{min-height:220px;border-radius:18px;overflow:hidden;position:relative;background:linear-gradient(90deg,#07110cf2 0%,#0a160dc9 48%,#0b150c33 100%),url('staff.jpg') center 46%/cover;border:1px solid #354c38;display:flex;align-items:center;padding:32px;margin-bottom:20px}
 .hero h2{font-size:clamp(26px,3vw,40px);line-height:1.12;margin:0 0 12px;max-width:570px}.hero p{color:#d2ded2;margin:0}.hero .tag{color:var(--gold);font-size:12px;letter-spacing:2px;text-transform:uppercase;margin-bottom:12px}
 .heroStats{margin-left:auto;display:flex;gap:10px;align-self:flex-end}.stat{background:#08110dc9;border:1px solid #536a51;border-radius:12px;padding:13px 16px;min-width:120px}.stat b{display:block;font-size:21px}.stat span{font-size:12px;color:var(--muted)}
+.homeWeeklyButton{font:inherit;color:inherit;text-align:left}
+.homeWeeklyButton:not(:disabled){cursor:pointer;border-color:var(--accent,#82a578)}
+.homeWeeklyButton:not(:disabled):hover b{text-decoration:underline}
+.homeWeeklyButton:disabled{cursor:default;opacity:1}
+.weeklySentBody{white-space:pre-wrap;overflow-wrap:anywhere;margin:12px 0 0}
 .sectionhead{display:flex;align-items:end;justify-content:space-between;margin:22px 0 13px}.sectionhead h3{margin:0;font-size:20px}.sectionhead p{margin:3px 0 0;color:var(--muted);font-size:13px}
 .content{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:18px}.tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px}
 .tile{height:154px;border-radius:14px;overflow:hidden;position:relative;border:1px solid #405b43;background:#18251b;cursor:pointer;transition:.18s}.tile:hover{transform:translateY(-3px);border-color:#87a27b}
@@ -337,7 +342,7 @@ body>.portalGate.portalPhotoLogin,body>.portalLoading{flex:1;min-height:0}
  <label><input id="pendingRolesOnly" type="checkbox"> Только ожидающие назначения</label><p id="portalRoleStatus" role="status"></p><div id="portalAssignments"></div>
 </section>
 <section class="page active" id="home">
-<div class="hero"><div><div class="tag">Служебная система · ВК</div><h2>Добро пожаловать<br>на служебный портал</h2><p>Дисциплина. Порядок. Служба.</p></div><div class="heroStats"><div class="stat"><span>Отчёт за неделю</span><b id="homeWeeklyStatus" aria-live="polite">—</b></div><div class="stat"><span>Баллы за неделю</span><b id="homeWeeklyPoints" aria-live="polite">—</b></div></div></div>
+<div class="hero"><div><div class="tag">Служебная система · ВК</div><h2>Добро пожаловать<br>на служебный портал</h2><p>Дисциплина. Порядок. Служба.</p></div><div class="heroStats"><button type="button" class="stat homeWeeklyButton" id="homeWeeklyButton" disabled><span>Отчёт за неделю</span><b id="homeWeeklyStatus" aria-live="polite">—</b></button><div class="stat"><span>Баллы за неделю</span><b id="homeWeeklyPoints" aria-live="polite">—</b></div></div></div>
 <div class="sectionhead"><div><h3>Быстрые переходы</h3><p>Выберите нужный раздел портала</p></div></div>
 <div class="content"><div class="tiles">
 <div class="tile" data-go="profile"><img loading="lazy" decoding="async" src="staff.jpg" alt="Личный профиль"><div class="tilelabel"><span><i>◉</i>Мой профиль</span>↗</div></div>
@@ -2125,12 +2130,15 @@ function renderHomeWeeklyPoints(){
 async function loadHomeWeeklySummary(){
  const version = ++homeWeeklyVersion;
  const status = document.getElementById("homeWeeklyStatus");
+ const button = document.getElementById("homeWeeklyButton");
+ button.disabled = true;
+ delete button.dataset.reportId;
  status.textContent = accountRole ? "Загрузка…" : "—";
  if (!accountRole) homeWeeklyReport = null;
  renderHomeWeeklyPoints();
  if (!accountId || !accountRole) return;
  const [start,end] = weeklyPeriod(weeklyToday(),0);
- const {data,error} = await client.from("portal_reports").select("weekly_points,review_status")
+ const {data,error} = await client.from("portal_reports").select("id,weekly_points,review_status")
   .eq("author_id",accountId).eq("kind","weekly")
   .eq("week_start",start).eq("week_end",end)
   .order("created_at",{ascending:false}).order("id",{ascending:false}).limit(1).maybeSingle();
@@ -2140,6 +2148,10 @@ async function loadHomeWeeklySummary(){
   return;
  }
  status.textContent = data ? (data.review_status === "pending" ? "Отправлен" : reviewLabels[data.review_status]) : "Не отправлен";
+ if (data?.review_status === "pending") {
+  button.dataset.reportId = data.id;
+  button.disabled = false;
+ }
  homeWeeklyReport = {start,points:data?.weekly_points ?? null};
  renderHomeWeeklyPoints();
 }
@@ -2345,7 +2357,14 @@ async function init(){
  document.getElementById("weeklyTopPeriod").addEventListener("change",() => {document.getElementById("weeklyTopDate").value = "";loadWeeklyTop();});
  document.getElementById("weeklyTopDate").addEventListener("change",loadWeeklyTop);
  setupReportDrafts();
+ document.getElementById("homeWeeklyButton").addEventListener("click",(event) => {
+  const id = event.currentTarget.dataset.reportId;
+  if (!id || !accountRole) return;
+  go("reports");
+  loadMyReports("weekly",id);
+ });
  document.addEventListener("click",(event) => {
+  if (event.target.closest('[data-page="home"],[data-go="home"]')) loadHomeWeeklySummary();
   if (event.target.closest('[data-page="rating"],[data-go="rating"]')) loadWeeklyTop();
   if (event.target.closest('[data-page="staff"],[data-go="staff"]')) loadStaffLeadership();
  });
@@ -2876,22 +2895,64 @@ async function openNotificationReport(item){
   notificationStatus.textContent = "Открой отчёт в режиме руководства.";
  }
 }
+async function withdrawWeeklyReport(item, row, button, author){
+ if (accountId !== author || !accountRole || button.disabled) return;
+ if (!window.confirm("Отозвать еженедельный отчёт? После этого его можно отправить снова.")) return;
+ const status = row.querySelector("[data-withdraw-status]");
+ const submit = document.querySelector('[data-submit-report="weekly"]');
+ button.disabled = true;
+ status.textContent = "Отзываем отчёт…";
+ try {
+  const {data,error} = await client.rpc("portal_withdraw_weekly_report",{report_id:item.id});
+  if (accountId !== author || !accountRole) return;
+  if (error) throw error;
+  if (data !== true) {
+   await loadHomeWeeklySummary();
+   status.textContent = "Отзыв недоступен. Возможно, отчёт уже проверили или отозвали.";
+   return;
+  }
+
+  if (pendingReports.get(submit)?.id === item.id) pendingReports.delete(submit);
+  if (item.week_start && draftOwner === author) {
+   const key = reportDraftKey("weekly")+"."+item.week_start;
+   if (!readReportDraft(key)) {
+    const draft = item.form_data || recoverLegacyReport("weekly",item.body,item.weekly_breakdown);
+    try {localStorage.setItem(key,JSON.stringify(draft));} catch {}
+    if (!reportCorrections.weekly && weeklyField("start").value === item.week_start) restoreReportDraft("weekly",draft);
+   }
+  }
+  const message = document.createElement("p");
+  message.setAttribute("role","status");
+  message.textContent = "Отчёт отозван. Его можно отправить снова.";
+  row.replaceWith(message);
+  await loadHomeWeeklySummary();
+ } catch {
+  status.textContent = "Не удалось отозвать отчёт. Попробуй ещё раз.";
+  button.disabled = false;
+ }
+}
 async function loadMyReports(kind, reportId){
  const user = accountId;
  if (!user || !accountRole) return;
  const list = document.querySelector('[data-my-report-list="'+kind+'"]');
  list.textContent = "Загрузка…";
- let query = client.from("portal_reports").select("id,kind,created_at,review_status,review_reason,week_start,week_end,weekly_points").eq("author_id",user).eq("kind",kind);
+ const fields = "id,kind,created_at,review_status,review_reason,week_start,week_end,weekly_points";
+ let query = client.from("portal_reports").select(fields+(reportId && kind === "weekly" ? ",body,form_data,weekly_breakdown" : "")).eq("author_id",user).eq("kind",kind);
  if (reportId) query = query.eq("id",reportId);
  const {data,error} = await query.order("created_at",{ascending:false}).limit(50);
  if (user !== accountId || !accountRole) return;
  list.replaceChildren();
- if (error || !data.length) {list.textContent = error ? "Не удалось загрузить отправки." : "Отправок пока нет.";return;}
+ if (error || !data?.length) {
+  list.textContent = error ? "Не удалось загрузить отправки." : reportId ? "Отправленный отчёт уже недоступен." : "Отправок пока нет.";
+  if (reportId && kind === "weekly") {list.scrollIntoView({block:"nearest"});loadHomeWeeklySummary();}
+  return;
+ }
  for (const item of data) {
   const row = document.createElement("details");
   const heading = document.createElement("summary");
   heading.textContent = new Date(item.created_at).toLocaleString("ru-RU")+" · "+reviewLabels[item.review_status]+(item.week_start ? " · "+item.week_start+" — "+item.week_end : "");
   row.open = Boolean(reportId);
+  if (kind === "weekly" && reportId && item.id === document.getElementById("homeWeeklyButton").dataset.reportId && item.review_status !== "pending") loadHomeWeeklySummary();
   row.append(heading);
   if (item.weekly_points != null) {
    const points = document.createElement("p");
@@ -2919,6 +2980,23 @@ async function loadMyReports(kind, reportId){
    setTimeout(() => URL.revokeObjectURL(url),1000);
   };
   row.append(button);
+  if (kind === "weekly" && reportId && item.review_status === "pending") {
+   const withdraw = document.createElement("button");
+   withdraw.type = "button";
+   withdraw.className = "action secondary";
+   withdraw.textContent = "Отозвать отчёт";
+   withdraw.onclick = () => withdrawWeeklyReport(item,row,withdraw,user);
+   const status = document.createElement("span");
+   status.dataset.withdrawStatus = "";
+   status.setAttribute("role","status");
+   row.append(withdraw,status);
+  }
+  if (kind === "weekly" && reportId && item.body) {
+   const body = document.createElement("p");
+   body.className = "weeklySentBody";
+   body.textContent = item.body;
+   row.append(body);
+  }
   if (item.review_status === "rejected") {
    const edit = document.createElement("button");
    edit.type = "button";
