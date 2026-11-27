@@ -286,6 +286,10 @@ body>.portalGate.portalPhotoLogin,body>.portalLoading{flex:1;min-height:0}
 </div>
 <section id="portalReportsQueue" class="page panel portalReportQueue" hidden>
  <div class="row"><h2>Входящие отчёты</h2><button data-close-queue class="action secondary" type="button">Закрыть</button></div>
+ <div class="row" role="group" aria-label="Еженедельные отчёты">
+  <button type="button" class="action" data-weekly-view="inbox" aria-pressed="true">Входящие</button>
+  <button type="button" class="action secondary" data-weekly-view="archive" aria-pressed="false">Архив</button>
+ </div>
  <p data-queue-status role="status"></p><div class="portalReportsList"></div>
  <button data-more-reports class="action secondary" type="button" hidden>Показать ещё</button>
 </section>
@@ -1788,7 +1792,9 @@ function makeReportRow(queue, report){
 
 async function loadReports(queue, reset){
  if (!canAssignRoles()) return;
- if (reset) {
+ const monday = queue.kind === "weekly" ? weeklyPeriod(weeklyToday(),0)[0] : null;
+ if (reset || queue.weekStart !== monday) {
+  queue.weekStart = monday;
   clearReportQueue(queue);
   queue.offset = 0;
  }
@@ -1797,7 +1803,13 @@ async function loadReports(queue, reset){
  queue.more.hidden = true;
  queue.status.textContent = "Загрузка…";
  const pageSize = 30;
- const {data,error} = await client.from("portal_reports").select("id,kind,created_at,review_status,weekly_points").eq("kind",queue.kind)
+ let query = client.from("portal_reports").select("id,kind,created_at,review_status,weekly_points").eq("kind",queue.kind);
+ if (monday) {
+  query = queue.archived
+   ? query.eq("review_status","approved").lt("week_end",monday)
+   : query.or("review_status.neq.approved,week_end.is.null,week_end.gte."+monday);
+ }
+ const {data,error} = await query
   .order("created_at",{ascending:false}).order("id",{ascending:false}).range(queue.offset,queue.offset+pageSize-1);
  if (version !== queue.version || !canAssignRoles()) return;
  if (error) {
@@ -1992,7 +2004,26 @@ async function init(){
  };
  document.addEventListener("click",openNotifications);
  document.addEventListener("visibilitychange",() => { if (!document.hidden) loadNotifications(); });
- window.setInterval(() => { if (!document.hidden) loadNotifications(); },30000);
+ window.setInterval(() => {
+  if (document.hidden) return;
+  loadNotifications();
+  const weekly = reportQueues.weekly;
+  if (!weekly.panel.hidden && weekly.panel.classList.contains("active") && weekly.weekStart !== weeklyPeriod(weeklyToday(),0)[0]) {
+   loadReports(weekly,true);
+  }
+ },30000);
+ const weeklyViews = Array.from(reportQueues.weekly.panel.querySelectorAll("[data-weekly-view]"));
+ for (const button of weeklyViews) {
+  button.addEventListener("click",() => {
+   if (!canAssignRoles() || button.getAttribute("aria-pressed") === "true") return;
+   reportQueues.weekly.archived = button.dataset.weeklyView === "archive";
+   for (const view of weeklyViews) {
+    view.setAttribute("aria-pressed",String(view === button));
+    view.classList.toggle("secondary",view !== button);
+   }
+   loadReports(reportQueues.weekly,true);
+  });
+ }
  document.getElementById("weeklyTopPeriod").addEventListener("change",loadWeeklyTop);
  document.addEventListener("click",(event) => {
   if (event.target.closest('[data-page="rating"],[data-go="rating"]')) loadWeeklyTop();
