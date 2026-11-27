@@ -287,12 +287,13 @@ body>.portalGate.portalPhotoLogin,body>.portalLoading{flex:1;min-height:0}
 <section id="portalReportsQueue" class="page panel portalReportQueue" hidden>
  <div class="row"><h2>Входящие отчёты</h2><button data-close-queue class="action secondary" type="button">Закрыть</button></div>
  <div class="row" role="group" aria-label="Еженедельные отчёты">
-  <button type="button" class="action" data-weekly-view="inbox" aria-pressed="true">Входящие</button>
+  <button type="button" class="action" data-weekly-view="inbox" aria-pressed="true">Сдача за неделю</button>
+  <button type="button" class="action secondary" data-weekly-view="documents" aria-pressed="false">Все входящие</button>
   <button type="button" class="action secondary" data-weekly-view="archive" aria-pressed="false">Архив</button>
  </div>
  <form class="row" data-queue-filters>
   <label>ФИО или статик <input name="author" type="search"></label>
-  <label>Статус <select name="review"><option value="">Все</option><option value="pending">На проверке</option><option value="approved">Одобрен</option><option value="rejected">Отклонён</option></select></label>
+  <label>Статус <select name="review"><option value="">Все</option><option value="missing">Не сдали</option><option value="pending">На проверке</option><option value="approved">Одобрен</option><option value="rejected">Отклонён</option></select></label>
   <label>Дата недели <input name="week" type="date"></label>
   <button type="submit" class="action secondary">Найти</button>
  </form>
@@ -1776,7 +1777,7 @@ function makeReportRow(queue, report){
     if (report.kind === "weekly") {
      loadHomeWeeklySummary();
      loadWeeklyTop();
-     if (decision === "approved") loadReports(queue,true);
+     if (decision === "approved" || isWeeklyRoster(queue)) loadReports(queue,true);
     }
    });
    buttons.push(review);
@@ -1834,6 +1835,51 @@ function makeReportRow(queue, report){
  return row;
 }
 
+function isWeeklyRoster(queue){
+ return queue.kind === "weekly" && !queue.archived && !queue.documentsOnly;
+}
+function weeklyRosterStatus(person){
+ if (!person.report_id) return "Не сдал";
+ if (person.report_status === "pending" && person.approved_id) return "Исправление на проверке";
+ return reviewLabels[person.report_status] || "На проверке";
+}
+async function loadWeeklyRoster(queue,version,filter){
+ const [start,end] = weeklyPeriod(filter.week.value || weeklyToday(),0);
+ const review = filter.review.value;
+ const search = filter.author.value.trim().toLocaleLowerCase("ru");
+ const {data,error} = await client.rpc("portal_weekly_submission_roster",{start_date:start,end_date:end});
+ if (version !== queue.version || !canAssignRoles()) return;
+ if (error) {queue.status.textContent = "Не удалось загрузить список сотрудников.";return;}
+ const totals = {missing:0,pending:0,approved:0,rejected:0};
+ for (const person of data) totals[person.report_id ? person.report_status : "missing"]++;
+ queue.status.textContent = [start,end].map((date) => date.split("-").reverse().join(".")).join(" — ") +
+  " · Всего: "+data.length+" · Не сдали: "+totals.missing+" · На проверке: "+totals.pending+
+  " · Одобрены: "+totals.approved+" · Отклонены: "+totals.rejected;
+ const people = data.filter((person) => (!review || (person.report_id ? person.report_status : "missing") === review) &&
+  [person.employee_name,person.employee_static].some((value) => value?.toLocaleLowerCase("ru").includes(search)));
+ if (!people.length) {queue.list.textContent = "Сотрудники не найдены.";return;}
+ const table = document.createElement("table");
+ table.className = "fakeTable";
+ table.innerHTML = "<thead><tr><th>Сотрудник</th><th>Статус за неделю</th><th>Баллы</th><th>Документы</th></tr></thead><tbody></tbody>";
+ for (const person of people) {
+  const row = table.tBodies[0].insertRow();
+  row.insertCell().textContent = person.employee_name+(person.employee_static ? " · "+person.employee_static : "");
+  row.insertCell().textContent = weeklyRosterStatus(person);
+  const previous = person.approved_id && person.approved_id !== person.report_id;
+  row.insertCell().textContent = (person.report_points ?? "—")+(previous ? " · учтено: "+(person.approved_points ?? "—") : "");
+  const documents = row.insertCell();
+  if (!person.report_id) {documents.textContent = "—";continue;}
+  documents.append(makeReportRow(queue,{id:person.report_id,kind:"weekly",created_at:person.report_created_at,
+   review_status:person.report_status,weekly_points:person.report_points}));
+  if (previous) documents.append(makeReportRow(queue,{id:person.approved_id,kind:"weekly",created_at:person.approved_created_at,
+   review_status:"approved",weekly_points:person.approved_points}));
+ }
+ const wrap = document.createElement("div");
+ wrap.style.overflowX = "auto";
+ wrap.append(table);
+ queue.list.append(wrap);
+}
+
 async function loadReports(queue, reset){
  if (!canAssignRoles()) return;
  const monday = queue.kind === "weekly" ? weeklyPeriod(weeklyToday(),0)[0] : null;
@@ -1846,6 +1892,8 @@ async function loadReports(queue, reset){
  queue.panel.hidden = false;
  queue.more.hidden = true;
  queue.status.textContent = "Загрузка…";
+ const filter = queue.panel.querySelector("[data-queue-filters]").elements;
+ if (isWeeklyRoster(queue)) return loadWeeklyRoster(queue,version,filter);
  const pageSize = 30;
  let query = client.from("portal_reports").select("id,kind,created_at,review_status,weekly_points").eq("kind",queue.kind);
  if (monday) {
@@ -1853,8 +1901,7 @@ async function loadReports(queue, reset){
    ? query.eq("review_status","approved").lt("week_end",monday)
    : query.or("review_status.neq.approved,week_end.is.null,week_end.gte."+monday);
  }
- const filter = queue.panel.querySelector("[data-queue-filters]").elements;
- if (filter.review.value) query = query.eq("review_status",filter.review.value);
+ if (filter.review.value && filter.review.value !== "missing") query = query.eq("review_status",filter.review.value);
  if (filter.week.value) {
   const [start,end] = weeklyPeriod(filter.week.value,0);
   query = queue.kind === "weekly" ? query.eq("week_start",start).eq("week_end",end)
@@ -2087,7 +2134,13 @@ async function init(){
  for (const button of weeklyViews) {
   button.addEventListener("click",() => {
    if (!canAssignRoles() || button.getAttribute("aria-pressed") === "true") return;
-   reportQueues.weekly.archived = button.dataset.weeklyView === "archive";
+   const queue = reportQueues.weekly;
+   queue.archived = button.dataset.weeklyView === "archive";
+   queue.documentsOnly = button.dataset.weeklyView === "documents";
+   const status = queue.panel.querySelector("[data-queue-filters]").elements.review;
+   const missing = status.querySelector('option[value="missing"]');
+   missing.hidden = missing.disabled = !isWeeklyRoster(queue);
+   if (status.value === "missing" && missing.disabled) status.value = "";
    for (const view of weeklyViews) {
     view.setAttribute("aria-pressed",String(view === button));
     view.classList.toggle("secondary",view !== button);
