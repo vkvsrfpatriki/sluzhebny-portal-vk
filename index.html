@@ -1,6 +1,9 @@
 <!doctype html>
 <html lang="ru">
 <head>
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="preconnect" href="https://zrcimhwyrunblodtssne.supabase.co" crossorigin>
+<link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm" crossorigin>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Служебный портал ВК</title>
@@ -291,14 +294,14 @@ body>.portalGate.portalPhotoLogin,body>.portalLoading{flex:1;min-height:0}
 <div class="hero"><div><div class="tag">Служебная система · ВК</div><h2>Добро пожаловать<br>на служебный портал</h2><p>Дисциплина. Порядок. Служба.</p></div><div class="heroStats"><div class="stat"><span>Отчёт за неделю</span><b id="homeWeeklyStatus" aria-live="polite">—</b></div><div class="stat"><span>Баллы за неделю</span><b id="homeWeeklyPoints" aria-live="polite">—</b></div></div></div>
 <div class="sectionhead"><div><h3>Быстрые переходы</h3><p>Выберите нужный раздел портала</p></div></div>
 <div class="content"><div class="tiles">
-<div class="tile" data-go="profile"><img src="staff.jpg" alt="Личный профиль"><div class="tilelabel"><span><i>◉</i>Мой профиль</span>↗</div></div>
-<div class="tile" data-go="reports"><img src="reports.jpg" alt="Заполнение служебного отчёта"><div class="tilelabel"><span><i>▤</i>Еженедельный отчёт</span>↗</div></div>
-<div class="tile" data-go="promotion"><img src="promotion.jpg" alt="Повышение в звании"><div class="tilelabel"><span><i>✦</i>Рапорт на повышение</span>↗</div></div>
-<div class="tile" data-go="rating"><img src="rating.jpg" alt="Командная подготовка военнослужащих"><div class="tilelabel"><span><i>★</i>Топ сотрудников</span>↗</div></div>
-<div class="tile" data-go="staff"><img src="staff.jpg" alt="Военнослужащие на построении"><div class="tilelabel"><span><i>♟</i>Руководящий состав</span>↗</div></div>
-<div class="tile" data-go="documents"><img src="documents.jpg" alt="Служебные документы"><div class="tilelabel"><span><i>▣</i>Документация ВК</span>↗</div></div>
-<div class="tile" data-go="notifications"><img src="notifications.jpg" alt="Служебные уведомления"><div class="tilelabel"><span><i>♢</i>Уведомления</span>↗</div></div>
-<div class="tile" data-go="training"><img src="training.jpg" alt="Занятие в учебном классе"><div class="tilelabel"><span><i>▱</i>Обучение</span>↗</div></div>
+<div class="tile" data-go="profile"><img loading="lazy" decoding="async" src="staff.jpg" alt="Личный профиль"><div class="tilelabel"><span><i>◉</i>Мой профиль</span>↗</div></div>
+<div class="tile" data-go="reports"><img loading="lazy" decoding="async" src="reports.jpg" alt="Заполнение служебного отчёта"><div class="tilelabel"><span><i>▤</i>Еженедельный отчёт</span>↗</div></div>
+<div class="tile" data-go="promotion"><img loading="lazy" decoding="async" src="promotion.jpg" alt="Повышение в звании"><div class="tilelabel"><span><i>✦</i>Рапорт на повышение</span>↗</div></div>
+<div class="tile" data-go="rating"><img loading="lazy" decoding="async" src="rating.jpg" alt="Командная подготовка военнослужащих"><div class="tilelabel"><span><i>★</i>Топ сотрудников</span>↗</div></div>
+<div class="tile" data-go="staff"><img loading="lazy" decoding="async" src="staff.jpg" alt="Военнослужащие на построении"><div class="tilelabel"><span><i>♟</i>Руководящий состав</span>↗</div></div>
+<div class="tile" data-go="documents"><img loading="lazy" decoding="async" src="documents.jpg" alt="Служебные документы"><div class="tilelabel"><span><i>▣</i>Документация ВК</span>↗</div></div>
+<div class="tile" data-go="notifications"><img loading="lazy" decoding="async" src="notifications.jpg" alt="Служебные уведомления"><div class="tilelabel"><span><i>♢</i>Уведомления</span>↗</div></div>
+<div class="tile" data-go="training"><img loading="lazy" decoding="async" src="training.jpg" alt="Занятие в учебном классе"><div class="tilelabel"><span><i>▱</i>Обучение</span>↗</div></div>
 </div><div class="rightcol">
 <div class="widget"><h4>★ Ваш профиль</h4><div class="profileRole">Сотрудник ВК</div><p class="muted">Иванов Алексей · № 014</p><p class="muted">Дата вступления: 12.06.2026</p></div>
 <div class="widget"><h4>♢ Последние уведомления</h4><div id="homeNotifications" aria-live="polite"></div><button type="button" class="action secondary" data-go="notifications">Все уведомления</button></div>
@@ -385,7 +388,7 @@ Object.entries(pages).forEach(([id,p]) => {
  section.id = id;
  section.innerHTML = `
   <div class="pagehero">
-   <img src="${p[2]}" alt="">
+   <img loading="lazy" decoding="async" src="${p[2]}" alt="">
    <div class="pageheroText"><h2>${p[0]}</h2><p>${p[1]}</p></div>
   </div>
   <div class="panel">
@@ -400,7 +403,7 @@ Object.entries(pages).forEach(([id,p]) => {
   </div>`;
  if (id === "promotion") {
   section.innerHTML = `
-   <div class="pagehero"><img src="promotion.jpg" alt=""><div class="pageheroText"><h2>Повышение</h2><p>Ступени званий, требования и система баллов</p></div></div>
+   <div class="pagehero"><img loading="lazy" decoding="async" src="promotion.jpg" alt=""><div class="pageheroText"><h2>Повышение</h2><p>Ступени званий, требования и система баллов</p></div></div>
    <div class="subnav">
     <button type="button" class="active" data-promo-tab="steps">Ступени и требования</button>
     <button type="button" data-promo-tab="points">Система баллов</button>
@@ -587,7 +590,7 @@ Object.entries(pages).forEach(([id,p]) => {
    <p id="bonusStatus" role="status"></p><div id="bonusResults"></div>
   </div>`;
  } else if (id === "documents" || id === "training") {
-  section.innerHTML = `<div class="pagehero"><img src="${p[2]}" alt=""><div class="pageheroText"><h2>${p[0]}</h2><p>${p[1]}</p></div></div>
+  section.innerHTML = `<div class="pagehero"><img loading="lazy" decoding="async" src="${p[2]}" alt=""><div class="pageheroText"><h2>${p[0]}</h2><p>${p[1]}</p></div></div>
    <div class="panel"><h3>Файлы</h3>
     <form class="row materialUpload" hidden><label>Документ до 10 МБ<input type="file" required></label><button class="action" type="submit">Добавить файл</button></form>
     <p class="materialStatus muted" role="status"></p><ul class="materialList"></ul>
@@ -595,13 +598,13 @@ Object.entries(pages).forEach(([id,p]) => {
  } else if (id === "rating") {
   section.innerHTML = staffTopMarkup;
  } else if (id === "staff") {
-  section.innerHTML = `<div class="pagehero"><img src="staff.jpg" alt=""><div class="pageheroText"><h2>${p[0]}</h2><p>${p[1]}</p></div></div>` + staffMarkup;
+  section.innerHTML = `<div class="pagehero"><img loading="lazy" decoding="async" src="staff.jpg" alt=""><div class="pageheroText"><h2>${p[0]}</h2><p>${p[1]}</p></div></div>` + staffMarkup;
  } else if (id === "profile") {
   section.innerHTML = profileMarkup;
  } else {
   section.innerHTML = `
   <div class="pagehero">
-   <img src="${p[2]}" alt="">
+   <img loading="lazy" decoding="async" src="${p[2]}" alt="">
    <div class="pageheroText"><h2>${p[0]}</h2><p>${p[1]}</p></div>
   </div>
   <div class="panel">
@@ -1295,6 +1298,7 @@ async function saveEmployeeProfile(event){
 
 async function loadStaffLeadership(){
  const viewer = accountId;
+ if (!viewer || !accountRole) return;
  const target = document.getElementById("staffLeadershipCards");
  const {data,error} = await client.rpc("portal_staff_leadership");
  if (viewer !== accountId || !accountRole) return;
@@ -1452,9 +1456,9 @@ async function showAccount(session){
  accountRole = data.role;
  syncAccountProfile(data);
  loadNotifications();
- loadWeeklyTop();
  loadHomeWeeklySummary();
- loadStaffLeadership();
+ if (document.getElementById("rating").classList.contains("active")) loadWeeklyTop();
+ if (document.getElementById("staff").classList.contains("active")) loadStaffLeadership();
  const meta = session.user.user_metadata || {};
  const candidate = meta.full_name || meta.name || meta.preferred_username;
  const title = typeof candidate === "string" && candidate.trim() ? candidate.trim().slice(0,80) : "Профиль";
@@ -1978,6 +1982,7 @@ async function init(){
  document.getElementById("weeklyTopPeriod").addEventListener("change",loadWeeklyTop);
  document.addEventListener("click",(event) => {
   if (event.target.closest('[data-page="rating"],[data-go="rating"]')) loadWeeklyTop();
+  if (event.target.closest('[data-page="staff"],[data-go="staff"]')) loadStaffLeadership();
  });
  bonusForm.elements.week.value = weeklyPeriod(weeklyToday(),0)[0];
  bonusForm.addEventListener("submit",calculateBonuses);
