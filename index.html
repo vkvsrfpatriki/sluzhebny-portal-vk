@@ -26,7 +26,15 @@ main{padding:24px;max-width:1600px;width:100%;margin:auto}
 .homeWeeklyButton:not(:disabled){cursor:pointer;border-color:var(--accent,#82a578)}
 .homeWeeklyButton:not(:disabled):hover b{text-decoration:underline}
 .homeWeeklyButton:disabled{cursor:default;opacity:1}
-.reportPdfFrame{display:block;width:100%;height:clamp(360px,72vh,920px);border:1px solid var(--line);border-radius:8px;background:#fff}
+.submittedReportLayout{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,2fr);gap:20px;align-items:start;margin-top:12px}
+.submittedReportLayout .portalPdfActions{margin-top:0}
+.submittedReportPaper{min-width:0}
+.submittedPdfSheet{position:relative;max-width:816px;margin:0 auto 12px;background:#fff;box-shadow:0 2px 10px #0005}
+.submittedPdfSheet canvas{display:block;width:100%;height:auto}
+.submittedPdfSheet a{position:absolute}
+.submittedPdfSheet a:focus-visible{outline:2px solid #326abd;outline-offset:2px}
+.weeklyWorkspace[hidden],#weeklySubmittedView[hidden]{display:none!important}
+@media(max-width:850px){.submittedReportLayout{grid-template-columns:minmax(0,1fr);gap:12px}}
 .noticeReportLink{text-align:left;max-width:100%;white-space:normal}
 .noticeReportAuthor{display:block;color:var(--muted);font-weight:normal}
 .sectionhead{display:flex;align-items:end;justify-content:space-between;margin:22px 0 13px}.sectionhead h3{margin:0;font-size:20px}.sectionhead p{margin:3px 0 0;color:var(--muted);font-size:13px}
@@ -627,7 +635,11 @@ Object.entries(pages).forEach(([id,p]) => {
      <div class="previewTop">Предпросмотр</div>
      <article id="weeklyDocument" class="officialDocument"></article>
     </div>
-   </div>`;
+   </div>
+   <section id="weeklySubmittedView" hidden>
+    <button id="closeWeeklySubmittedView" type="button" class="action secondary">Вернуться к черновику</button>
+    <div id="weeklySubmittedReport"></div>
+   </section>`;
  } else if (id === "notifications") {
   section.innerHTML = `<div class="panel">
    <div class="row"><h2>Уведомления</h2><button id="markNotificationsRead" class="action secondary" type="button" disabled>Отметить все прочитанными</button></div>
@@ -1544,6 +1556,7 @@ async function showAccount(session){
   restoreReportDraft("weekly");
   restoreReportDraft("promotion");
   document.querySelectorAll("[data-my-report-list]").forEach(clearMyReportList);
+  closeWeeklySubmittedView();
   commissionerMode = true;
   selfProfileForm.reset();
   selfProfileForm.querySelector("fieldset").disabled = true;
@@ -1811,6 +1824,67 @@ async function loadWeeklyTop(){
  target.append(table);
 }
 
+const pdfJsPath = "https://cdn.jsdelivr.net/npm/pdfjs-dist@6.5.438/";
+let pdfJsModule;
+function loadPdfJs(){
+ pdfJsModule ??= import(pdfJsPath+"legacy/build/pdf.min.mjs").then((pdfjs) => {
+  pdfjs.GlobalWorkerOptions.workerSrc = pdfJsPath+"legacy/build/pdf.worker.min.mjs";
+  return pdfjs;
+ }).catch((error) => {pdfJsModule = undefined;throw error;});
+ return pdfJsModule;
+}
+async function renderPdfPages(container,bytes,label){
+ container.textContent = "Загрузка PDF…";
+ let task;
+ try {
+  const pdfjs = await loadPdfJs();
+  if (!container.isConnected) return;
+  task = pdfjs.getDocument({data:bytes,standardFontDataUrl:pdfJsPath+"standard_fonts/"});
+  const pdf = await task.promise;
+  if (!container.isConnected) return;
+  container.replaceChildren();
+  const scale = Math.min(2,window.devicePixelRatio || 1);
+  for (let number=1;number<=pdf.numPages;number++) {
+   if (!container.isConnected) break;
+   const page = await pdf.getPage(number);
+   const base = page.getViewport({scale:1});
+   const viewport = page.getViewport({scale:Math.min(816*scale/base.width,2048*scale/base.height)});
+   const sheet = document.createElement("div");
+   sheet.className = "submittedPdfSheet";
+   const canvas = document.createElement("canvas");
+   canvas.width = Math.ceil(viewport.width);
+   canvas.height = Math.ceil(viewport.height);
+   canvas.setAttribute("role","img");
+   canvas.setAttribute("aria-label",label+", страница "+number+" из "+pdf.numPages);
+   await page.render({canvas,viewport}).promise;
+   sheet.append(canvas);
+   const annotations = await page.getAnnotations().catch(() => []);
+   for (const annotation of annotations) {
+    if (!annotation.rect || !/^https?:\/\//i.test(annotation.url ?? "")) continue;
+    const [left,bottom,right,top] = annotation.rect;
+    const [x1,y1] = viewport.convertToViewportPoint(left,bottom);
+    const [x2,y2] = viewport.convertToViewportPoint(right,top);
+    const link = document.createElement("a");
+    link.href = annotation.url;
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    link.title = annotation.url;
+    link.setAttribute("aria-label",annotation.url);
+    link.style.left = Math.min(x1,x2)/viewport.width*100+"%";
+    link.style.top = Math.min(y1,y2)/viewport.height*100+"%";
+    link.style.width = Math.abs(x2-x1)/viewport.width*100+"%";
+    link.style.height = Math.abs(y2-y1)/viewport.height*100+"%";
+    sheet.append(link);
+   }
+   page.cleanup();
+   if (container.isConnected) container.append(sheet);
+  }
+ } catch {
+  if (container.isConnected) container.textContent = "Предпросмотр недоступен. Открой или скачай PDF.";
+ } finally {
+  await task?.destroy().catch(() => {});
+ }
+}
 function appendReportPdf(actions,container,report,encoded,urls){
  if (!encoded) {
   container.textContent = "Для этого документа PDF недоступен.";
@@ -1831,26 +1905,28 @@ function appendReportPdf(actions,container,report,encoded,urls){
  download.download = (report.kind === "weekly" ? "ezhenedelny-otchet" : "raport-na-povyshenie")+"-"+report.id.slice(0,8)+".pdf";
  download.textContent = "Скачать PDF";
  actions.prepend(open,download);
- const frame = document.createElement("iframe");
- frame.title = report.kind === "weekly" ? "PDF еженедельного отчёта" : "PDF рапорта на повышение";
- frame.className = "reportPdfFrame";
- frame.src = url;
- container.append(frame);
+ const label = report.kind === "weekly" ? "PDF еженедельного отчёта" : "PDF рапорта на повышение";
+ renderPdfPages(container,bytes,label);
 }
-function makeReportRow(queue, report, pdfPreview = false){
+function makeReportRow(queue, report){
  const row = document.createElement("details");
  const title = document.createElement("summary");
  const actions = document.createElement("div");
  const body = document.createElement("div");
+ const layout = document.createElement("div");
+ const controls = document.createElement("div");
+ layout.className = "submittedReportLayout";
  actions.className = "portalPdfActions";
- body.className = "portalReportBody";
+ body.className = "submittedReportPaper";
+ controls.append(actions);
+ layout.append(controls,body);
  const updateTitle = () => {
   title.textContent = reportTypes[report.kind].label + " · " + new Date(report.created_at).toLocaleString("ru-RU") +
    " · " + reviewLabels[report.review_status] +
    (report.weekly_points == null ? "" : " · " + report.weekly_points + " баллов");
  };
  updateTitle();
- row.append(title,actions,body);
+ row.append(title,layout);
  const remove = document.createElement("button");
  remove.type = "button";
  remove.className = "action secondary portalPdfDanger";
@@ -1916,46 +1992,30 @@ function makeReportRow(queue, report, pdfPreview = false){
   loading = true;
   body.textContent = "Загрузка…";
   try {
-   const fields = pdfPreview ? "pdf_base64" : "body,pdf_base64,weekly_breakdown,review_reason";
-   const {data,error} = await client.from("portal_reports").select(fields).eq("id",report.id).single();
+   const {data,error} = await client.from("portal_reports").select("pdf_base64,review_reason").eq("id",report.id).single();
    if (!row.isConnected || !canAssignRoles()) return;
    if (error) throw error;
    body.replaceChildren();
-   if (pdfPreview) {
-    appendReportPdf(actions,body,report,data.pdf_base64,queue.urls);
-    loaded = true;
-    return;
-   }
-   if (data.pdf_base64) {
-    const bytes = Uint8Array.from(atob(data.pdf_base64), (ch) => ch.charCodeAt(0));
-    const url = URL.createObjectURL(new Blob([bytes],{type:"application/pdf"}));
-    queue.urls.add(url);
-    const open = document.createElement("a");
-    open.className = "action secondary";
-    open.href = url;
-    open.target = "_blank";
-    open.rel = "noopener noreferrer";
-    open.textContent = "Открыть PDF";
-    const download = document.createElement("a");
-    download.className = "action secondary";
-    download.href = url;
-    download.download = (report.kind === "weekly" ? "ezhenedelny-otchet" : "raport-na-povyshenie")+"-"+report.id.slice(0,8)+".pdf";
-    download.textContent = "Скачать PDF";
-    actions.prepend(open,download);
-   } else {
-    body.append("Документ отправлен до появления PDF.\n\n");
-   }
-   if (data.weekly_breakdown?.length) {
-    const breakdown = document.createElement("p");
-    breakdown.textContent = "Расчёт сервера: "+data.weekly_breakdown.map((item) => item.title+" × "+item.count+" = "+item.points).join(" · ");
-    body.append(breakdown);
+   appendReportPdf(actions,body,report,data.pdf_base64,queue.urls);
+   if (!data.pdf_base64) {
+    const legacy = await client.from("portal_reports").select("body").eq("id",report.id).single();
+    if (!row.isConnected || !canAssignRoles()) return;
+    if (legacy.data?.body) {
+     const fallback = document.createElement("details");
+     const heading = document.createElement("summary");
+     const text = document.createElement("div");
+     text.className = "portalReportBody";
+     heading.textContent = "Текст старого документа";
+     renderReportBody(text,legacy.data.body);
+     fallback.append(heading,text);
+     body.append(fallback);
+    }
    }
    if (data.review_reason) {
     const reason = document.createElement("p");
     reason.textContent = "Причина отказа: "+data.review_reason;
-    body.append(reason);
+    controls.append(reason);
    }
-   renderReportBody(body,data.body);
    loaded = true;
   } catch {
    if (row.isConnected) body.textContent = "Не удалось открыть документ. Закрой и открой его снова.";
@@ -2419,6 +2479,7 @@ async function init(){
  document.getElementById("weeklyTopPeriod").addEventListener("change",() => {document.getElementById("weeklyTopDate").value = "";loadWeeklyTop();});
  document.getElementById("weeklyTopDate").addEventListener("change",loadWeeklyTop);
  setupReportDrafts();
+ document.getElementById("closeWeeklySubmittedView").onclick = closeWeeklySubmittedView;
  document.getElementById("homeWeeklyButton").addEventListener("click",(event) => {
   const id = event.currentTarget.dataset.reportId;
   if (!id || !accountRole) return;
@@ -2426,6 +2487,7 @@ async function init(){
   loadMyReports("weekly",id);
  });
  document.addEventListener("click",(event) => {
+  if (event.target.closest('[data-page="reports"],[data-go="reports"]')) closeWeeklySubmittedView();
   if (event.target.closest('[data-page="home"],[data-go="home"]')) loadHomeWeeklySummary();
   if (event.target.closest('[data-page="rating"],[data-go="rating"]')) loadWeeklyTop();
   if (event.target.closest('[data-page="staff"],[data-go="staff"]')) loadStaffLeadership();
@@ -2913,6 +2975,7 @@ async function openReportCorrection(item, row, button, user){
   setReportCorrection(kind,{id:item.id,review_reason:data.review_reason,week_start:kind === "weekly" ? weeklyField("start").value : null});
   restoreReportDraft(kind,data.form_data || recoverLegacyReport(kind,data.body,data.weekly_breakdown));
   saveReportDraft(kind);
+  if (kind === "weekly") closeWeeklySubmittedView();
   go(kind === "weekly" ? "reports" : "promotion");
   document.querySelector('[data-report-correction="'+kind+'"] button').focus({preventScroll:true});
  } catch {
@@ -2927,6 +2990,7 @@ async function openNotificationReport(item){
  const version = ++notificationOpenVersion;
  if (item.reminder_week) {
   const [start,end] = weeklyPeriod(item.reminder_week,0);
+  closeWeeklySubmittedView();
   go("reports");
   if (reportCorrections.weekly?.week_start !== start) setReportCorrection("weekly",null);
   weeklyField("start").value = start;
@@ -2950,7 +3014,7 @@ async function openNotificationReport(item){
   clearReportQueue(queue);
   queue.panel.hidden = false;
   go(queue.panel.id);
-  const row = makeReportRow(queue,data,true);
+  const row = makeReportRow(queue,data);
   queue.list.append(row);
   row.open = true;
  } else {
@@ -2985,7 +3049,8 @@ async function withdrawWeeklyReport(item, row, button, author){
    }
   }
   const list = row.parentElement;
-  if (list) clearMyReportList(list);
+  if (list?.id === "weeklySubmittedReport") closeWeeklySubmittedView();
+  else if (list) clearMyReportList(list);
   await loadHomeWeeklySummary();
  } catch {
   status.textContent = "Не удалось отозвать отчёт. Попробуй ещё раз.";
@@ -2998,10 +3063,21 @@ function clearMyReportList(list){
  myReportLists.delete(list);
  list.replaceChildren();
 }
+function closeWeeklySubmittedView(){
+ const view = document.getElementById("weeklySubmittedView");
+ clearMyReportList(document.getElementById("weeklySubmittedReport"));
+ view.hidden = true;
+ weeklyPage.querySelector(".weeklyWorkspace").hidden = false;
+}
 async function loadMyReports(kind, reportId){
  const user = accountId;
  if (!user || !accountRole) return;
- const list = document.querySelector('[data-my-report-list="'+kind+'"]');
+ const submittedWeekly = kind === "weekly" && Boolean(reportId);
+ const list = submittedWeekly ? document.getElementById("weeklySubmittedReport") : document.querySelector('[data-my-report-list="'+kind+'"]');
+ if (submittedWeekly) {
+  weeklyPage.querySelector(".weeklyWorkspace").hidden = true;
+  document.getElementById("weeklySubmittedView").hidden = false;
+ }
  clearMyReportList(list);
  const state = {urls:new Set()};
  myReportLists.set(list,state);
@@ -3080,7 +3156,13 @@ async function loadMyReports(kind, reportId){
    edit.onclick = () => openReportCorrection(item,row,edit,user);
    actions.append(edit);
   }
-  if (reportId) row.append(preview);
+  if (reportId) {
+   const layout = document.createElement("div");
+   layout.className = "submittedReportLayout";
+   preview.className = "submittedReportPaper";
+   layout.append(actions,preview);
+   row.append(layout);
+  }
   list.append(row);
  }
  if (reportId) list.scrollIntoView({block:"nearest"});
