@@ -240,7 +240,7 @@ body>.portalGate.portalPhotoLogin,body>.portalLoading{flex:1;min-height:0}
  <div class="portalLoginCard">
  <span class="portalLoginEmblem" aria-hidden="true">✦</span>
  <h1 id="portalLoginTitle">Военный Комиссариат</h1>
- <p id="portalAuthStatus" role="status"></p>
+ <p id="portalAuthStatus" role="status"></p><button id="portalRetry" class="action secondary" type="button" hidden onclick="location.reload()">Повторить</button>
  <button id="portalDiscord" class="action discordEntry" type="button" disabled>Войти через Discord</button>
  <section id="portalPending" hidden>
   <h2>Ожидает назначения роли</h2>
@@ -275,7 +275,7 @@ body>.portalGate.portalPhotoLogin,body>.portalLoading{flex:1;min-height:0}
 <button type="button" id="bonusNav" data-page="bonuses" hidden><span class="ico" aria-hidden="true">₽</span>Премии</button>
 <button type="button" data-page="documents"><span class="ico">▣</span>Документация ВК</button>
 <button type="button" data-page="rating"><span class="ico">★</span>Топ сотрудников недели</button>
-<button type="button" data-page="notifications"><span class="ico">♢</span>Уведомления</button>
+<button type="button" data-page="notifications"><span class="ico">♢</span>Уведомления <span id="unreadNotificationCount" hidden></span></button>
 <button id="portalOpenReports" type="button" data-page="portalReportsQueue" hidden><span class="ico" aria-hidden="true">▤</span>Входящие отчёты</button>
 <button id="portalOpenPromotion" type="button" data-page="portalPromotionQueue" hidden><span class="ico" aria-hidden="true">✦</span>Рапорты на повышение</button>
 <button id="portalOpenLeadership" type="button" data-page="portalLeadership" hidden><span class="ico" aria-hidden="true">♟</span>Назначение ролей</button>
@@ -301,7 +301,7 @@ body>.portalGate.portalPhotoLogin,body>.portalLoading{flex:1;min-height:0}
 <section id="portalLeadership" class="page panel" hidden>
  <div class="row"><h2>Пользователи и роли</h2><button id="portalCloseLeadership" class="action secondary" type="button">Закрыть</button></div>
  <label class="roleSearch">Поиск пользователей <input id="portalRoleSearch" type="search" placeholder="Discord ID, ник, игровое имя, статик"></label>
- <p id="portalRoleStatus" role="status"></p><div id="portalAssignments"></div>
+ <label><input id="pendingRolesOnly" type="checkbox"> Только ожидающие назначения</label><p id="portalRoleStatus" role="status"></p><div id="portalAssignments"></div>
 </section>
 <section class="page active" id="home">
 <div class="hero"><div><div class="tag">Служебная система · ВК</div><h2>Добро пожаловать<br>на служебный портал</h2><p>Дисциплина. Порядок. Служба.</p></div><div class="heroStats"><div class="stat"><span>Отчёт за неделю</span><b id="homeWeeklyStatus" aria-live="polite">—</b></div><div class="stat"><span>Баллы за неделю</span><b id="homeWeeklyPoints" aria-live="polite">—</b></div></div></div>
@@ -345,7 +345,7 @@ const pages = {
 const staffTopMarkup = `
  <section class="panel staffSection">
   <h3>Топ сотрудников</h3>
-  <label>Период <select id="weeklyTopPeriod"><option value="0">Текущая неделя</option><option value="-1">Прошлая неделя</option></select></label>
+  <label>Период <select id="weeklyTopPeriod"><option value="0">Текущая неделя</option><option value="-1">Прошлая неделя</option></select></label> <label>Или выбери дату недели <input id="weeklyTopDate" type="date"></label>
   <p id="weeklyTopStatus" class="muted" role="status"></p>
   <div id="weeklyTopTable"></div>
  </section>`;
@@ -517,7 +517,7 @@ Object.entries(pages).forEach(([id,p]) => {
       <button type="button" id="reportPdf" class="action">Сохранить PDF</button>
       <button type="button" id="reportPng" class="action secondary">Скачать PNG</button>
       <button type="button" class="action" data-submit-report="promotion">Отправить руководству</button>
-      <p data-report-submit-status="promotion" class="muted" role="status"></p>
+      <p data-report-submit-status="promotion" class="muted" role="status"></p><button type="button" class="action secondary" data-my-reports="promotion">Мои отправки</button><div data-my-report-list="promotion"></div>
       <button type="button" id="reportReset" class="action secondary">Обнулить достижения</button>
       <p id="reportExportStatus" class="muted" role="status"></p>
      </div>
@@ -553,7 +553,7 @@ Object.entries(pages).forEach(([id,p]) => {
        <label class="reportFieldWide">Имя и фамилия<input data-week-field="name" readonly></label>
        <h4 class="reportFieldGroup">2. Отчётный период</h4>
        <label>Начало недели<input data-week-field="start" type="date"></label>
-       <label>Конец недели<input data-week-field="end" type="date"></label>
+       <label>Конец недели<input data-week-field="end" type="date" readonly></label>
        <button type="button" class="action secondary" data-week-offset="0">Текущая неделя</button>
        <button type="button" class="action secondary" data-week-offset="-1">Прошлая неделя</button>
       </div>
@@ -575,7 +575,7 @@ Object.entries(pages).forEach(([id,p]) => {
       <button type="button" id="weeklyPdf" class="action">Сохранить PDF</button>
       <button type="button" id="weeklyPng" class="action secondary">Скачать PNG</button>
       <button type="button" class="action" data-submit-report="weekly">Отправить руководству</button>
-      <p data-report-submit-status="weekly" class="muted" role="status"></p>
+      <p data-report-submit-status="weekly" class="muted" role="status"></p><button type="button" class="action secondary" data-my-reports="weekly">Мои отправки</button><div data-my-report-list="weekly"></div>
       <button type="button" id="weeklyReset" class="action secondary">Обнулить неделю</button>
       <p class="muted" id="weeklyExportStatus" role="status"></p>
      </div>
@@ -943,6 +943,7 @@ const weeklyActions = [
  {id:"enlistment", title:"Принял граждан на службу", group:0, senior:true},
  {id:"promote", title:"Повысил военнослужащих", group:0, senior:true}
 ].map((action) => ({
+ id:action.id,
  title:action.title,
  count:0,
  rate:weeklyRates.get(action.id) ?? action.rate ?? 0,
@@ -958,10 +959,8 @@ weeklyList.innerHTML = weeklyGroups.map((title, group) =>
   if (action.group !== group) return "";
   const name = reportEscape(action.title);
   return '<div class="catalogItem" data-week-action="'+index+'"><div class="catalogRow"><strong>'+name+'</strong>'+
-   (action.manualRate ? '' : '<span class="catalogRate">+'+action.rate+' баллов'+(action.unit === "военнослужащих" ? " за военнослужащего" : "")+'</span>')+
    '<span class="catalogCount"><button type="button" class="action secondary" data-week-step="-1" aria-label="Уменьшить: '+name+'" disabled>−</button>'+
    '<output aria-label="Количество: '+name+'">0</output><button type="button" class="action secondary" data-week-step="1" aria-label="Увеличить: '+name+'">+</button></span></div>'+
-   (action.manualRate ? '<label class="weeklyManualRate">Баллы за одну благодарность <input type="number" min="0" step="1" value="0" data-week-rate></label>' : '')+
    '<details class="catalogEvidence"><summary>Доказательства</summary><textarea rows="2" aria-label="Доказательства: '+name+'" placeholder="По одной ссылке на строку"></textarea></details></div>';
  }).join("")+'</details>'
 ).join("");
@@ -1113,7 +1112,6 @@ document.getElementById("weeklyReset").addEventListener("click", () => {
   weeklyRows[index].querySelector("textarea").value = "";
   if (action.manualRate) {
    action.rate = 0;
-   weeklyRows[index].querySelector("[data-week-rate]").value = "0";
   }
   updateWeeklyRow(weeklyRows[index], action);
  });
@@ -1211,6 +1209,7 @@ function fillProfileForm(form, data){
 function syncAccountProfile(data){
  fillProfileForm(selfProfileForm, data);
  selfProfileForm.querySelector("fieldset").disabled = false;
+ selfProfileForm.elements.player_rank.disabled = true;
  Object.assign(currentProfile, {
   name:data.game_name || "", rank:data.game_rank || "",
   passport:data.game_static || "", position:data.game_position || ""
@@ -1285,8 +1284,8 @@ async function saveEmployeeProfile(event){
  const button = form.querySelector('button[type="submit"]');
  const fields = Object.fromEntries(["player_name","player_rank","player_static"].map((name) => [name,form.elements[name].value.trim()]));
  fields.player_position = manager ? managedProfiles.get(target)?.game_position || "" : currentProfile.position;
- if (!fields.player_name || !profileRanks.includes(fields.player_rank) || !fields.player_static) {
-  status.textContent = "Заполни ФИО, звание и статик.";
+ if (!fields.player_name || (manager && !profileRanks.includes(fields.player_rank)) || !fields.player_static) {
+  status.textContent = "Заполни ФИО и статик. Звание может изменить руководство.";
   return;
  }
  button.disabled = true;
@@ -1343,8 +1342,11 @@ async function loadStaffLeadership(){
 const notificationLabels = {
  weekly:"Поступил новый еженедельный отчёт",
  promotion:"Поступил новый рапорт на повышение",
- role:"Тебе назначили роль на портале"
+ role:"Тебе назначили роль на портале",
+ approved:"Твой отчёт одобрен",
+ rejected:"Твой отчёт отклонён"
 };
+const notificationBadge = document.getElementById("unreadNotificationCount");
 const notificationList = document.getElementById("portalNotificationList");
 const homeNotifications = document.getElementById("homeNotifications");
 const markRead = document.getElementById("markNotificationsRead");
@@ -1379,6 +1381,7 @@ function clearNotifications(){
  homeNotifications.replaceChildren();
  notificationStatus.textContent = "";
  markRead.disabled = true;
+ notificationBadge.hidden = true;
 }
 async function loadNotifications(){
  const user = accountId;
@@ -1394,7 +1397,10 @@ async function loadNotifications(){
  notificationStatus.textContent = "";
  renderNotifications(notificationList,data);
  renderNotifications(homeNotifications,data.slice(0,3));
- markRead.disabled = !data.some((item) => !item.read_at);
+ const unread = data.filter((item) => !item.read_at).length;
+ notificationBadge.hidden = unread === 0;
+ notificationBadge.textContent = String(unread);
+ markRead.disabled = unread === 0;
 }
 async function markNotificationsRead(){
  const user = accountId;
@@ -1419,6 +1425,10 @@ async function showAccount(session){
  const version = ++stateVersion;
  const nextId = session?.user?.id ?? null;
  if (accountId !== nextId) {
+  draftOwner = nextId;
+  restoreReportDraft("weekly");
+  restoreReportDraft("promotion");
+  document.querySelectorAll("[data-my-report-list]").forEach((list) => list.replaceChildren());
   commissionerMode = true;
   selfProfileForm.reset();
   selfProfileForm.querySelector("fieldset").disabled = true;
@@ -1458,7 +1468,8 @@ async function showAccount(session){
  if (error) {
   authLoading.hidden = true;
   gate.hidden = false;
-  message.textContent = "Не удалось загрузить аккаунт. Обнови страницу или войди снова.";
+  message.textContent = "Не удалось загрузить аккаунт.";
+  document.getElementById("portalRetry").hidden = false;
   return;
  }
  if (!Object.hasOwn(roles, data.role)) {
@@ -1559,6 +1570,7 @@ async function showAssignments(){
    select.addEventListener("change", () => { button.disabled = !select.value || select.value === account.staff_role; });
    button.addEventListener("click", async () => {
     if (version !== stateVersion || !canAssignRoles() || !available.includes(select.value)) return;
+    if (!window.confirm("Назначить роль «"+roles[select.value]+"» пользователю "+account.discord_name+"?")) return;
     select.disabled = button.disabled = true;
     const {error} = await client.rpc("portal_assign_role",{target_user:account.user_id,target_role:select.value});
     if (version !== stateVersion || !canAssignRoles()) return;
@@ -1612,15 +1624,17 @@ async function showAssignments(){
    rankCell.append(controls);
   }
   row.insertCell().textContent = account.last_sign_in ? new Date(account.last_sign_in).toLocaleString("ru-RU") : "—";
-  rows.push({row,search:[account.discord_name,account.discord_id,account.game_name,account.game_static].join(" ").toLocaleLowerCase("ru")});
+  rows.push({row,pending:!account.staff_role,search:[account.discord_name,account.discord_id,account.game_name,account.game_static].join(" ").toLocaleLowerCase("ru")});
  }
  function filter(){
   const query = roleSearch.value.trim().toLocaleLowerCase("ru");
-  rows.forEach(({row,search}) => {row.hidden = !search.includes(query);});
+  const pendingOnly = document.getElementById("pendingRolesOnly").checked;
+  rows.forEach(({row,search,pending}) => {row.hidden = !search.includes(query) || (pendingOnly && !pending);});
   roleStatus.textContent = rows.some(({row}) => !row.hidden) ? "" : "Пользователи не найдены.";
  }
  assignments.replaceChildren(table);
  roleSearch.oninput = filter;
+ document.getElementById("pendingRolesOnly").onchange = filter;
  filter();
 }
 
@@ -1662,7 +1676,8 @@ async function loadWeeklyTop(){
  target.replaceChildren();
  if (!accountRole || !accountId) return;
  const offset = Number(document.getElementById("weeklyTopPeriod").value);
- const [start,end] = weeklyPeriod(weeklyToday(),offset);
+ const selectedDate = document.getElementById("weeklyTopDate").value;
+ const [start,end] = selectedDate ? weeklyPeriod(selectedDate,0) : weeklyPeriod(weeklyToday(),offset);
  status.textContent = "Загрузка…";
  const {data,error} = await client.rpc("portal_weekly_leaderboard",{start_date:start,end_date:end});
  if (version !== weeklyTopVersion || !accountRole) return;
@@ -1722,9 +1737,12 @@ function makeReportRow(queue, report){
    review.className = decision === "approved" ? "action" : "action secondary portalPdfDanger";
    review.textContent = label;
    review.addEventListener("click", async () => {
-    if (!canAssignRoles() || !window.confirm(label+" документ?")) return;
+    if (!canAssignRoles()) return;
+    const reason = decision === "rejected" ? window.prompt("Причина отказа (до 500 символов)") : null;
+    if (decision === "rejected" && (!reason?.trim() || reason.trim().length > 500)) return;
+    if (decision === "approved" && !window.confirm("Одобрить документ?")) return;
     buttons.forEach((button) => {button.disabled = true;});
-    const {data,error} = await client.rpc("portal_review_report",{report_id:report.id,decision});
+    const {data,error} = await client.rpc("portal_review_report_with_reason",{report_id:report.id,decision,reason});
     if (!row.isConnected || !canAssignRoles()) return;
     if (error) {
      queue.status.textContent = "Не удалось сохранить решение.";
@@ -1743,6 +1761,7 @@ function makeReportRow(queue, report){
     if (report.kind === "weekly") {
      loadHomeWeeklySummary();
      loadWeeklyTop();
+     if (decision === "approved") loadReports(queue,true);
     }
    });
    buttons.push(review);
@@ -1756,7 +1775,7 @@ function makeReportRow(queue, report){
   loading = true;
   body.textContent = "Загрузка…";
   try {
-   const {data,error} = await client.from("portal_reports").select("body,pdf_base64").eq("id",report.id).single();
+   const {data,error} = await client.from("portal_reports").select("body,pdf_base64,weekly_breakdown,review_reason").eq("id",report.id).single();
    if (!row.isConnected || !canAssignRoles()) return;
    if (error) throw error;
    body.replaceChildren();
@@ -1778,6 +1797,16 @@ function makeReportRow(queue, report){
     actions.prepend(open,download);
    } else {
     body.append("Документ отправлен до появления PDF.\n\n");
+   }
+   if (data.weekly_breakdown?.length) {
+    const breakdown = document.createElement("p");
+    breakdown.textContent = "Расчёт сервера: "+data.weekly_breakdown.map((item) => item.title+" × "+item.count+" = "+item.points).join(" · ");
+    body.append(breakdown);
+   }
+   if (data.review_reason) {
+    const reason = document.createElement("p");
+    reason.textContent = "Причина отказа: "+data.review_reason;
+    body.append(reason);
    }
    renderReportBody(body,data.body);
    loaded = true;
@@ -1909,8 +1938,12 @@ async function submitReport(button){
  const weekly = kind === "weekly" ? {
   week_start:weeklyField("start").value,
   week_end:weeklyField("end").value,
-  weekly_points:countWeeklyPoints()
+  actions:Object.fromEntries(weeklyActions.filter((action) => weeklyActionAllowed(action) && action.count > 0).map((action) => [action.id,action.count]))
  } : {};
+ if (kind === "weekly" && weeklyPeriod(weekly.week_start,0).join(",") !== [weekly.week_start,weekly.week_end].join(",")) {
+  status.textContent = "Выбери неделю с понедельника по воскресенье.";
+  return;
+ }
  const key = JSON.stringify([body,weekly]);
  let pending = pendingReports.get(button);
  if (!pending || pending.key !== key || pending.author !== author) {
@@ -1923,11 +1956,13 @@ async function submitReport(button){
   if (!pending.pdf) pending.pdf = await buildSubmittedPdf(documentNode.cloneNode(true),documentNode.offsetWidth);
   if (accountId !== author || !accountRole) return;
   status.textContent = "Отправка…";
-  const {error} = await client.from("portal_reports").insert({id:pending.id,kind,body,pdf_base64:pending.pdf,...weekly});
+  const {error} = kind === "weekly"
+   ? await client.rpc("portal_submit_weekly",{report_id:pending.id,report_body:body,report_pdf:pending.pdf,start_date:weekly.week_start,end_date:weekly.week_end,actions:weekly.actions})
+   : await client.from("portal_reports").insert({id:pending.id,kind,body,pdf_base64:pending.pdf});
   if (accountId !== author) return;
   const sent = !error || error.code === "23505";
   status.textContent = sent ? "Отчёт отправлен руководству." : "Не удалось отправить отчёт. Попробуй ещё раз.";
-  if (sent && kind === "weekly") loadHomeWeeklySummary();
+  if (sent) {saveReportDraft(kind);if (kind === "weekly") loadHomeWeeklySummary();}
  } catch {
   if (accountId === author) status.textContent = "Не удалось подготовить PDF или отправить документ. Попробуй снова.";
  } finally {
@@ -1962,7 +1997,8 @@ async function init(){
  } catch {
   authLoading.hidden = true;
   gate.hidden = false;
-  message.textContent = "Не удалось подключиться к регистрации.";
+  message.textContent = "Не удалось подключиться к порталу.";
+  document.getElementById("portalRetry").hidden = false;
   return;
  }
 
@@ -2024,7 +2060,9 @@ async function init(){
    loadReports(reportQueues.weekly,true);
   });
  }
- document.getElementById("weeklyTopPeriod").addEventListener("change",loadWeeklyTop);
+ document.getElementById("weeklyTopPeriod").addEventListener("change",() => {document.getElementById("weeklyTopDate").value = "";loadWeeklyTop();});
+ document.getElementById("weeklyTopDate").addEventListener("change",loadWeeklyTop);
+ setupReportDrafts();
  document.addEventListener("click",(event) => {
   if (event.target.closest('[data-page="rating"],[data-go="rating"]')) loadWeeklyTop();
   if (event.target.closest('[data-page="staff"],[data-go="staff"]')) loadStaffLeadership();
@@ -2292,6 +2330,125 @@ async function uploadMaterial(event){
  } catch {
   if (viewer === accountId) status.textContent = "Не удалось добавить файл.";
  } finally {button.disabled = false;}
+}
+
+let draftOwner = null;
+let draftWeek = "";
+function reportDraftFields(kind){
+ const selector = kind === "weekly" ? '[data-week-field]:not([readonly]):not([data-week-field="start"]),#weeklyShowPoints' : '[data-report-field]:not([readonly])';
+ return Array.from(document.querySelectorAll(selector));
+}
+function reportDraftRows(kind){
+ return kind === "weekly" ? [weeklyActions,weeklyRows] : [catalog,catalogRows];
+}
+function draftKey(kind){
+ return "portal.draft."+draftOwner+"."+kind+(kind === "weekly" ? "."+weeklyField("start").value : "");
+}
+function saveReportDraft(kind){
+ if (!draftOwner) return;
+ try {
+  const [actions,rows] = reportDraftRows(kind);
+  const fields = Object.fromEntries(reportDraftFields(kind).map((field) => [field.dataset.weekField || field.dataset.reportField || field.id,field.type === "checkbox" ? field.checked : field.value]));
+  const entries = Object.fromEntries(actions.map((action,index) => [action.id,{count:action.count,links:rows[index].querySelector("textarea").value}]));
+  localStorage.setItem(draftKey(kind),JSON.stringify({fields,entries}));
+ } catch {}
+}
+function restoreReportDraft(kind){
+ let draft;
+ try {if (draftOwner) draft = JSON.parse(localStorage.getItem(draftKey(kind)));} catch {}
+ for (const field of reportDraftFields(kind)) {
+  const value = draft?.fields?.[field.dataset.weekField || field.dataset.reportField || field.id];
+  if (field.type === "checkbox") field.checked = value ?? field.defaultChecked;
+  else if (field.tagName === "SELECT") field.value = value ?? field.options[0]?.value ?? "";
+  else field.value = value ?? (field.type === "date" ? weeklyToday() : field.defaultValue);
+ }
+ const [actions,rows] = reportDraftRows(kind);
+ actions.forEach((action,index) => {
+  const entry = draft?.entries?.[action.id];
+  const row = rows[index];
+  action.count = Number.isSafeInteger(entry?.count) ? Math.min(999999,Math.max(0,entry.count)) : 0;
+  row.querySelector("textarea").value = typeof entry?.links === "string" ? entry.links : "";
+  if (kind === "weekly") updateWeeklyRow(row,action);
+  else {
+   row.querySelector("output").textContent = action.count;
+   row.querySelector('[data-step="-1"]').disabled = !action.count;
+   row.classList.toggle("selected",!!action.count);
+  }
+ });
+ if (kind === "weekly") {
+  draftWeek = weeklyField("start").value;
+  refreshWeeklyReport();
+ } else {filterCatalog();refreshReport();}
+}
+async function loadMyReports(kind){
+ const user = accountId;
+ if (!user || !accountRole) return;
+ const list = document.querySelector('[data-my-report-list="'+kind+'"]');
+ list.textContent = "Загрузка…";
+ const {data,error} = await client.from("portal_reports").select("id,kind,created_at,review_status,review_reason,week_start,week_end").eq("author_id",user).eq("kind",kind).order("created_at",{ascending:false}).limit(50);
+ if (user !== accountId || !accountRole) return;
+ list.replaceChildren();
+ if (error || !data.length) {list.textContent = error ? "Не удалось загрузить отправки." : "Отправок пока нет.";return;}
+ for (const item of data) {
+  const row = document.createElement("details");
+  const heading = document.createElement("summary");
+  heading.textContent = new Date(item.created_at).toLocaleString("ru-RU")+" · "+reviewLabels[item.review_status]+(item.week_start ? " · "+item.week_start+" — "+item.week_end : "");
+  row.append(heading);
+  if (item.review_reason) {
+   const reason = document.createElement("p");
+   reason.textContent = "Причина отказа: "+item.review_reason;
+   row.append(reason);
+  }
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "action secondary";
+  button.textContent = "Скачать PDF";
+  button.onclick = async () => {
+   const {data:pdf,error} = await client.from("portal_reports").select("pdf_base64").eq("id",item.id).single();
+   if (accountId !== user || !row.isConnected) return;
+   if (error || !pdf.pdf_base64) {button.textContent = "PDF недоступен";return;}
+   const url = URL.createObjectURL(new Blob([Uint8Array.from(atob(pdf.pdf_base64),c=>c.charCodeAt(0))],{type:"application/pdf"}));
+   const link = document.createElement("a");
+   link.href = url;
+   link.download = "raport-"+item.id.slice(0,8)+".pdf";
+   link.click();
+   setTimeout(() => URL.revokeObjectURL(url),1000);
+  };
+  row.append(button);
+  if (item.kind === "weekly" && item.week_start) {
+   const edit = document.createElement("button");
+   edit.type = "button";
+   edit.className = "action secondary";
+   edit.textContent = "Подготовить исправление";
+   edit.onclick = () => {
+    go("reports");
+    weeklyField("start").value = item.week_start;
+    weeklyField("end").value = item.week_end;
+    restoreReportDraft("weekly");
+    document.querySelector('[data-report-submit-status="weekly"]').textContent = "Проверь данные и отправь исправленный отчёт за ту же неделю.";
+   };
+   row.append(edit);
+  }
+  list.append(row);
+ }
+}
+function setupReportDrafts(){
+ for (const kind of ["weekly","promotion"]) {
+  const editor = document.getElementById(kind === "weekly" ? "reports" : "promoReport");
+  editor.addEventListener("input",(event) => {
+   if (kind === "weekly" && event.target === weeklyField("start") && weeklyField("start").value) {
+    const [start,end] = weeklyPeriod(weeklyField("start").value,0);
+    weeklyField("start").value = start;
+    weeklyField("end").value = end;
+    restoreReportDraft(kind);
+   } else saveReportDraft(kind);
+  });
+  editor.addEventListener("click",(event) => {
+   if (event.target.closest("[data-week-offset]")) restoreReportDraft(kind);
+   if (event.target.closest("[data-week-step],[data-step],#weeklyReset,#reportReset")) saveReportDraft(kind);
+  });
+  document.querySelector('[data-my-reports="'+kind+'"]').onclick = () => loadMyReports(kind);
+ }
 }
 
 init();
