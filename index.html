@@ -1363,7 +1363,8 @@ const notificationLabels = {
  promotion:"Поступил новый рапорт на повышение",
  role:"Тебе назначили роль на портале",
  approved:"Твой отчёт одобрен",
- rejected:"Твой отчёт отклонён"
+ rejected:"Твой отчёт отклонён",
+ weekly_reminder:"Напоминание: сдай еженедельный отчёт"
 };
 const notificationBadge = document.getElementById("unreadNotificationCount");
 const notificationList = document.getElementById("portalNotificationList");
@@ -1385,6 +1386,14 @@ function renderNotifications(target, items){
    row.append(dot);
   }
   row.append(label);
+  if (item.related_report_id || item.reminder_week) {
+   const open = document.createElement("button");
+   open.type = "button";
+   open.className = "action secondary";
+   open.textContent = item.reminder_week ? "Заполнить отчёт" : "Открыть отчёт";
+   open.onclick = () => openNotificationReport(item);
+   row.append(" ",open);
+  }
   const time = document.createElement("div");
   time.className = "muted";
   time.textContent = new Date(item.created_at).toLocaleString("ru-RU");
@@ -1407,7 +1416,7 @@ async function loadNotifications(){
  if (!user || !accountRole) return;
  const version = ++notificationVersion;
  const {data,error} = await client.from("portal_notifications")
-  .select("id,kind,created_at,read_at").eq("recipient_id",user).order("id",{ascending:false}).limit(50);
+  .select("id,kind,created_at,read_at,related_report_id,reminder_week").eq("recipient_id",user).order("id",{ascending:false}).limit(50);
  if (version !== notificationVersion || user !== accountId || !accountRole) return;
  if (error) {
   notificationStatus.textContent = "Не удалось загрузить уведомления.";
@@ -1858,6 +1867,33 @@ async function loadWeeklyRoster(queue,version,filter){
  queue.status.textContent = [start,end].map((date) => date.split("-").reverse().join(".")).join(" — ") +
   " · Всего: "+data.length+" · Не сдали: "+totals.missing+" · На проверке: "+totals.pending+
   " · Одобрены: "+totals.approved+" · Отклонены: "+totals.rejected;
+ const missing = data.filter((person) => !person.report_id);
+ if (missing.length) {
+  const reminder = document.createElement("button");
+  reminder.className = "action secondary";
+  reminder.type = "button";
+  reminder.textContent = "Напомнить тем, кто не сдал";
+  reminder.onclick = async () => {
+   if (version !== queue.version || !canAssignRoles()) return;
+   reminder.disabled = true;
+   try {
+    const directory = await client.rpc("portal_role_directory");
+    if (version !== queue.version || !canAssignRoles()) return;
+    if (directory.error) throw directory.error;
+    const eligible = new Set(directory.data.filter((person) => ["trainee","employee","deputy"].includes(person.staff_role)).map((person) => person.user_id));
+    const recipients = missing.filter((person) => eligible.has(person.employee_id));
+    if (!recipients.length) {queue.status.textContent = "Нет сотрудников для напоминания.";return;}
+    if (!window.confirm("Отправить напоминание за "+formatBonusPeriod(start,end)+"?\n\n"+recipients.map((person) => person.employee_name+(person.employee_static ? " · "+person.employee_static : "")).join("\n"))) return;
+    const {data:sent,error} = await client.rpc("portal_send_weekly_reminders",{start_date:start,recipients:recipients.map((person) => person.employee_id)});
+    if (version !== queue.version || !canAssignRoles()) return;
+    if (error) throw error;
+    queue.status.textContent = sent ? "Напоминаний отправлено: "+sent : "Новых напоминаний нет: сотрудники уже получили их или сдали отчёт.";
+   } catch {
+    if (version === queue.version && canAssignRoles()) queue.status.textContent = "Не удалось отправить напоминания.";
+   } finally {reminder.disabled = false;}
+  };
+  queue.list.append(reminder);
+ }
  const people = data.filter((person) => (!review || (person.report_id ? person.report_status : "missing") === review) &&
   [person.employee_name,person.employee_static].some((value) => value?.toLocaleLowerCase("ru").includes(search)));
  if (!people.length) {queue.list.textContent = "Сотрудники не найдены.";return;}
@@ -2228,8 +2264,11 @@ function setBonusWeek(offset){
  updateBonusWeekRange();
  clearBonusStatement();
 }
+function bonusMissingReason(item){
+ return item.latest_status === "pending" ? "На проверке" : item.latest_status === "rejected" ? "Отклонён" : "Не подал";
+}
 function bonusReportStatus(item){
- return item.submitted ? "Одобрен" : "Нет одобренного отчёта";
+ return item.submitted ? "Одобрен" : bonusMissingReason(item);
 }
 async function savedBonusStatement(save){
  const week = bonusForm.elements.week.value;
@@ -2308,7 +2347,7 @@ async function calculateBonuses(event){
  button.disabled = true;
  bonusStatus.textContent = "Загрузка отчётов…";
  try {
-  const {data,error} = await client.rpc("portal_bonus_statement_roster",{start_date:start,end_date:end});
+  const {data,error} = await client.rpc("portal_bonus_statement_details",{start_date:start,end_date:end});
   if (version !== bonusRequest || !canCalculateBonuses()) return;
   if (error) throw error;
   if (data.some((item) => item.submitted && item.points == null)) {
@@ -2372,7 +2411,20 @@ async function calculateBonuses(event){
   const tableBox = document.createElement("div");
   tableBox.className = "bonusTable";
   tableBox.append(table);
-  bonusResults.append(metrics,tableBox);
+  bonusResults.append(metrics);
+  const fixedRecipients = data.filter((item) => !item.submitted);
+  if (fixedRecipients.length) {
+   const title = document.createElement("h3");
+   title.textContent = "Фиксированная премия 100 000";
+   const list = document.createElement("ul");
+   for (const item of fixedRecipients) {
+    const row = document.createElement("li");
+    row.textContent = item.employee_name+" · "+bonusMissingReason(item);
+    list.append(row);
+   }
+   bonusResults.append(title,list);
+  }
+  bonusResults.append(tableBox);
   bonusStatus.textContent = period+(pendingCount ? " · Сотрудников с отчётами на проверке: "+pendingCount : "");
   bonusStatement = ["Премии ВК · "+period,"Бюджет: "+formatBonus(budget),...figures.map(([label,value]) => label+": "+value),...lines].filter(Boolean).join("\n");
   bonusCopy.hidden = false;
@@ -2494,12 +2546,49 @@ function restoreReportDraft(kind){
   refreshWeeklyReport();
  } else {filterCatalog();refreshReport();}
 }
-async function loadMyReports(kind){
+async function openNotificationReport(item){
+ const user = accountId;
+ if (!user || !accountRole) return;
+ if (item.reminder_week) {
+  const [start,end] = weeklyPeriod(item.reminder_week,0);
+  go("reports");
+  weeklyField("start").value = start;
+  weeklyField("end").value = end;
+  restoreReportDraft("weekly");
+  return;
+ }
+ const {data,error} = await client.from("portal_reports").select("id,author_id,kind,created_at,review_status,weekly_points").eq("id",item.related_report_id).single();
+ if (accountId !== user || !accountRole) return;
+ if (error || !data) {
+  go("notifications");
+  notificationStatus.textContent = "Отчёт больше недоступен.";
+  return;
+ }
+ if (data.author_id === user && (item.kind === "approved" || item.kind === "rejected" || !canAssignRoles())) {
+  go(data.kind === "weekly" ? "reports" : "promotion");
+  if (data.kind === "promotion") document.querySelector('[data-promo-tab="report"]').click();
+  await loadMyReports(data.kind,data.id);
+ } else if (canAssignRoles()) {
+  const queue = reportQueues[data.kind];
+  clearReportQueue(queue);
+  queue.panel.hidden = false;
+  go(queue.panel.id);
+  const row = makeReportRow(queue,data);
+  queue.list.append(row);
+  row.open = true;
+ } else {
+  go("notifications");
+  notificationStatus.textContent = "Открой отчёт в режиме руководства.";
+ }
+}
+async function loadMyReports(kind, reportId){
  const user = accountId;
  if (!user || !accountRole) return;
  const list = document.querySelector('[data-my-report-list="'+kind+'"]');
  list.textContent = "Загрузка…";
- const {data,error} = await client.from("portal_reports").select("id,kind,created_at,review_status,review_reason,week_start,week_end").eq("author_id",user).eq("kind",kind).order("created_at",{ascending:false}).limit(50);
+ let query = client.from("portal_reports").select("id,kind,created_at,review_status,review_reason,week_start,week_end,weekly_points").eq("author_id",user).eq("kind",kind);
+ if (reportId) query = query.eq("id",reportId);
+ const {data,error} = await query.order("created_at",{ascending:false}).limit(50);
  if (user !== accountId || !accountRole) return;
  list.replaceChildren();
  if (error || !data.length) {list.textContent = error ? "Не удалось загрузить отправки." : "Отправок пока нет.";return;}
@@ -2507,7 +2596,13 @@ async function loadMyReports(kind){
   const row = document.createElement("details");
   const heading = document.createElement("summary");
   heading.textContent = new Date(item.created_at).toLocaleString("ru-RU")+" · "+reviewLabels[item.review_status]+(item.week_start ? " · "+item.week_start+" — "+item.week_end : "");
+  row.open = Boolean(reportId);
   row.append(heading);
+  if (item.weekly_points != null) {
+   const points = document.createElement("p");
+   points.textContent = "Баллы: "+item.weekly_points;
+   row.append(points);
+  }
   if (item.review_reason) {
    const reason = document.createElement("p");
    reason.textContent = "Причина отказа: "+item.review_reason;
@@ -2545,6 +2640,7 @@ async function loadMyReports(kind){
   }
   list.append(row);
  }
+ if (reportId) list.scrollIntoView({block:"nearest"});
 }
 function setupReportDrafts(){
  for (const kind of ["weekly","promotion"]) {
