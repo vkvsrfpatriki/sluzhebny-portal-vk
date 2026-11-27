@@ -26,7 +26,9 @@ main{padding:24px;max-width:1600px;width:100%;margin:auto}
 .homeWeeklyButton:not(:disabled){cursor:pointer;border-color:var(--accent,#82a578)}
 .homeWeeklyButton:not(:disabled):hover b{text-decoration:underline}
 .homeWeeklyButton:disabled{cursor:default;opacity:1}
-.weeklySentBody{white-space:pre-wrap;overflow-wrap:anywhere;margin:12px 0 0}
+.reportPdfFrame{display:block;width:100%;height:clamp(360px,72vh,920px);border:1px solid var(--line);border-radius:8px;background:#fff}
+.noticeReportLink{text-align:left;max-width:100%;white-space:normal}
+.noticeReportAuthor{display:block;color:var(--muted);font-weight:normal}
 .sectionhead{display:flex;align-items:end;justify-content:space-between;margin:22px 0 13px}.sectionhead h3{margin:0;font-size:20px}.sectionhead p{margin:3px 0 0;color:var(--muted);font-size:13px}
 .content{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:18px}.tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px}
 .tile{height:154px;border-radius:14px;overflow:hidden;position:relative;border:1px solid #405b43;background:#18251b;cursor:pointer;transition:.18s}.tile:hover{transform:translateY(-3px);border-color:#87a27b}
@@ -1414,8 +1416,8 @@ async function loadStaffLeadership(){
 
 
 const notificationLabels = {
- weekly:"Поступил новый еженедельный отчёт",
- promotion:"Поступил новый рапорт на повышение",
+ weekly:"Новый отчёт",
+ promotion:"Новый рапорт на повышение",
  role:"Тебе назначили роль на портале",
  approved:"Твой отчёт одобрен",
  rejected:"Твой отчёт отклонён",
@@ -1427,8 +1429,12 @@ const homeNotifications = document.getElementById("homeNotifications");
 const markRead = document.getElementById("markNotificationsRead");
 const notificationStatus = document.getElementById("portalNotificationStatus");
 let notificationVersion = 0;
+let notificationOpenVersion = 0;
 
-function renderNotifications(target, items){
+function isNewReportNotification(item){
+ return (item.kind === "weekly" || item.kind === "promotion") && item.related_report_id;
+}
+function renderNotifications(target, items, authors){
  const nodes = items.map((item) => {
   const row = document.createElement("div");
   row.className = "notice";
@@ -1440,8 +1446,18 @@ function renderNotifications(target, items){
    dot.setAttribute("aria-label","Непрочитанное");
    row.append(dot);
   }
-  row.append(label);
-  if (item.related_report_id || item.reminder_week) {
+  if (isNewReportNotification(item)) {
+   const open = document.createElement("button");
+   open.type = "button";
+   open.className = "action secondary noticeReportLink";
+   const author = document.createElement("span");
+   author.className = "noticeReportAuthor";
+   author.textContent = authors.get(item.related_report_id) || "Автор не указан";
+   open.append(label,author);
+   open.onclick = () => openNotificationReport(item);
+   row.append(open);
+  } else row.append(label);
+  if (!isNewReportNotification(item) && (item.related_report_id || item.reminder_week)) {
    const open = document.createElement("button");
    open.type = "button";
    open.className = "action secondary";
@@ -1460,6 +1476,7 @@ function renderNotifications(target, items){
 }
 function clearNotifications(){
  notificationVersion++;
+ notificationOpenVersion++;
  notificationList.replaceChildren();
  homeNotifications.replaceChildren();
  notificationStatus.textContent = "";
@@ -1477,9 +1494,22 @@ async function loadNotifications(){
   notificationStatus.textContent = "Не удалось загрузить уведомления.";
   return;
  }
+ const authors = new Map();
+ const reportIds = [...new Set(data.filter(isNewReportNotification).map((item) => item.related_report_id))];
+ if (reportIds.length && canAssignRoles()) {
+  const [reports,directory] = await Promise.all([
+   client.from("portal_reports").select("id,author_id").in("id",reportIds),
+   client.rpc("portal_role_directory")
+  ]);
+  if (version !== notificationVersion || user !== accountId || !accountRole) return;
+  if (canAssignRoles() && !reports.error && !directory.error) {
+   const names = new Map(directory.data.map((account) => [account.user_id,account.game_name?.trim() || account.discord_name]));
+   for (const report of reports.data) authors.set(report.id,names.get(report.author_id));
+  }
+ }
  notificationStatus.textContent = "";
- renderNotifications(notificationList,data);
- renderNotifications(homeNotifications,data.slice(0,3));
+ renderNotifications(notificationList,data,authors);
+ renderNotifications(homeNotifications,data.slice(0,3),authors);
  const unread = data.filter((item) => !item.read_at).length;
  notificationBadge.hidden = unread === 0;
  notificationBadge.textContent = String(unread);
@@ -1513,7 +1543,7 @@ async function showAccount(session){
   restoreWeeklyDraftPeriod();
   restoreReportDraft("weekly");
   restoreReportDraft("promotion");
-  document.querySelectorAll("[data-my-report-list]").forEach((list) => list.replaceChildren());
+  document.querySelectorAll("[data-my-report-list]").forEach(clearMyReportList);
   commissionerMode = true;
   selfProfileForm.reset();
   selfProfileForm.querySelector("fieldset").disabled = true;
@@ -1781,7 +1811,33 @@ async function loadWeeklyTop(){
  target.append(table);
 }
 
-function makeReportRow(queue, report){
+function appendReportPdf(actions,container,report,encoded,urls){
+ if (!encoded) {
+  container.textContent = "Для этого документа PDF недоступен.";
+  return;
+ }
+ const bytes = Uint8Array.from(atob(encoded),(character) => character.charCodeAt(0));
+ const url = URL.createObjectURL(new Blob([bytes],{type:"application/pdf"}));
+ urls.add(url);
+ const open = document.createElement("a");
+ open.className = "action secondary";
+ open.href = url;
+ open.target = "_blank";
+ open.rel = "noopener noreferrer";
+ open.textContent = "Открыть PDF";
+ const download = document.createElement("a");
+ download.className = "action secondary";
+ download.href = url;
+ download.download = (report.kind === "weekly" ? "ezhenedelny-otchet" : "raport-na-povyshenie")+"-"+report.id.slice(0,8)+".pdf";
+ download.textContent = "Скачать PDF";
+ actions.prepend(open,download);
+ const frame = document.createElement("iframe");
+ frame.title = report.kind === "weekly" ? "PDF еженедельного отчёта" : "PDF рапорта на повышение";
+ frame.className = "reportPdfFrame";
+ frame.src = url;
+ container.append(frame);
+}
+function makeReportRow(queue, report, pdfPreview = false){
  const row = document.createElement("details");
  const title = document.createElement("summary");
  const actions = document.createElement("div");
@@ -1860,10 +1916,16 @@ function makeReportRow(queue, report){
   loading = true;
   body.textContent = "Загрузка…";
   try {
-   const {data,error} = await client.from("portal_reports").select("body,pdf_base64,weekly_breakdown,review_reason").eq("id",report.id).single();
+   const fields = pdfPreview ? "pdf_base64" : "body,pdf_base64,weekly_breakdown,review_reason";
+   const {data,error} = await client.from("portal_reports").select(fields).eq("id",report.id).single();
    if (!row.isConnected || !canAssignRoles()) return;
    if (error) throw error;
    body.replaceChildren();
+   if (pdfPreview) {
+    appendReportPdf(actions,body,report,data.pdf_base64,queue.urls);
+    loaded = true;
+    return;
+   }
    if (data.pdf_base64) {
     const bytes = Uint8Array.from(atob(data.pdf_base64), (ch) => ch.charCodeAt(0));
     const url = URL.createObjectURL(new Blob([bytes],{type:"application/pdf"}));
@@ -2862,6 +2924,7 @@ async function openReportCorrection(item, row, button, user){
 async function openNotificationReport(item){
  const user = accountId;
  if (!user || !accountRole) return;
+ const version = ++notificationOpenVersion;
  if (item.reminder_week) {
   const [start,end] = weeklyPeriod(item.reminder_week,0);
   go("reports");
@@ -2872,7 +2935,7 @@ async function openNotificationReport(item){
   return;
  }
  const {data,error} = await client.from("portal_reports").select("id,author_id,kind,created_at,review_status,weekly_points").eq("id",item.related_report_id).single();
- if (accountId !== user || !accountRole) return;
+ if (version !== notificationOpenVersion || accountId !== user || !accountRole) return;
  if (error || !data) {
   go("notifications");
   notificationStatus.textContent = "Отчёт больше недоступен.";
@@ -2887,7 +2950,7 @@ async function openNotificationReport(item){
   clearReportQueue(queue);
   queue.panel.hidden = false;
   go(queue.panel.id);
-  const row = makeReportRow(queue,data);
+  const row = makeReportRow(queue,data,true);
   queue.list.append(row);
   row.open = true;
  } else {
@@ -2921,26 +2984,34 @@ async function withdrawWeeklyReport(item, row, button, author){
     if (!reportCorrections.weekly && weeklyField("start").value === item.week_start) restoreReportDraft("weekly",draft);
    }
   }
-  const message = document.createElement("p");
-  message.setAttribute("role","status");
-  message.textContent = "Отчёт отозван. Его можно отправить снова.";
-  row.replaceWith(message);
+  const list = row.parentElement;
+  if (list) clearMyReportList(list);
   await loadHomeWeeklySummary();
  } catch {
   status.textContent = "Не удалось отозвать отчёт. Попробуй ещё раз.";
   button.disabled = false;
  }
 }
+const myReportLists = new WeakMap();
+function clearMyReportList(list){
+ for (const url of myReportLists.get(list)?.urls ?? []) URL.revokeObjectURL(url);
+ myReportLists.delete(list);
+ list.replaceChildren();
+}
 async function loadMyReports(kind, reportId){
  const user = accountId;
  if (!user || !accountRole) return;
  const list = document.querySelector('[data-my-report-list="'+kind+'"]');
+ clearMyReportList(list);
+ const state = {urls:new Set()};
+ myReportLists.set(list,state);
  list.textContent = "Загрузка…";
  const fields = "id,kind,created_at,review_status,review_reason,week_start,week_end,weekly_points";
- let query = client.from("portal_reports").select(fields+(reportId && kind === "weekly" ? ",body,form_data,weekly_breakdown" : "")).eq("author_id",user).eq("kind",kind);
+ const documentFields = reportId ? ",pdf_base64"+(kind === "weekly" ? ",body,form_data,weekly_breakdown" : "") : "";
+ let query = client.from("portal_reports").select(fields+documentFields).eq("author_id",user).eq("kind",kind);
  if (reportId) query = query.eq("id",reportId);
  const {data,error} = await query.order("created_at",{ascending:false}).limit(50);
- if (user !== accountId || !accountRole) return;
+ if (user !== accountId || !accountRole || myReportLists.get(list) !== state) return;
  list.replaceChildren();
  if (error || !data?.length) {
   list.textContent = error ? "Не удалось загрузить отправки." : reportId ? "Отправленный отчёт уже недоступен." : "Отправок пока нет.";
@@ -2964,22 +3035,31 @@ async function loadMyReports(kind, reportId){
    reason.textContent = "Причина отказа: "+item.review_reason;
    row.append(reason);
   }
-  const button = document.createElement("button");
-  button.type = "button";
-  button.className = "action secondary";
-  button.textContent = "Скачать PDF";
-  button.onclick = async () => {
-   const {data:pdf,error} = await client.from("portal_reports").select("pdf_base64").eq("id",item.id).single();
-   if (accountId !== user || !row.isConnected) return;
-   if (error || !pdf.pdf_base64) {button.textContent = "PDF недоступен";return;}
-   const url = URL.createObjectURL(new Blob([Uint8Array.from(atob(pdf.pdf_base64),c=>c.charCodeAt(0))],{type:"application/pdf"}));
-   const link = document.createElement("a");
-   link.href = url;
-   link.download = "raport-"+item.id.slice(0,8)+".pdf";
-   link.click();
-   setTimeout(() => URL.revokeObjectURL(url),1000);
-  };
-  row.append(button);
+  const actions = document.createElement("div");
+  actions.className = "portalPdfActions";
+  const preview = document.createElement("div");
+  row.append(actions);
+  if (reportId) {
+   try {appendReportPdf(actions,preview,item,item.pdf_base64,state.urls);}
+   catch {preview.textContent = "Не удалось открыть PDF.";}
+  } else {
+   const button = document.createElement("button");
+   button.type = "button";
+   button.className = "action secondary";
+   button.textContent = "Скачать PDF";
+   button.onclick = async () => {
+    const {data:pdf,error} = await client.from("portal_reports").select("pdf_base64").eq("id",item.id).single();
+    if (accountId !== user || !row.isConnected) return;
+    if (error || !pdf.pdf_base64) {button.textContent = "PDF недоступен";return;}
+    const url = URL.createObjectURL(new Blob([Uint8Array.from(atob(pdf.pdf_base64),c=>c.charCodeAt(0))],{type:"application/pdf"}));
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "raport-"+item.id.slice(0,8)+".pdf";
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(url),1000);
+   };
+   actions.append(button);
+  }
   if (kind === "weekly" && reportId && item.review_status === "pending") {
    const withdraw = document.createElement("button");
    withdraw.type = "button";
@@ -2989,13 +3069,7 @@ async function loadMyReports(kind, reportId){
    const status = document.createElement("span");
    status.dataset.withdrawStatus = "";
    status.setAttribute("role","status");
-   row.append(withdraw,status);
-  }
-  if (kind === "weekly" && reportId && item.body) {
-   const body = document.createElement("p");
-   body.className = "weeklySentBody";
-   body.textContent = item.body;
-   row.append(body);
+   actions.append(withdraw,status);
   }
   if (item.review_status === "rejected") {
    const edit = document.createElement("button");
@@ -3004,8 +3078,9 @@ async function loadMyReports(kind, reportId){
    edit.dataset.editRejected = "";
    edit.textContent = "Исправить и отправить снова";
    edit.onclick = () => openReportCorrection(item,row,edit,user);
-   row.append(edit);
+   actions.append(edit);
   }
+  if (reportId) row.append(preview);
   list.append(row);
  }
  if (reportId) list.scrollIntoView({block:"nearest"});
