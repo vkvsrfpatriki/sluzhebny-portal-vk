@@ -222,6 +222,13 @@ body>.portalGate.portalPhotoLogin,body>.portalLoading{flex:1;min-height:0}
 @media print{body{display:block;min-height:0}.portalDisclaimer{display:none!important}}
 .weeklyDeadlineCountdown{font-size:clamp(17px,2vw,23px);font-weight:750;line-height:1.3;color:var(--gold);font-variant-numeric:tabular-nums}
 #weeklyDeadlineDate{margin:6px 0 12px}
+.bonusWeek{display:flex;gap:8px;align-items:end;flex-wrap:wrap}
+.bonusMetrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin:12px 0}
+.bonusMetrics .metric{min-width:0;overflow-wrap:anywhere}
+.bonusTable{overflow-x:auto;margin-bottom:12px}
+.bonusTable .fakeTable{min-width:620px}
+#bonusCopy[hidden]{display:none}
+#bonusReportPreview:not(:empty){margin-top:14px;padding:12px;border:1px solid var(--line);border-radius:8px}
 </style>
 </head>
 <body>
@@ -580,13 +587,17 @@ Object.entries(pages).forEach(([id,p]) => {
  } else if (id === "bonuses") {
   section.innerHTML = `<div class="panel"><h2>Премии</h2>
    <form id="bonusForm" class="row bonusForm">
-    <label>Неделя с понедельника<input name="week" type="date" required></label>
+    <div class="bonusWeek"><label>Неделя с понедельника<input name="week" type="date" required></label>
+     <button type="button" class="action secondary" data-bonus-week="-1">Прошлая неделя</button>
+     <button type="button" class="action secondary" data-bonus-week="0">Текущая неделя</button></div>
     <label>Общий бюджет ВК<input name="budget" type="number" min="0" step="1" required></label>
     <label>Премия комиссара<input name="own" type="number" min="0" step="1" value="0" required></label>
     <button type="submit" class="action">Рассчитать</button>
    </form>
    <p class="muted">Без отчёта — 100 000. Меньше 200 баллов — 250 000. Остаток делится поровну между набравшими 200 баллов и больше.</p>
    <p id="bonusStatus" role="status"></p><div id="bonusResults"></div>
+   <button type="button" id="bonusCopy" class="action secondary" hidden>Скопировать ведомость</button>
+   <div id="bonusReportPreview"></div>
   </div>`;
  } else if (id === "documents" || id === "training") {
   section.innerHTML = `<div class="pagehero"><img loading="lazy" decoding="async" src="${p[2]}" alt=""><div class="pageheroText"><h2>${p[0]}</h2><p>${p[1]}</p></div></div>
@@ -1152,9 +1163,8 @@ function updatePortalMode(){
  document.getElementById("bonusNav").hidden = !commissioner || !commissionerMode;
  if ((!commissioner || !commissionerMode) && document.getElementById("bonuses").classList.contains("active")) go("home");
  if (!commissioner || !commissionerMode) {
-  document.getElementById("bonusForm").reset();
-  document.getElementById("bonusStatus").textContent = "";
-  document.getElementById("bonusResults").replaceChildren();
+  bonusForm.reset();
+  setBonusWeek(-1);
  }
  document.querySelectorAll(".materialUpload").forEach((form) => {form.hidden = !canAssignRoles();});
  document.getElementById("manageEmployeeProfiles").hidden = !canAssignRoles();
@@ -1984,8 +1994,13 @@ async function init(){
   if (event.target.closest('[data-page="rating"],[data-go="rating"]')) loadWeeklyTop();
   if (event.target.closest('[data-page="staff"],[data-go="staff"]')) loadStaffLeadership();
  });
- bonusForm.elements.week.value = weeklyPeriod(weeklyToday(),0)[0];
+ setBonusWeek(-1);
  bonusForm.addEventListener("submit",calculateBonuses);
+ bonusForm.addEventListener("input",clearBonusStatement);
+ bonusForm.querySelectorAll("[data-bonus-week]").forEach((button) => {
+  button.addEventListener("click",() => setBonusWeek(Number(button.dataset.bonusWeek)));
+ });
+ bonusCopy.addEventListener("click",copyBonusStatement);
  document.querySelectorAll(".materialUpload").forEach((form) => form.addEventListener("submit",uploadMaterial));
  document.addEventListener("click",(event) => {
   const target = event.target.closest("[data-page],[data-go]");
@@ -2009,11 +2024,77 @@ function splitBonuses(roster, budget, own){
 const bonusForm = document.getElementById("bonusForm");
 const bonusStatus = document.getElementById("bonusStatus");
 const bonusResults = document.getElementById("bonusResults");
+const bonusCopy = document.getElementById("bonusCopy");
+const bonusReportPreview = document.getElementById("bonusReportPreview");
 const formatBonus = (amount) => new Intl.NumberFormat("ru-RU").format(amount);
+let bonusStatement = "";
+let bonusRequest = 0;
+let bonusReportRequest = 0;
+let bonusReportUrl = "";
+function clearBonusStatement(){
+ bonusRequest++;
+ bonusReportRequest++;
+ bonusStatement = "";
+ bonusCopy.hidden = true;
+ bonusResults.replaceChildren();
+ bonusStatus.textContent = "";
+ bonusReportPreview.replaceChildren();
+ if (bonusReportUrl) URL.revokeObjectURL(bonusReportUrl);
+ bonusReportUrl = "";
+}
+function setBonusWeek(offset){
+ bonusForm.elements.week.value = weeklyPeriod(weeklyToday(),offset)[0];
+ clearBonusStatement();
+}
+function bonusReportStatus(item){
+ if (!item.submitted) return "Без отчёта";
+ return reviewLabels[item.review_status] || "На проверке";
+}
+async function copyBonusStatement(){
+ if (!canCalculateBonuses() || !bonusStatement) return;
+ const version = bonusRequest;
+ try {
+  await navigator.clipboard.writeText(bonusStatement);
+  if (version === bonusRequest && canCalculateBonuses()) bonusStatus.textContent = "Ведомость скопирована.";
+ } catch {
+  if (version === bonusRequest && canCalculateBonuses()) bonusStatus.textContent = "Браузер не разрешил копирование.";
+ }
+}
+async function openBonusReport(item){
+ if (!canCalculateBonuses() || !item.report_id) return;
+ const version = ++bonusReportRequest;
+ if (bonusReportUrl) URL.revokeObjectURL(bonusReportUrl);
+ bonusReportUrl = "";
+ bonusReportPreview.textContent = "Загрузка отчёта…";
+ const {data,error} = await client.from("portal_reports").select("body,pdf_base64").eq("id",item.report_id).single();
+ if (version !== bonusReportRequest || !canCalculateBonuses()) return;
+ if (error) {bonusReportPreview.textContent = "Не удалось открыть отчёт.";return;}
+ const title = document.createElement("h3");
+ title.textContent = item.employee_name+" · "+bonusReportStatus(item);
+ bonusReportPreview.replaceChildren(title);
+ if (data.pdf_base64) {
+  try {
+   const bytes = Uint8Array.from(atob(data.pdf_base64),(character) => character.charCodeAt(0));
+   bonusReportUrl = URL.createObjectURL(new Blob([bytes],{type:"application/pdf"}));
+   const link = document.createElement("a");
+   link.href = bonusReportUrl;
+   link.target = "_blank";
+   link.rel = "noopener noreferrer";
+   link.textContent = "Открыть PDF";
+   bonusReportPreview.append(link);
+  } catch {bonusReportPreview.append("PDF недоступен.");}
+ }
+ const body = document.createElement("div");
+ body.className = "portalReportBody";
+ renderReportBody(body,data.body || "");
+ bonusReportPreview.append(body);
+ bonusReportPreview.scrollIntoView({block:"nearest"});
+}
 async function calculateBonuses(event){
  event.preventDefault();
  if (!canCalculateBonuses()) return;
- const version = stateVersion;
+ clearBonusStatement();
+ const version = bonusRequest;
  const week = bonusForm.elements.week.value;
  const budget = bonusForm.elements.budget.valueAsNumber;
  const own = bonusForm.elements.own.valueAsNumber;
@@ -2028,12 +2109,12 @@ async function calculateBonuses(event){
   bonusStatus.textContent = "Выбери понедельник нужной недели.";
   return;
  }
- const button = bonusForm.querySelector("button");
+ const button = bonusForm.querySelector('button[type="submit"]');
  button.disabled = true;
  bonusStatus.textContent = "Загрузка отчётов…";
  try {
-  const {data,error} = await client.rpc("portal_bonus_roster",{start_date:start,end_date:end});
-  if (version !== stateVersion || !canCalculateBonuses()) return;
+  const {data,error} = await client.rpc("portal_bonus_statement_roster",{start_date:start,end_date:end});
+  if (version !== bonusRequest || !canCalculateBonuses()) return;
   if (error) throw error;
   if (data.some((item) => item.submitted && item.points == null)) {
    bonusStatus.textContent = "У одного из отчётов нет сохранённых баллов. Для расчёта его нужно отправить заново.";
@@ -2044,17 +2125,63 @@ async function calculateBonuses(event){
    bonusStatus.textContent = "Не хватает "+formatBonus(result.shortfall)+" для фиксированных выплат.";
    return;
   }
+  const submitted = data.filter((item) => item.submitted).length;
+  const eligible = data.filter((item) => item.submitted && item.points >= 200).length;
+  const pending = data.filter((item) => item.review_status === "pending").length;
+  const rejected = data.filter((item) => item.review_status === "rejected").length;
+  const fixed = (data.length-submitted)*100000+(submitted-eligible)*250000;
+  const shared = budget-own-fixed-result.unused;
+  const period = [start,end].map((date) => date.split("-").reverse().join(".")).join(" — ");
+  const figures = [
+   ["Отчёты сдали",submitted+" из "+data.length],["Набрали 200 и больше",eligible],
+   ["Фиксированные премии",formatBonus(fixed)],["Доля за 200 и больше",
+    eligible ? formatBonus(Math.floor(shared/eligible))+(shared%eligible ? "–"+formatBonus(Math.ceil(shared/eligible)) : "") : "—"],
+   ["Комиссару",formatBonus(own)],["Нераспределённый остаток",formatBonus(result.unused)]
+  ];
+  const metrics = document.createElement("div");
+  metrics.className = "bonusMetrics";
+  for (const [label,value] of figures) {
+   const metric = document.createElement("div");
+   metric.className = "metric";
+   const name = document.createElement("span");
+   const amount = document.createElement("b");
+   name.textContent = label;
+   amount.textContent = value;
+   metric.append(name,amount);
+   metrics.append(metric);
+  }
+  const reviewNote = pending || rejected ? "На проверке: "+pending+" · Отклонено: "+rejected+". Эти отчёты включены в расчёт." : "";
   const table = document.createElement("table");
   table.className = "fakeTable";
-  table.innerHTML = "<thead><tr><th>Сотрудник</th><th>Баллы</th><th>Премия</th></tr></thead><tbody></tbody>";
+  table.innerHTML = "<thead><tr><th>ФИО</th><th>Баллы</th><th>Статус отчёта</th><th>Основание</th><th>Премия</th></tr></thead><tbody></tbody>";
+  const lines = [];
   for (const [index,item] of data.entries()) {
    const row = table.tBodies[0].insertRow();
-   for (const value of [item.employee_name,item.submitted ? item.points : "Без отчёта",formatBonus(result.payouts[index])]) row.insertCell().textContent = value;
+   const employee = row.insertCell();
+   if (item.report_id) {
+    const open = document.createElement("button");
+    open.type = "button";
+    open.className = "action secondary";
+    open.textContent = item.employee_name;
+    open.title = "Открыть отчёт";
+    open.onclick = () => openBonusReport(item);
+    employee.append(open);
+   } else employee.textContent = item.employee_name;
+   const basis = !item.submitted ? "Фиксированная: без отчёта" : item.points < 200 ? "Фиксированная: меньше 200" : "Доля от остатка";
+   const payout = formatBonus(result.payouts[index]);
+   const cells = [item.submitted ? item.points : "—",bonusReportStatus(item),basis,payout];
+   for (const value of cells) row.insertCell().textContent = value;
+   lines.push([item.employee_name,...cells].join(" · "));
   }
-  bonusResults.append(table);
-  bonusStatus.textContent = start+" — "+end+" · Комиссару: "+formatBonus(own)+" · Нераспределённый остаток: "+formatBonus(result.unused);
+  const tableBox = document.createElement("div");
+  tableBox.className = "bonusTable";
+  tableBox.append(table);
+  bonusResults.append(metrics,tableBox);
+  bonusStatus.textContent = period+(reviewNote ? " · "+reviewNote : "");
+  bonusStatement = ["Премии ВК · "+period,"Бюджет: "+formatBonus(budget),...figures.map(([label,value]) => label+": "+value),reviewNote,"",...lines].filter(Boolean).join("\n");
+  bonusCopy.hidden = false;
  } catch {
-  if (version === stateVersion) bonusStatus.textContent = "Не удалось рассчитать премии.";
+  if (version === bonusRequest && canCalculateBonuses()) bonusStatus.textContent = "Не удалось рассчитать премии.";
  } finally {
   button.disabled = false;
  }
