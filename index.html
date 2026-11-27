@@ -329,7 +329,7 @@ body>.portalGate.portalPhotoLogin,body>.portalLoading{flex:1;min-height:0}
 <div class="tile" data-go="notifications"><img loading="lazy" decoding="async" src="notifications.jpg" alt="Служебные уведомления"><div class="tilelabel"><span><i>♢</i>Уведомления</span>↗</div></div>
 <div class="tile" data-go="training"><img loading="lazy" decoding="async" src="training.jpg" alt="Занятие в учебном классе"><div class="tilelabel"><span><i>▱</i>Обучение</span>↗</div></div>
 </div><div class="rightcol">
-<div class="widget"><h4>★ Ваш профиль</h4><div class="profileRole">Сотрудник ВК</div><p class="muted">Иванов Алексей · № 014</p><p class="muted">Дата вступления: 12.06.2026</p></div>
+<div class="widget"><h4>★ Ваш профиль</h4><div class="profileRole" id="homeProfileRole">—</div><p class="muted" id="homeProfileName">—</p><p class="muted">Статик: <span id="homeProfileStatic">—</span></p></div>
 <div class="widget"><h4>♢ Последние уведомления</h4><div id="homeNotifications" aria-live="polite"></div><button type="button" class="action secondary" data-go="notifications">Все уведомления</button></div>
 <div class="widget">
  <h4>Срок сдачи еженедельного отчёта</h4>
@@ -1233,6 +1233,9 @@ function syncAccountProfile(data){
  for (const [field,key] of [["name","name"],["currentRank","rank"],["passport","passport"]]) {
   document.querySelector('[data-report-field="'+field+'"]').value = currentProfile[key];
  }
+ document.getElementById("homeProfileRole").textContent = roles[accountRole] || "—";
+ document.getElementById("homeProfileName").textContent = currentProfile.name.trim() || "Имя и фамилия не указаны";
+ document.getElementById("homeProfileStatic").textContent = currentProfile.passport.trim() || "—";
  syncWeeklyProfile();
  refreshReport();
  refreshWeeklyReport();
