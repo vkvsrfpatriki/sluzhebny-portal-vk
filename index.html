@@ -527,7 +527,7 @@ Object.entries(pages).forEach(([id,p]) => {
      </div>
      <div class="panel reportExport">
       <h3 class="reportSectionTitle">Выгрузка</h3>
-      <button type="button" id="reportPdf" class="action">Сохранить PDF</button>
+      <button type="button" id="reportPdf" class="action">Скачать PDF</button>
       <button type="button" id="reportPng" class="action secondary">Скачать PNG</button>
       <button type="button" class="action" data-submit-report="promotion">Отправить руководству</button>
       <p data-report-submit-status="promotion" class="muted" role="status"></p><button type="button" class="action secondary" data-my-reports="promotion">Мои отправки</button><div data-my-report-list="promotion"></div>
@@ -585,7 +585,7 @@ Object.entries(pages).forEach(([id,p]) => {
      </div>
      <div class="panel reportExport">
       <h3 class="reportSectionTitle">Выгрузка</h3>
-      <button type="button" id="weeklyPdf" class="action">Сохранить PDF</button>
+      <button type="button" id="weeklyPdf" class="action">Скачать PDF</button>
       <button type="button" id="weeklyPng" class="action secondary">Скачать PNG</button>
       <button type="button" class="action" data-submit-report="weekly">Отправить руководству</button>
       <p data-report-submit-status="weekly" class="muted" role="status"></p><button type="button" class="action secondary" data-my-reports="weekly">Мои отправки</button><div data-my-report-list="weekly"></div>
@@ -860,14 +860,6 @@ catalogList.addEventListener("click", (event) => {
  filterCatalog();
  refreshReport();
 });
-document.getElementById("reportPdf").addEventListener("click", () => {
- document.body.classList.add("printingReport");
- try {
-  window.print();
- } finally {
-  document.body.classList.remove("printingReport");
- }
-});
 
 let reportImageRenderer;
 function loadReportImageRenderer(){
@@ -1106,15 +1098,6 @@ weeklyPage.addEventListener("click", (event) => {
   action.count = Math.max(0, action.count + Number(step.dataset.weekStep));
   updateWeeklyRow(row, action);
   refreshWeeklyReport();
- }
-});
-document.getElementById("weeklyPdf").addEventListener("click", () => {
- if (!weeklyField("end").reportValidity()) return;
- document.body.classList.add("printingWeekly");
- try {
-  window.print();
- } finally {
-  document.body.classList.remove("printingWeekly");
  }
 });
 document.getElementById("weeklyPng").addEventListener("click", (event) => {
@@ -1968,6 +1951,38 @@ async function loadReports(queue, reset){
  queue.offset += data.length;
  queue.more.hidden = data.length < pageSize;
 }
+
+async function downloadReportPdf(button, documentId, statusId, filename){
+ const status = document.getElementById(statusId);
+ const report = document.getElementById(documentId);
+ if (button.disabled) return;
+ button.disabled = true;
+ const previous = status.querySelector("a[download]");
+ if (previous) URL.revokeObjectURL(previous.href);
+ status.textContent = "Готовим PDF…";
+ try {
+  const snapshot = report.cloneNode(true);
+  const base64 = await buildSubmittedPdf(snapshot,794);
+  const bytes = Uint8Array.from(atob(base64),character => character.charCodeAt(0));
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(new Blob([bytes],{type:"application/pdf"}));
+  link.download = filename;
+  link.textContent = "Скачать готовый PDF";
+  status.replaceChildren(link);
+  link.click();
+ } catch {
+  status.textContent = "Не удалось создать PDF. Попробуй ещё раз.";
+ } finally {
+  button.disabled = false;
+ }
+}
+document.getElementById("reportPdf").addEventListener("click",(event) => {
+ downloadReportPdf(event.currentTarget,"reportDocument","reportExportStatus","raport-na-povyshenie.pdf");
+});
+document.getElementById("weeklyPdf").addEventListener("click",(event) => {
+ if (!weeklyField("end").reportValidity()) return;
+ downloadReportPdf(event.currentTarget,"weeklyDocument","weeklyExportStatus","ezhenedelny-otchet.pdf");
+});
 
 async function buildSubmittedPdf(snapshot, width){
  const [render,{jsPDF}] = await Promise.all([
