@@ -617,6 +617,9 @@ Object.entries(pages).forEach(([id,p]) => {
    <p class="muted">Без одобренного отчёта — 100 000. Меньше 200 баллов в одобренном отчёте — 250 000. Остаток делится поровну между набравшими 200 баллов и больше.</p>
    <p id="bonusStatus" role="status"></p><div id="bonusResults"></div>
    <button type="button" id="bonusCopy" class="action secondary" hidden>Скопировать ведомость</button>
+   <button type="button" class="action secondary" id="bonusSave" disabled>Сохранить ведомость</button>
+   <button type="button" class="action secondary" id="bonusLoad">Показать сохранённую</button>
+   <pre id="bonusSaved" class="portalReportBody"></pre>
    <div id="bonusReportPreview"></div>
   </div>`;
  } else if (id === "documents" || id === "training") {
@@ -2109,6 +2112,8 @@ async function init(){
   button.addEventListener("click",() => setBonusWeek(Number(button.dataset.bonusWeek)));
  });
  bonusCopy.addEventListener("click",copyBonusStatement);
+ document.getElementById("bonusSave").onclick = () => savedBonusStatement(true);
+ document.getElementById("bonusLoad").onclick = () => savedBonusStatement(false);
  document.querySelectorAll(".materialUpload").forEach((form) => form.addEventListener("submit",uploadMaterial));
  document.addEventListener("click",(event) => {
   const target = event.target.closest("[data-page],[data-go]");
@@ -2144,6 +2149,8 @@ function clearBonusStatement(){
  bonusReportRequest++;
  bonusStatement = "";
  bonusCopy.hidden = true;
+ document.getElementById("bonusSave").disabled = true;
+ document.getElementById("bonusSaved").textContent = "";
  bonusResults.replaceChildren();
  bonusStatus.textContent = "";
  bonusReportPreview.replaceChildren();
@@ -2167,6 +2174,20 @@ function setBonusWeek(offset){
 }
 function bonusReportStatus(item){
  return item.submitted ? "Одобрен" : "Нет одобренного отчёта";
+}
+async function savedBonusStatement(save){
+ const week = bonusForm.elements.week.value;
+ if (!canCalculateBonuses() || !week || (save && !bonusStatement)) return;
+ if (save && !window.confirm("Сохранить ведомость за эту неделю? Предыдущая сохранённая версия будет заменена.")) return;
+ const version = bonusRequest;
+ const table = client.from("portal_bonus_statements");
+ const {data,error} = save
+  ? await table.upsert({week_start:week,statement:bonusStatement,saved_at:new Date().toISOString()})
+  : await table.select("statement").eq("week_start",week).maybeSingle();
+ if (version !== bonusRequest || !canCalculateBonuses()) return;
+ if (error) {bonusStatus.textContent = "Не удалось выполнить операцию с ведомостью.";return;}
+ if (save) bonusStatus.textContent = "Ведомость сохранена.";
+ else document.getElementById("bonusSaved").textContent = data?.statement || "За эту неделю сохранённой ведомости нет.";
 }
 async function copyBonusStatement(){
  if (!canCalculateBonuses() || !bonusStatement) return;
@@ -2246,6 +2267,10 @@ async function calculateBonuses(event){
   const submitted = data.filter((item) => item.submitted).length;
   const eligible = data.filter((item) => item.submitted && item.points >= 200).length;
   const fixed = (data.length-submitted)*100000+(submitted-eligible)*250000;
+  const {data:waiting} = await client.from("portal_reports").select("author_id").eq("kind","weekly")
+   .eq("week_start",start).eq("week_end",end).eq("review_status","pending").is("deleted_at",null);
+  if (version !== bonusRequest || !canCalculateBonuses()) return;
+  const pendingCount = new Set((waiting || []).map((report) => report.author_id)).size;
   const shared = budget-own-fixed-result.unused;
   const period = formatBonusPeriod(start,end);
   const figures = [
@@ -2292,9 +2317,10 @@ async function calculateBonuses(event){
   tableBox.className = "bonusTable";
   tableBox.append(table);
   bonusResults.append(metrics,tableBox);
-  bonusStatus.textContent = period;
+  bonusStatus.textContent = period+(pendingCount ? " · Сотрудников с отчётами на проверке: "+pendingCount : "");
   bonusStatement = ["Премии ВК · "+period,"Бюджет: "+formatBonus(budget),...figures.map(([label,value]) => label+": "+value),...lines].filter(Boolean).join("\n");
   bonusCopy.hidden = false;
+  document.getElementById("bonusSave").disabled = false;
  } catch {
   if (version === bonusRequest && canCalculateBonuses()) bonusStatus.textContent = "Не удалось рассчитать премии.";
  } finally {
