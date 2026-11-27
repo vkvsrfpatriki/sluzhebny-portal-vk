@@ -1250,9 +1250,10 @@ function canAssignRoles(){
 function updatePortalMode(){
  const commissioner = accountRole === "commissioner";
  modeSwitch.hidden = !commissioner;
- document.getElementById("bonusNav").hidden = !commissioner || !commissionerMode;
- if ((!commissioner || !commissionerMode) && document.getElementById("bonuses").classList.contains("active")) go("home");
- if (!commissioner || !commissionerMode) {
+ const leadershipMode = canAssignRoles();
+ document.getElementById("bonusNav").hidden = !leadershipMode;
+ if (!leadershipMode) {
+  if (document.getElementById("bonuses").classList.contains("active")) go("home");
   bonusForm.reset();
   setBonusWeek(-1);
  }
@@ -2512,9 +2513,6 @@ async function init(){
  });
  discordButton.disabled = false;
 }
-function canCalculateBonuses(){
- return accountRole === "commissioner" && commissionerMode;
-}
 function splitBonuses(roster, budget, own){
  const fixed = roster.map(({submitted,points}) => !submitted ? 100000 : points < 200 ? 250000 : null);
  const remaining = budget-own-fixed.reduce((sum,value) => sum+(value ?? 0),0);
@@ -2570,36 +2568,36 @@ function bonusReportStatus(item){
 }
 async function savedBonusStatement(save){
  const week = bonusForm.elements.week.value;
- if (!canCalculateBonuses() || !week || (save && !bonusStatement)) return;
+ if (!canAssignRoles() || !week || (save && !bonusStatement)) return;
  if (save && !window.confirm("Сохранить ведомость за эту неделю? Предыдущая сохранённая версия будет заменена.")) return;
  const version = bonusRequest;
  const table = client.from("portal_bonus_statements");
  const {data,error} = save
   ? await table.upsert({week_start:week,statement:bonusStatement,saved_at:new Date().toISOString()})
   : await table.select("statement").eq("week_start",week).maybeSingle();
- if (version !== bonusRequest || !canCalculateBonuses()) return;
+ if (version !== bonusRequest || !canAssignRoles()) return;
  if (error) {bonusStatus.textContent = "Не удалось выполнить операцию с ведомостью.";return;}
  if (save) bonusStatus.textContent = "Ведомость сохранена.";
  else document.getElementById("bonusSaved").textContent = data?.statement || "За эту неделю сохранённой ведомости нет.";
 }
 async function copyBonusStatement(){
- if (!canCalculateBonuses() || !bonusStatement) return;
+ if (!canAssignRoles() || !bonusStatement) return;
  const version = bonusRequest;
  try {
   await navigator.clipboard.writeText(bonusStatement);
-  if (version === bonusRequest && canCalculateBonuses()) bonusStatus.textContent = "Ведомость скопирована.";
+  if (version === bonusRequest && canAssignRoles()) bonusStatus.textContent = "Ведомость скопирована.";
  } catch {
-  if (version === bonusRequest && canCalculateBonuses()) bonusStatus.textContent = "Браузер не разрешил копирование.";
+  if (version === bonusRequest && canAssignRoles()) bonusStatus.textContent = "Браузер не разрешил копирование.";
  }
 }
 async function openBonusReport(item){
- if (!canCalculateBonuses() || !item.report_id) return;
+ if (!canAssignRoles() || !item.report_id) return;
  const version = ++bonusReportRequest;
  if (bonusReportUrl) URL.revokeObjectURL(bonusReportUrl);
  bonusReportUrl = "";
  bonusReportPreview.textContent = "Загрузка отчёта…";
  const {data,error} = await client.from("portal_reports").select("body,pdf_base64").eq("id",item.report_id).single();
- if (version !== bonusReportRequest || !canCalculateBonuses()) return;
+ if (version !== bonusReportRequest || !canAssignRoles()) return;
  if (error) {bonusReportPreview.textContent = "Не удалось открыть отчёт.";return;}
  const title = document.createElement("h3");
  title.textContent = item.employee_name+" · "+bonusReportStatus(item);
@@ -2624,7 +2622,7 @@ async function openBonusReport(item){
 }
 async function calculateBonuses(event){
  event.preventDefault();
- if (!canCalculateBonuses()) return;
+ if (!canAssignRoles()) return;
  clearBonusStatement();
  const version = bonusRequest;
  const week = bonusForm.elements.week.value;
@@ -2646,7 +2644,7 @@ async function calculateBonuses(event){
  bonusStatus.textContent = "Загрузка отчётов…";
  try {
   const {data,error} = await client.rpc("portal_bonus_statement_details",{start_date:start,end_date:end});
-  if (version !== bonusRequest || !canCalculateBonuses()) return;
+  if (version !== bonusRequest || !canAssignRoles()) return;
   if (error) throw error;
   if (data.some((item) => item.submitted && item.points == null)) {
    bonusStatus.textContent = "У одного из отчётов нет сохранённых баллов. Для расчёта его нужно отправить заново.";
@@ -2662,7 +2660,7 @@ async function calculateBonuses(event){
   const fixed = (data.length-submitted)*100000+(submitted-eligible)*250000;
   const {data:waiting} = await client.from("portal_reports").select("author_id").eq("kind","weekly")
    .eq("week_start",start).eq("week_end",end).eq("review_status","pending").is("deleted_at",null);
-  if (version !== bonusRequest || !canCalculateBonuses()) return;
+  if (version !== bonusRequest || !canAssignRoles()) return;
   const pendingCount = new Set((waiting || []).map((report) => report.author_id)).size;
   const shared = budget-own-fixed-result.unused;
   const period = formatBonusPeriod(start,end);
@@ -2728,7 +2726,7 @@ async function calculateBonuses(event){
   bonusCopy.hidden = false;
   document.getElementById("bonusSave").disabled = false;
  } catch {
-  if (version === bonusRequest && canCalculateBonuses()) bonusStatus.textContent = "Не удалось рассчитать премии.";
+  if (version === bonusRequest && canAssignRoles()) bonusStatus.textContent = "Не удалось рассчитать премии.";
  } finally {
   button.disabled = false;
  }
