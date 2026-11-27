@@ -229,6 +229,9 @@ body>.portalGate.portalPhotoLogin,body>.portalLoading{flex:1;min-height:0}
 .bonusTable .fakeTable{min-width:620px}
 #bonusCopy[hidden]{display:none}
 #bonusReportPreview:not(:empty){margin-top:14px;padding:12px;border:1px solid var(--line);border-radius:8px}
+.bonusWeekPeriod{display:grid;gap:5px;padding:4px 8px 4px 0}
+.bonusWeekPeriod span{font-size:13px;color:var(--muted)}
+.bonusWeekPeriod output{font-weight:700;white-space:nowrap}
 </style>
 </head>
 <body>
@@ -587,14 +590,15 @@ Object.entries(pages).forEach(([id,p]) => {
  } else if (id === "bonuses") {
   section.innerHTML = `<div class="panel"><h2>Премии</h2>
    <form id="bonusForm" class="row bonusForm">
-    <div class="bonusWeek"><label>Неделя с понедельника<input name="week" type="date" required></label>
+    <div class="bonusWeek"><div class="bonusWeekPeriod"><span>Отчётная неделя</span><output id="bonusWeekRange" aria-live="polite">—</output></div>
+     <label>Изменить дату<input name="week" type="date" required></label>
      <button type="button" class="action secondary" data-bonus-week="-1">Прошлая неделя</button>
      <button type="button" class="action secondary" data-bonus-week="0">Текущая неделя</button></div>
     <label>Общий бюджет ВК<input name="budget" type="number" min="0" step="1" required></label>
     <label>Премия комиссара<input name="own" type="number" min="0" step="1" value="0" required></label>
     <button type="submit" class="action">Рассчитать</button>
    </form>
-   <p class="muted">Без отчёта — 100 000. Меньше 200 баллов — 250 000. Остаток делится поровну между набравшими 200 баллов и больше.</p>
+   <p class="muted">Без одобренного отчёта — 100 000. Меньше 200 баллов в одобренном отчёте — 250 000. Остаток делится поровну между набравшими 200 баллов и больше.</p>
    <p id="bonusStatus" role="status"></p><div id="bonusResults"></div>
    <button type="button" id="bonusCopy" class="action secondary" hidden>Скопировать ведомость</button>
    <div id="bonusReportPreview"></div>
@@ -1996,7 +2000,10 @@ async function init(){
  });
  setBonusWeek(-1);
  bonusForm.addEventListener("submit",calculateBonuses);
- bonusForm.addEventListener("input",clearBonusStatement);
+ bonusForm.addEventListener("input",(event) => {
+  if (event.target === bonusForm.elements.week) updateBonusWeekRange();
+  clearBonusStatement();
+ });
  bonusForm.querySelectorAll("[data-bonus-week]").forEach((button) => {
   button.addEventListener("click",() => setBonusWeek(Number(button.dataset.bonusWeek)));
  });
@@ -2042,13 +2049,23 @@ function clearBonusStatement(){
  if (bonusReportUrl) URL.revokeObjectURL(bonusReportUrl);
  bonusReportUrl = "";
 }
+function formatBonusPeriod(start,end){
+ const [startYear,startMonth,startDay] = start.split("-");
+ const [endYear,endMonth,endDay] = end.split("-");
+ return startDay+"."+startMonth+(startYear === endYear ? "" : "."+startYear)+"–"+endDay+"."+endMonth+"."+endYear;
+}
+function updateBonusWeekRange(){
+ const week = bonusForm.elements.week.value;
+ const range = document.getElementById("bonusWeekRange");
+ range.textContent = week ? formatBonusPeriod(...weeklyPeriod(week,0)) : "—";
+}
 function setBonusWeek(offset){
  bonusForm.elements.week.value = weeklyPeriod(weeklyToday(),offset)[0];
+ updateBonusWeekRange();
  clearBonusStatement();
 }
 function bonusReportStatus(item){
- if (!item.submitted) return "Без отчёта";
- return reviewLabels[item.review_status] || "На проверке";
+ return item.submitted ? "Одобрен" : "Нет одобренного отчёта";
 }
 async function copyBonusStatement(){
  if (!canCalculateBonuses() || !bonusStatement) return;
@@ -2127,13 +2144,11 @@ async function calculateBonuses(event){
   }
   const submitted = data.filter((item) => item.submitted).length;
   const eligible = data.filter((item) => item.submitted && item.points >= 200).length;
-  const pending = data.filter((item) => item.review_status === "pending").length;
-  const rejected = data.filter((item) => item.review_status === "rejected").length;
   const fixed = (data.length-submitted)*100000+(submitted-eligible)*250000;
   const shared = budget-own-fixed-result.unused;
-  const period = [start,end].map((date) => date.split("-").reverse().join(".")).join(" — ");
+  const period = formatBonusPeriod(start,end);
   const figures = [
-   ["Отчёты сдали",submitted+" из "+data.length],["Набрали 200 и больше",eligible],
+   ["Отчёты одобрены",submitted+" из "+data.length],["Набрали 200 и больше",eligible],
    ["Фиксированные премии",formatBonus(fixed)],["Доля за 200 и больше",
     eligible ? formatBonus(Math.floor(shared/eligible))+(shared%eligible ? "–"+formatBonus(Math.ceil(shared/eligible)) : "") : "—"],
    ["Комиссару",formatBonus(own)],["Нераспределённый остаток",formatBonus(result.unused)]
@@ -2150,7 +2165,6 @@ async function calculateBonuses(event){
    metric.append(name,amount);
    metrics.append(metric);
   }
-  const reviewNote = pending || rejected ? "На проверке: "+pending+" · Отклонено: "+rejected+". Эти отчёты включены в расчёт." : "";
   const table = document.createElement("table");
   table.className = "fakeTable";
   table.innerHTML = "<thead><tr><th>ФИО</th><th>Баллы</th><th>Статус отчёта</th><th>Основание</th><th>Премия</th></tr></thead><tbody></tbody>";
@@ -2167,7 +2181,7 @@ async function calculateBonuses(event){
     open.onclick = () => openBonusReport(item);
     employee.append(open);
    } else employee.textContent = item.employee_name;
-   const basis = !item.submitted ? "Фиксированная: без отчёта" : item.points < 200 ? "Фиксированная: меньше 200" : "Доля от остатка";
+   const basis = !item.submitted ? "Фиксированная: без одобренного отчёта" : item.points < 200 ? "Фиксированная: меньше 200" : "Доля от остатка";
    const payout = formatBonus(result.payouts[index]);
    const cells = [item.submitted ? item.points : "—",bonusReportStatus(item),basis,payout];
    for (const value of cells) row.insertCell().textContent = value;
@@ -2177,8 +2191,8 @@ async function calculateBonuses(event){
   tableBox.className = "bonusTable";
   tableBox.append(table);
   bonusResults.append(metrics,tableBox);
-  bonusStatus.textContent = period+(reviewNote ? " · "+reviewNote : "");
-  bonusStatement = ["Премии ВК · "+period,"Бюджет: "+formatBonus(budget),...figures.map(([label,value]) => label+": "+value),reviewNote,"",...lines].filter(Boolean).join("\n");
+  bonusStatus.textContent = period;
+  bonusStatement = ["Премии ВК · "+period,"Бюджет: "+formatBonus(budget),...figures.map(([label,value]) => label+": "+value),...lines].filter(Boolean).join("\n");
   bonusCopy.hidden = false;
  } catch {
   if (version === bonusRequest && canCalculateBonuses()) bonusStatus.textContent = "Не удалось рассчитать премии.";
