@@ -1,9 +1,8 @@
 <!doctype html>
 <html lang="ru">
 <head>
-<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link rel="preconnect" href="https://zrcimhwyrunblodtssne.supabase.co" crossorigin>
-<link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm" crossorigin>
+<link rel="modulepreload" href="./vendor/supabase-2.119.2.js">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Служебный портал ВК</title>
@@ -1923,7 +1922,8 @@ async function init(){
   return;
  }
  try {
-  const {createClient} = await import("https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm");
+  const {createClient} = await import("./vendor/supabase-2.119.2.js")
+   .catch(() => import("https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm"));
   client = createClient(config.url,config.publishableKey);
   const {data,error} = await client.auth.getSession();
   if (error) throw error;
