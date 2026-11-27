@@ -218,6 +218,8 @@ body>.portalGate.portalPhotoLogin,body>.portalLoading{flex:1;min-height:0}
 .portalDisclaimer{padding:16px clamp(14px,4vw,36px);border-top:1px solid var(--line);background:var(--panel);color:#bcc9c2;font-size:13px;line-height:1.5}
 .portalDisclaimer p{max-width:94ch;margin:0 auto}
 @media print{body{display:block;min-height:0}.portalDisclaimer{display:none!important}}
+.weeklyDeadlineCountdown{font-size:clamp(17px,2vw,23px);font-weight:750;line-height:1.3;color:var(--gold);font-variant-numeric:tabular-nums}
+#weeklyDeadlineDate{margin:6px 0 12px}
 </style>
 </head>
 <body>
@@ -300,7 +302,12 @@ body>.portalGate.portalPhotoLogin,body>.portalLoading{flex:1;min-height:0}
 </div><div class="rightcol">
 <div class="widget"><h4>★ Ваш профиль</h4><div class="profileRole">Сотрудник ВК</div><p class="muted">Иванов Алексей · № 014</p><p class="muted">Дата вступления: 12.06.2026</p></div>
 <div class="widget"><h4>♢ Последние уведомления</h4><div id="homeNotifications" aria-live="polite"></div><button type="button" class="action secondary" data-go="notifications">Все уведомления</button></div>
-<div class="widget"><h4>Памятка</h4><p class="muted">Проверяйте уведомления и своевременно отправляйте недельный отчёт.</p></div>
+<div class="widget">
+ <h4>Срок сдачи еженедельного отчёта</h4>
+ <div id="weeklyDeadlineCountdown" class="weeklyDeadlineCountdown" role="timer">—</div>
+ <p id="weeklyDeadlineDate" class="muted"></p>
+ <button type="button" class="action secondary" data-go="reports">Открыть отчёт</button>
+</div>
 </div></div></section>
 <div id="otherPages"></div>
 </main></div></div>
@@ -953,6 +960,24 @@ function weeklyPeriod(today, offset){
  end.setUTCDate(end.getUTCDate()+6);
  return [start, end].map((day) => day.toISOString().slice(0,10));
 }
+
+function weeklyDeadlineLabel(deadline, now){
+ const secondsLeft = Math.max(0, Math.ceil((deadline-now)/1000));
+ if (secondsLeft === 0) return "Срок сдачи прошёл";
+ const days = Math.floor(secondsLeft/86400);
+ const hours = Math.floor(secondsLeft/3600)%24;
+ const minutes = Math.floor(secondsLeft/60)%60;
+ const seconds = secondsLeft%60;
+ return (days ? days+" дн. " : "")+[hours,minutes,seconds].map((value) => String(value).padStart(2,"0")).join(":");
+}
+function updateWeeklyDeadline(){
+ const [,sunday] = weeklyPeriod(weeklyToday(),0);
+ const deadline = new Date(sunday+"T19:00:00+03:00");
+ document.getElementById("weeklyDeadlineCountdown").textContent = weeklyDeadlineLabel(deadline,Date.now());
+ document.getElementById("weeklyDeadlineDate").textContent = "До "+sunday.split("-").reverse().join(".")+" · 19:00 МСК";
+}
+updateWeeklyDeadline();
+window.setInterval(updateWeeklyDeadline,1000);
 
 function setWeeklyPeriod(offset){
  const [start,end] = weeklyPeriod(weeklyToday(), offset);
