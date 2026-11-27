@@ -1383,9 +1383,9 @@ async function showAccount(session){
  loadWeeklyTop();
  loadHomeWeeklySummary();
  updatePortalMode();
- authLoading.hidden = true;
+ authLoading.hidden = !session;
  shell.hidden = true;
- gate.hidden = false;
+ gate.hidden = Boolean(session);
  leadership.hidden = true;
  assignments.replaceChildren();
  accountControls.hidden = !session;
@@ -1404,13 +1404,18 @@ async function showAccount(session){
   .eq("user_id",session.user.id).single();
  if (version !== stateVersion) return;
  if (error) {
+  authLoading.hidden = true;
+  gate.hidden = false;
   message.textContent = "Не удалось загрузить аккаунт. Обнови страницу или войди снова.";
   return;
  }
  if (!Object.hasOwn(roles, data.role)) {
   pending.hidden = false;
+  authLoading.hidden = true;
+  gate.hidden = false;
   return;
  }
+ authLoading.hidden = true;
  shell.hidden = false;
  gate.hidden = true;
  accountRole = data.role;
