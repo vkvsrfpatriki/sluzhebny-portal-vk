@@ -1083,8 +1083,11 @@ function syncWeeklyProfile(){
 function weeklyActionAllowed(action){
  return !action.senior || canUseWeeklySeniorActions(currentProfile.rank);
 }
-function countWeeklyPoints(){
- return weeklyActions.filter(weeklyActionAllowed).reduce((sum,action) => sum+action.count*action.rate,0);
+function countWeeklyPoints(entries){
+ return weeklyActions.filter(weeklyActionAllowed).reduce((sum,action) => {
+  const count = entries ? entries[action.id]?.count : action.count;
+  return sum+(Number.isSafeInteger(count) ? Math.min(999999,Math.max(0,count))*action.rate : 0);
+ },0);
 }
 function refreshWeeklyReport(){
  const field = (name, fallback = "—") => reportEscape(weeklyField(name).value.trim() || fallback);
@@ -1285,6 +1288,7 @@ function syncAccountProfile(data){
  syncWeeklyProfile();
  refreshReport();
  refreshWeeklyReport();
+ renderHomeWeeklyPoints();
 }
 
 async function loadManagedLog(){
@@ -1501,6 +1505,7 @@ async function showAccount(session){
  if (accountId !== nextId) {
   draftOwner = nextId;
   for (const kind of Object.keys(reportCorrections)) setReportCorrection(kind, null);
+  restoreWeeklyDraftPeriod();
   restoreReportDraft("weekly");
   restoreReportDraft("promotion");
   document.querySelectorAll("[data-my-report-list]").forEach((list) => list.replaceChildren());
@@ -2098,12 +2103,31 @@ async function buildSubmittedPdf(snapshot, width){
 }
 
 let homeWeeklyVersion = 0;
+let homeWeeklyReport = null;
+function renderHomeWeeklyPoints(){
+ const output = document.getElementById("homeWeeklyPoints");
+ if (!accountRole || !draftOwner || draftOwner !== accountId) {
+  output.textContent = "—";
+  return;
+ }
+ const [start] = weeklyPeriod(weeklyToday(),0);
+ const correction = reportCorrections.weekly;
+ const currentCorrection = correction?.week_start === start
+  ? readReportDraft(draftKey("weekly"))
+  : null;
+ const regular = readReportDraft(reportDraftKey("weekly")+"."+start);
+ const draft = currentCorrection ?? regular;
+ const submittedPoints = homeWeeklyReport?.start === start ? homeWeeklyReport.points : null;
+ output.textContent = String(draft?.entries && (!draft.submitted || submittedPoints == null)
+  ? countWeeklyPoints(draft.entries)
+  : submittedPoints ?? 0);
+}
 async function loadHomeWeeklySummary(){
  const version = ++homeWeeklyVersion;
  const status = document.getElementById("homeWeeklyStatus");
- const points = document.getElementById("homeWeeklyPoints");
  status.textContent = accountRole ? "Загрузка…" : "—";
- points.textContent = "—";
+ if (!accountRole) homeWeeklyReport = null;
+ renderHomeWeeklyPoints();
  if (!accountId || !accountRole) return;
  const [start,end] = weeklyPeriod(weeklyToday(),0);
  const {data,error} = await client.from("portal_reports").select("weekly_points,review_status")
@@ -2116,7 +2140,8 @@ async function loadHomeWeeklySummary(){
   return;
  }
  status.textContent = data ? (data.review_status === "pending" ? "Отправлен" : reviewLabels[data.review_status]) : "Не отправлен";
- points.textContent = data ? String(data.weekly_points) : "—";
+ homeWeeklyReport = {start,points:data?.weekly_points ?? null};
+ renderHomeWeeklyPoints();
 }
 const pendingReports = new WeakMap();
 const reportValidationFields = new Map();
@@ -2202,8 +2227,12 @@ async function submitReport(button){
   const sent = !error || error.code === "23505";
   status.textContent = sent ? (correction ? "Исправленный документ отправлен руководству." : "Отчёт отправлен руководству.") : "Не удалось отправить отчёт. Попробуй ещё раз.";
   if (sent) {
-   saveReportDraft(kind);
-   if (kind === "weekly") loadHomeWeeklySummary();
+   if (kind === "weekly") {
+    // A change made during PDF generation or upload remains an editable draft.
+    if (weeklyField("start").value === weekly.week_start &&
+        JSON.stringify(captureReportDraft(kind,true)) === JSON.stringify(formData)) saveReportDraft(kind,true);
+    loadHomeWeeklySummary();
+   } else saveReportDraft(kind);
    if (correction) loadMyReports(kind);
   }
  } catch {
@@ -2633,10 +2662,37 @@ function reportDraftFields(kind){
 function reportDraftRows(kind){
  return kind === "weekly" ? [weeklyActions,weeklyRows] : [catalog,catalogRows];
 }
+function reportDraftKey(kind){
+ return "portal.draft."+draftOwner+"."+kind;
+}
 function draftKey(kind){
- const key = "portal.draft."+draftOwner+"."+kind;
+ const key = reportDraftKey(kind);
  const correction = reportCorrections[kind];
  return correction ? key+".correction."+correction.id : key+(kind === "weekly" ? "."+weeklyField("start").value : "");
+}
+function readReportDraft(key){
+ try {return JSON.parse(localStorage.getItem(key));} catch {return null;}
+}
+function weeklyDraftPeriodKey(){
+ const [currentWeek] = weeklyPeriod(weeklyToday(),0);
+ return reportDraftKey("weekly")+".selected."+currentWeek;
+}
+function rememberWeeklyDraftPeriod(){
+ if (!draftOwner || reportCorrections.weekly) return;
+ const start = weeklyField("start").value;
+ if (!start) return;
+ try {localStorage.setItem(weeklyDraftPeriodKey(),start);} catch {}
+}
+function restoreWeeklyDraftPeriod(){
+ setWeeklyPeriod(0);
+ if (!draftOwner) return;
+ try {
+  const selected = localStorage.getItem(weeklyDraftPeriodKey());
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(selected ?? "")) return;
+  const [start,end] = weeklyPeriod(selected,0);
+  weeklyField("start").value = start;
+  weeklyField("end").value = end;
+ } catch {}
 }
 function setReportCorrection(kind, correction){
  reportCorrections[kind] = correction;
@@ -2657,17 +2713,21 @@ function captureReportDraft(kind, forSubmission = false){
  }));
  return {fields,entries};
 }
-function saveReportDraft(kind){
- if (!draftOwner) return;
+function saveReportDraft(kind, submitted = false){
+ if (!draftOwner || (kind === "weekly" && !weeklyField("start").value)) return;
+ const draft = captureReportDraft(kind);
+ if (submitted) draft.submitted = true;
  try {
-  localStorage.setItem(draftKey(kind),JSON.stringify(captureReportDraft(kind)));
+  localStorage.setItem(draftKey(kind),JSON.stringify(draft));
  } catch {}
+ if (kind === "weekly") {
+  rememberWeeklyDraftPeriod();
+  renderHomeWeeklyPoints();
+ }
 }
 function restoreReportDraft(kind, fallback){
  clearReportValidation(kind);
- let draft;
- try {if (draftOwner) draft = JSON.parse(localStorage.getItem(draftKey(kind)));} catch {}
- draft ??= fallback;
+ const draft = (draftOwner && readReportDraft(draftKey(kind))) || fallback;
  for (const field of reportDraftFields(kind)) {
   const value = draft?.fields?.[field.dataset.weekField || field.dataset.reportField || field.id];
   if (field.type === "checkbox") field.checked = value ?? field.defaultChecked;
@@ -2687,8 +2747,10 @@ function restoreReportDraft(kind, fallback){
    row.classList.toggle("selected",!!action.count);
   }
  });
- if (kind === "weekly") refreshWeeklyReport();
- else {filterCatalog();refreshReport();}
+ if (kind === "weekly") {
+  refreshWeeklyReport();
+  renderHomeWeeklyPoints();
+ } else {filterCatalog();refreshReport();}
 }
 function legacyReportPeriod(body){
  const period = body.match(/Отч[её]тный период:\s*(\d{2}\.\d{2}\.\d{4})\s*[—–-]\s*(\d{2}\.\d{2}\.\d{4})/i);
@@ -2880,17 +2942,18 @@ function setupReportDrafts(){
   editor.addEventListener("input",(event) => {
    if (reportValidationFields.get(kind) === event.target) clearReportValidation(kind);
    if (kind === "weekly" && event.target === weeklyField("start")) {
-    if (!weeklyField("start").value) return;
-    const [start,end] = weeklyPeriod(weeklyField("start").value,0);
+    const [start,end] = weeklyPeriod(weeklyField("start").value || weeklyField("end").value || weeklyToday(),0);
     weeklyField("start").value = start;
     weeklyField("end").value = end;
     if (reportCorrections.weekly && reportCorrections.weekly.week_start !== start) setReportCorrection(kind,null);
+    rememberWeeklyDraftPeriod();
     restoreReportDraft(kind);
    } else saveReportDraft(kind);
   });
   editor.addEventListener("click",(event) => {
    if (event.target.closest("[data-week-offset]")) {
     if (reportCorrections.weekly && reportCorrections.weekly.week_start !== weeklyField("start").value) setReportCorrection(kind,null);
+    rememberWeeklyDraftPeriod();
     restoreReportDraft(kind);
    }
    if (event.target.closest("[data-week-step],[data-step],#weeklyReset,#reportReset")) saveReportDraft(kind);
