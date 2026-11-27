@@ -659,6 +659,24 @@ Object.entries(pages).forEach(([id,p]) => {
      </div>
      <button type="button" class="action" data-go="reports">Открыть еженедельный отчёт</button>
     </div>
+   </details>
+   <details class="panel trainingLesson">
+    <summary>
+     <span><span class="trainingLessonTitle">Как подать рапорт на повышение</span><span class="trainingLessonDescription">Требования к званию, подтверждения и отправка рапорта</span></span>
+     <span class="trainingLessonArrow" aria-hidden="true"></span>
+    </summary>
+    <div class="trainingLessonBody">
+     <ol>
+      <li><strong>Проверь требования.</strong> В разделе «Повышение» открой «Ступени и требования» и найди своё следующее звание. Проверь обязательные условия и порог баллов, если он указан.</li>
+      <li><strong>Заполни рапорт.</strong> Проверь номер, дату подачи и данные из профиля. Выбери звание в поле «Испрашиваемое звание». Добавь выполненные действия и внеси ссылки в «Доказательства» по одной на строку.</li>
+      <li><strong>Сверь и отправь.</strong> В «Предпросмотре» проверь выбранное звание, количество действий и ссылки. Нажми «Отправить руководству», дождись подтверждения и проверь статус в «Моих отправках».</li>
+     </ol>
+     <div class="trainingLessonExample">
+      <h3>Пример заполнения</h3>
+      <p>Провёл две тренировки? В действии «Проведение тренировки» поставь 2 и добавь ссылки на обе тренировки. Калькулятор покажет 60 баллов за это действие.</p>
+     </div>
+     <button type="button" class="action" data-go="promotion" data-open-promotion-report>Открыть рапорт на повышение</button>
+    </div>
    </details>`;
  } else if (id === "documents") {
   section.innerHTML = `<div class="pagehero"><img loading="lazy" decoding="async" src="${p[2]}" alt=""><div class="pageheroText"><h2>${p[0]}</h2><p>${p[1]}</p></div></div>
@@ -720,6 +738,7 @@ document.addEventListener("click", event => {
  const goButton = event.target.closest("[data-go]");
  if (goButton) {
   event.preventDefault();
+  if (goButton.hasAttribute("data-open-promotion-report")) document.querySelector('[data-promo-tab="report"]').click();
   go(goButton.dataset.go);
  }
 });
