@@ -212,6 +212,12 @@ main{padding:24px;max-width:1600px;width:100%;margin:auto}
 .bonusForm label,.materialUpload label{display:grid;gap:5px}
 .bonusForm input,.materialUpload input{font:inherit;padding:7px;max-width:100%}
 .materialList li{margin:8px 0;overflow-wrap:anywhere;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+body{display:flex;flex-direction:column;min-height:100vh;min-height:100svh}
+body>.shell{flex:1;min-height:0}
+body>.portalGate.portalPhotoLogin,body>.portalLoading{flex:1;min-height:0}
+.portalDisclaimer{padding:16px clamp(14px,4vw,36px);border-top:1px solid var(--line);background:var(--panel);color:#bcc9c2;font-size:13px;line-height:1.5}
+.portalDisclaimer p{max-width:94ch;margin:0 auto}
+@media print{body{display:block;min-height:0}.portalDisclaimer{display:none!important}}
 </style>
 </head>
 <body>
@@ -297,8 +303,8 @@ main{padding:24px;max-width:1600px;width:100%;margin:auto}
 <div class="widget"><h4>Памятка</h4><p class="muted">Проверяйте уведомления и своевременно отправляйте недельный отчёт.</p></div>
 </div></div></section>
 <div id="otherPages"></div>
-<div class="footer">© Военный Комиссариат</div>
 </main></div></div>
+<footer class="footer portalDisclaimer"><p>Настоящий сайт является неофициальным фанатским ресурсом игрового проекта RMRP и создан исключительно в развлекательных целях для ролевой игры. Сайт не имеет отношения к Военному Комиссариату Министерства обороны Российской Федерации и иным государственным органам Российской Федерации и не является официальным источником информации. Все названия, звания, документы и события вымышлены в рамках игры; возможные совпадения случайны.</p></footer>
 <script>
 const pages = {
  reports:["Отчёты","Еженедельный отчёт и история отправок","reports.jpg","Здесь будет двухпанельный редактор: форма слева и автоматически формируемый официальный документ справа. Доступны PDF и PNG."],
